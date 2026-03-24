@@ -1,7 +1,9 @@
 package org.github.keepasscompose.di
 
+import org.github.keepasscompose.core.common.FileSystem
+import org.github.keepasscompose.core.common.PlatformFileSystem
 import org.koin.dsl.module
 
 val appModule = module {
-    // Common dependencies will be registered here
+    single<FileSystem> { PlatformFileSystem() }
 }
