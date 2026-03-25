@@ -58,6 +58,7 @@ kotlin {
             implementation(libs.compose.material3.adaptive.layout)
             implementation(libs.compose.material3.adaptive.navigation)
             implementation(libs.okio)
+            implementation(libs.datastore.preferences.core)
             implementation(libs.napier)
         }
         commonTest.dependencies {
