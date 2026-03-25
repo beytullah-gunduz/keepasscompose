@@ -1,6 +1,6 @@
 package org.github.keepasscompose.core.model
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 data class KdbxEntry(
     val uuid: String,
