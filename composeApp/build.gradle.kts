@@ -61,9 +61,11 @@ kotlin {
             implementation(libs.okio)
             implementation(libs.datastore.preferences.core)
             implementation(libs.napier)
+            implementation(libs.xmlutil.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.datetime)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
