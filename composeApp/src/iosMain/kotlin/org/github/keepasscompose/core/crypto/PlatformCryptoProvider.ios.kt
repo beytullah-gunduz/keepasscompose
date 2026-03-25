@@ -9,6 +9,9 @@ import platform.CommonCrypto.CC_SHA256
 import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH
 import platform.CommonCrypto.CC_SHA512
 import platform.CommonCrypto.CC_SHA512_DIGEST_LENGTH
+import platform.CommonCrypto.CCHmac
+import platform.CommonCrypto.kCCHmacAlgSHA256
+import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH as HMAC_SHA256_LENGTH
 
 // iOS implementation will use a hybrid approach:
 // - Apple CommonCrypto (via CInterop) for AES-CBC, SHA-256/512, HMAC-SHA-256
@@ -46,7 +49,25 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
     }
 
     override fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
-        TODO("iOS: Implement via CommonCrypto CCHmac")
+        val mac = UByteArray(HMAC_SHA256_LENGTH)
+        // Pin all three arrays simultaneously for the CCHmac call
+        val keyToPin = key.ifEmpty { byteArrayOf(0) }
+        val dataToPin = data.ifEmpty { byteArrayOf(0) }
+        mac.usePinned { macPin ->
+            keyToPin.usePinned { keyPin ->
+                dataToPin.usePinned { dataPin ->
+                    CCHmac(
+                        kCCHmacAlgSHA256,
+                        if (key.isEmpty()) null else keyPin.addressOf(0),
+                        key.size.convert(),
+                        if (data.isEmpty()) null else dataPin.addressOf(0),
+                        data.size.convert(),
+                        macPin.addressOf(0),
+                    )
+                }
+            }
+        }
+        return mac.toByteArray()
     }
 
     override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
