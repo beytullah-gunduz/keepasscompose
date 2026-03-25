@@ -23,6 +23,7 @@ napier = "2.7.1"
 okio = "3.10.2"
 compose-material3-adaptive = "1.2.0"
 datastore = "1.1.2"
+bouncycastle = "1.78.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -56,6 +57,7 @@ datastore-preferences-core = { module = "androidx.datastore:datastore-preference
 compose-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "compose-material3-adaptive" }
 compose-material3-adaptive-layout = { module = "org.jetbrains.compose.material3.adaptive:adaptive-layout", version.ref = "compose-material3-adaptive" }
 compose-material3-adaptive-navigation = { module = "org.jetbrains.compose.material3.adaptive:adaptive-navigation", version.ref = "compose-material3-adaptive" }
+bouncycastle-provider = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
