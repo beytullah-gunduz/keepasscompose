@@ -1,19 +1,48 @@
 package org.github.keepasscompose.core.crypto
 
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.convert
+import kotlinx.cinterop.usePinned
 import org.github.keepasscompose.core.model.Argon2Variant
+import platform.CommonCrypto.CC_SHA256
+import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH
+import platform.CommonCrypto.CC_SHA512
+import platform.CommonCrypto.CC_SHA512_DIGEST_LENGTH
 
 // iOS implementation will use a hybrid approach:
 // - Apple CommonCrypto (via CInterop) for AES-CBC, SHA-256/512, HMAC-SHA-256
 // - libsodium (via kotlin-libsodium or CInterop) for Argon2, ChaCha20, Salsa20
 // - Twofish requires a pure Kotlin or C library via CInterop
+@OptIn(ExperimentalForeignApi::class)
 actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
 
     override fun sha256(data: ByteArray): ByteArray {
-        TODO("iOS: Implement via CommonCrypto CC_SHA256")
+        val digest = UByteArray(CC_SHA256_DIGEST_LENGTH)
+        digest.usePinned { digestPin ->
+            if (data.isEmpty()) {
+                CC_SHA256(null, 0u, digestPin.addressOf(0))
+            } else {
+                data.usePinned { dataPin ->
+                    CC_SHA256(dataPin.addressOf(0), data.size.convert(), digestPin.addressOf(0))
+                }
+            }
+        }
+        return digest.toByteArray()
     }
 
     override fun sha512(data: ByteArray): ByteArray {
-        TODO("iOS: Implement via CommonCrypto CC_SHA512")
+        val digest = UByteArray(CC_SHA512_DIGEST_LENGTH)
+        digest.usePinned { digestPin ->
+            if (data.isEmpty()) {
+                CC_SHA512(null, 0u, digestPin.addressOf(0))
+            } else {
+                data.usePinned { dataPin ->
+                    CC_SHA512(dataPin.addressOf(0), data.size.convert(), digestPin.addressOf(0))
+                }
+            }
+        }
+        return digest.toByteArray()
     }
 
     override fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
