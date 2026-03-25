@@ -2,15 +2,26 @@ package org.github.keepasscompose.core.crypto
 
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.alloc
 import kotlinx.cinterop.convert
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
 import kotlinx.cinterop.usePinned
+import kotlinx.cinterop.value
 import org.github.keepasscompose.core.model.Argon2Variant
 import platform.CommonCrypto.CC_SHA256
 import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH
 import platform.CommonCrypto.CC_SHA512
 import platform.CommonCrypto.CC_SHA512_DIGEST_LENGTH
+import platform.CommonCrypto.CCCrypt
 import platform.CommonCrypto.CCHmac
+import platform.CommonCrypto.kCCAlgorithmAES
+import platform.CommonCrypto.kCCDecrypt
+import platform.CommonCrypto.kCCEncrypt
 import platform.CommonCrypto.kCCHmacAlgSHA256
+import platform.CommonCrypto.kCCOptionPKCS7Padding
+import platform.CommonCrypto.kCCSuccess
+import platform.CoreFoundation.CFIndex
 import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH as HMAC_SHA256_LENGTH
 
 // iOS implementation will use a hybrid approach:
@@ -70,12 +81,41 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return mac.toByteArray()
     }
 
-    override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
-        TODO("iOS: Implement via CommonCrypto CCCrypt with kCCAlgorithmAES")
-    }
+    override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray =
+        ccCryptAes(kCCEncrypt, data, key, iv)
 
-    override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
-        TODO("iOS: Implement via CommonCrypto CCCrypt with kCCAlgorithmAES")
+    override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray =
+        ccCryptAes(kCCDecrypt, data, key, iv)
+
+    private fun ccCryptAes(operation: Int, data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
+        // Output buffer: encrypt may add up to one block of padding (16 bytes)
+        val outputSize = data.size + 16
+        val output = ByteArray(outputSize)
+        memScoped {
+            val dataOutMoved = alloc<CFIndex>()
+            val status = data.usePinned { dataPin ->
+                key.usePinned { keyPin ->
+                    iv.usePinned { ivPin ->
+                        output.usePinned { outPin ->
+                            CCCrypt(
+                                operation.convert(),
+                                kCCAlgorithmAES,
+                                kCCOptionPKCS7Padding,
+                                keyPin.addressOf(0), key.size.convert(),
+                                ivPin.addressOf(0),
+                                dataPin.addressOf(0), data.size.convert(),
+                                outPin.addressOf(0), outputSize.convert(),
+                                dataOutMoved.ptr,
+                            )
+                        }
+                    }
+                }
+            }
+            if (status != kCCSuccess) {
+                throw RuntimeException("CCCrypt failed with status: $status")
+            }
+            return output.copyOf(dataOutMoved.value.toInt())
+        }
     }
 
     override fun aesKdf(key: ByteArray, seed: ByteArray, rounds: Long): ByteArray {
