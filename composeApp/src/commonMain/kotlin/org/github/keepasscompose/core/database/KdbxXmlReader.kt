@@ -5,8 +5,6 @@ import nl.adaptivity.xmlutil.EventType
 import nl.adaptivity.xmlutil.XmlReader
 import nl.adaptivity.xmlutil.xmlStreaming
 import okio.Buffer
-import okio.GzipSource
-import okio.buffer
 import org.github.keepasscompose.core.model.DeletedObject
 import org.github.keepasscompose.core.model.KdbxAttachment
 import org.github.keepasscompose.core.model.KdbxEntry
@@ -23,13 +21,14 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * @param meta The parsed database metadata.
  * @param rootGroup The root group containing all groups and entries.
  * @param deletedObjects Objects that were deleted from the database.
- * @param binaries Binary attachment pool (ID to data) parsed from Meta/Binaries (KDBX 3.1).
+ * @param binaryPool The binary attachment pool, populated from either
+ *   XML Meta/Binaries (KDBX 3.1) or the inner header (KDBX 4.x).
  */
 data class KdbxXmlReadResult(
     val meta: KdbxMeta,
     val rootGroup: KdbxGroup,
     val deletedObjects: List<DeletedObject> = emptyList(),
-    val binaries: Map<Int, ByteArray> = emptyMap(),
+    val binaryPool: KdbxBinaryPool = KdbxBinaryPool(),
 )
 
 /**
@@ -42,14 +41,18 @@ data class KdbxXmlReadResult(
  * @param isV4 Whether the source file is KDBX 4.x (affects timestamp format).
  * @param innerStreamDecryptor Optional decryptor for protected field values.
  *   If null, protected values are left as raw base64 strings.
+ * @param externalBinaryPool Optional pre-populated binary pool from the KDBX 4.x inner header.
+ *   When provided, entry attachment references resolve against this pool instead of
+ *   parsing binaries from XML Meta/Binaries.
  */
 @OptIn(ExperimentalEncodingApi::class)
 class KdbxXmlReader(
     private val isV4: Boolean = true,
     private val innerStreamDecryptor: InnerStreamDecryptor? = null,
+    private val externalBinaryPool: KdbxBinaryPool? = null,
 ) {
 
-    private var binariesPool: Map<Int, ByteArray> = emptyMap()
+    private var binariesPool: KdbxBinaryPool = externalBinaryPool ?: KdbxBinaryPool()
 
     fun readXml(xml: String): KdbxXmlReadResult {
         val reader = xmlStreaming.newReader(xml)
@@ -79,7 +82,7 @@ class KdbxXmlReader(
             meta = meta,
             rootGroup = rootGroup ?: throw KdbxParseException("Missing Root/Group element"),
             deletedObjects = deletedObjects,
-            binaries = binariesPool,
+            binaryPool = binariesPool,
         )
     }
 
@@ -114,7 +117,7 @@ class KdbxXmlReader(
                     protectUrl = mp.protectUrl
                     protectNotes = mp.protectNotes
                 }
-                "Binaries" -> binariesPool = parseBinaries(reader)
+                "Binaries" -> parseBinariesIntoPool(reader)
                 else -> reader.skipElement()
             }
         }
@@ -164,9 +167,8 @@ class KdbxXmlReader(
         return MemoryProtection(protectTitle, protectUserName, protectPassword, protectUrl, protectNotes)
     }
 
-    private fun parseBinaries(reader: XmlReader): Map<Int, ByteArray> {
+    private fun parseBinariesIntoPool(reader: XmlReader) {
         reader.requireStart("Binaries")
-        val pool = mutableMapOf<Int, ByteArray>()
 
         while (reader.nextTag() == EventType.START_ELEMENT) {
             if (reader.localName == "Binary") {
@@ -177,16 +179,14 @@ class KdbxXmlReader(
                 if (id != null && base64Text.isNotBlank()) {
                     var data = Base64.decode(base64Text)
                     if (compressed) {
-                        data = decompressGzip(data)
+                        data = KdbxBinaryPool.decompressGzip(data)
                     }
-                    pool[id] = data
+                    binariesPool.put(id, data)
                 }
             } else {
                 reader.skipElement()
             }
         }
-
-        return pool
     }
 
     // -- Root parsing --
@@ -396,7 +396,7 @@ class KdbxXmlReader(
         return KdbxAttachment(
             id = refId,
             name = name,
-            data = binariesPool[refId] ?: ByteArray(0),
+            data = binariesPool[refId] ?: byteArrayOf(),
         )
     }
 
@@ -459,13 +459,6 @@ class KdbxXmlReader(
         Instant.fromEpochSeconds(seconds - DOTNET_EPOCH_OFFSET)
     } catch (_: Exception) {
         null
-    }
-
-    // -- Utilities --
-
-    private fun decompressGzip(data: ByteArray): ByteArray {
-        val source = Buffer().apply { write(data) }
-        return GzipSource(source).buffer().readByteArray()
     }
 
     companion object {
