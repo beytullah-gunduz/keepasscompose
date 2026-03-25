@@ -314,5 +314,9 @@ class KdbxHeaderReader {
 private fun ByteArray?.contentEquals(other: ByteArray?): Boolean {
     if (this === other) return true
     if (this == null || other == null) return false
-    return this.contentEquals(other)
+    if (this.size != other.size) return false
+    for (i in this.indices) {
+        if (this[i] != other[i]) return false
+    }
+    return true
 }
