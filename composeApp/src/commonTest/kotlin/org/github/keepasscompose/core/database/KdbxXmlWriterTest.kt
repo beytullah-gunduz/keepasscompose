@@ -406,8 +406,8 @@ class KdbxXmlWriterTest {
         val readResult = reader.readXml(writeResult.xml)
 
         // Check binaries pool round-trips
-        assertEquals(1, readResult.binaries.size)
-        assertTrue(binaryData.contentEquals(readResult.binaries[0]!!))
+        assertEquals(1, readResult.binaryPool.size)
+        assertTrue(binaryData.contentEquals(readResult.binaryPool[0]!!))
 
         // Check entry attachment
         val attachment = readResult.rootGroup.entries.first().attachments.first()
@@ -440,9 +440,9 @@ class KdbxXmlWriterTest {
         val reader = KdbxXmlReader(isV4 = false)
         val readResult = reader.readXml(writeResult.xml)
 
-        assertEquals(2, readResult.binaries.size)
-        assertTrue(data0.contentEquals(readResult.binaries[0]!!))
-        assertTrue(data1.contentEquals(readResult.binaries[1]!!))
+        assertEquals(2, readResult.binaryPool.size)
+        assertTrue(data0.contentEquals(readResult.binaryPool[0]!!))
+        assertTrue(data1.contentEquals(readResult.binaryPool[1]!!))
     }
 
     // -- DeletedObjects tests --
