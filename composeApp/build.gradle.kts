@@ -37,6 +37,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.bouncycastle.provider)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -69,6 +70,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
+            implementation(libs.bouncycastle.provider)
         }
     }
 }
