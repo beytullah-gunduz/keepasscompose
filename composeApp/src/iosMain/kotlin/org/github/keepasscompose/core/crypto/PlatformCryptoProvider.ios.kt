@@ -135,7 +135,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
     }
 
     override fun chaCha20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
-        TODO("iOS: Implement via libsodium crypto_stream_chacha20_ietf_xor")
+        return ChaCha20.encrypt(data, key, nonce)
     }
 
     override fun salsa20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
