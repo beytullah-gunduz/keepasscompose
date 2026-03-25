@@ -431,8 +431,8 @@ class KdbxXmlReaderTest {
         val result = readerV3().readXml(xml)
 
         // Check binaries pool
-        assertEquals(1, result.binaries.size)
-        assertTrue(binaryData.contentEquals(result.binaries[0]!!))
+        assertEquals(1, result.binaryPool.size)
+        assertTrue(binaryData.contentEquals(result.binaryPool[0]!!))
 
         // Check entry attachment
         val attachment = result.rootGroup.entries.first().attachments.first()
