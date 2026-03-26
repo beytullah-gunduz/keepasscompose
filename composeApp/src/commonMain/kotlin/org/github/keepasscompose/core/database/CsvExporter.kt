@@ -17,7 +17,7 @@ object CsvExporter {
     data class Config(
         val includeTitle: Boolean = true,
         val includeUserName: Boolean = true,
-        val includePassword: Boolean = true,
+        val includePassword: Boolean = false,
         val includeUrl: Boolean = true,
         val includeNotes: Boolean = true,
         val includeGroup: Boolean = false,
