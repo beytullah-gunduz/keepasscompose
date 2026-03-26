@@ -119,7 +119,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
     }
 
     override fun aesKdf(key: ByteArray, seed: ByteArray, rounds: Long): ByteArray {
-        TODO("iOS: Implement via CommonCrypto CCCrypt with kCCAlgorithmAES in ECB mode")
+        return AesKdf.transform(key, seed, rounds)
     }
 
     override fun argon2(
