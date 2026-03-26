@@ -1,0 +1,12 @@
+#!/bin/sh
+# Pre-commit hook: run Spotless check before committing
+# Install: cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+echo "Running Spotless formatting check..."
+./gradlew spotlessCheck --daemon 2>/dev/null
+
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "Code formatting issues found. Run './gradlew spotlessApply' to fix them."
+    exit 1
+fi
