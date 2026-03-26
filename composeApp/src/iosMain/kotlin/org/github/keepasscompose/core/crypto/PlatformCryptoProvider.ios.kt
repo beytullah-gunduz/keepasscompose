@@ -131,7 +131,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         iterations: Long,
         parallelism: Int,
     ): ByteArray {
-        TODO("iOS: Implement via libsodium crypto_pwhash")
+        return Argon2.derive(password, salt, variant, version, memory, iterations, parallelism)
     }
 
     override fun chaCha20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
