@@ -6,6 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import org.github.keepasscompose.core.common.FilePicker
@@ -25,6 +27,23 @@ private sealed interface AppScreen {
     data object Main : AppScreen
 }
 
+private val AppScreenSaver = Saver<AppScreen, List<String>>(
+    save = { screen ->
+        when (screen) {
+            is AppScreen.Welcome -> listOf("welcome")
+            is AppScreen.Unlock -> listOf("unlock", screen.databasePath)
+            is AppScreen.Main -> listOf("main")
+        }
+    },
+    restore = { list ->
+        when (list[0]) {
+            "unlock" -> AppScreen.Unlock(list[1])
+            "main" -> AppScreen.Main
+            else -> AppScreen.Welcome
+        }
+    },
+)
+
 @Composable
 fun AppNavigator() {
     val unlockViewModel: UnlockViewModel = koinInject()
@@ -33,7 +52,7 @@ fun AppNavigator() {
     val filePicker = remember { FilePicker() }
     val scope = rememberCoroutineScope()
 
-    var currentScreen: AppScreen by remember { mutableStateOf(AppScreen.Welcome) }
+    var currentScreen: AppScreen by rememberSaveable(saver = AppScreenSaver) { mutableStateOf(AppScreen.Welcome) }
     val unlockState by unlockViewModel.state.collectAsState()
 
     // React to successful unlock
