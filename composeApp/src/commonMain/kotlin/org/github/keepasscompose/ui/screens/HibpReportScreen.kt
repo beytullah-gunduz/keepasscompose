@@ -67,7 +67,8 @@ fun HibpReportScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "This check sends the first 5 characters of each password's SHA-1 hash to the Have I Been Pwned API. Your full passwords are never transmitted.",
+                    text = "This check sends the first 5 characters of each password's SHA-1 hash to the " +
+                        "Have I Been Pwned API. Your full passwords are never transmitted.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                 )

@@ -58,6 +58,13 @@ class DatabaseViewModel(private val kdbxWriter: KdbxWriter, private val fileSyst
         _isLocked.value = false
     }
 
+    fun setDatabase(database: KdbxDatabase, filePath: String) {
+        _database.value = database
+        _filePath.value = filePath
+        _isDirty.value = false
+        _isLocked.value = false
+    }
+
     fun markDirty() {
         _isDirty.value = true
     }

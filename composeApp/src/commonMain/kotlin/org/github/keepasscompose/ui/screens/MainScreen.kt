@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import kotlinx.coroutines.launch
+import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.ui.components.DatabaseTab
 import org.github.keepasscompose.ui.components.DatabaseTabBar
 import org.github.keepasscompose.ui.components.Toolbar
@@ -56,6 +57,12 @@ import org.github.keepasscompose.ui.shortcuts.keyboardShortcuts
 fun MainScreen(
     databaseName: String = "",
     entryCount: Int = 0,
+    groups: List<String> = emptyList(),
+    entries: List<KdbxEntry> = emptyList(),
+    onGroupSelected: (String) -> Unit = {},
+    onEntrySelected: (KdbxEntry) -> Unit = {},
+    onLockDatabase: () -> Unit = {},
+    onOpenDatabase: () -> Unit = {},
     tabs: List<DatabaseTab> = emptyList(),
     selectedTabId: String = "",
     hasSelectedEntry: Boolean = false,
@@ -69,15 +76,23 @@ fun MainScreen(
     if (isCompact) {
         MobileMainScreen(
             databaseName = databaseName,
+            groups = groups,
+            entries = entries,
+            onGroupSelected = onGroupSelected,
+            onEntrySelected = onEntrySelected,
             onNewEntry = toolbarCallbacks.onNewEntry,
-            onOpenDatabase = toolbarCallbacks.onOpenDatabase,
-            onLockDatabase = toolbarCallbacks.onLockDatabase,
+            onOpenDatabase = onOpenDatabase,
+            onLockDatabase = onLockDatabase,
             onSearch = toolbarCallbacks.onSearch,
         )
     } else {
         DesktopMainScreen(
             databaseName = databaseName,
             entryCount = entryCount,
+            groups = groups,
+            entries = entries,
+            onGroupSelected = onGroupSelected,
+            onEntrySelected = onEntrySelected,
             tabs = tabs,
             selectedTabId = selectedTabId,
             hasSelectedEntry = hasSelectedEntry,
@@ -97,6 +112,10 @@ fun MainScreen(
 private fun DesktopMainScreen(
     databaseName: String,
     entryCount: Int,
+    groups: List<String>,
+    entries: List<KdbxEntry>,
+    onGroupSelected: (String) -> Unit,
+    onEntrySelected: (KdbxEntry) -> Unit,
     tabs: List<DatabaseTab>,
     selectedTabId: String,
     hasSelectedEntry: Boolean,
@@ -144,9 +163,9 @@ private fun DesktopMainScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            GroupTreeSidebar(modifier = Modifier.width(260.dp).fillMaxHeight())
+            GroupTreeSidebar(groups = groups, onGroupSelected = onGroupSelected, modifier = Modifier.width(260.dp).fillMaxHeight())
             VerticalDivider()
-            EntryListPane(modifier = Modifier.weight(1f).fillMaxHeight())
+            EntryListPane(entries = entries, onEntrySelected = onEntrySelected, modifier = Modifier.weight(1f).fillMaxHeight())
         }
     }
 }
@@ -159,6 +178,10 @@ private fun DesktopMainScreen(
 @Composable
 private fun MobileMainScreen(
     databaseName: String,
+    groups: List<String>,
+    entries: List<KdbxEntry>,
+    onGroupSelected: (String) -> Unit,
+    onEntrySelected: (KdbxEntry) -> Unit,
     onNewEntry: () -> Unit,
     onOpenDatabase: () -> Unit,
     onLockDatabase: () -> Unit,
@@ -179,9 +202,11 @@ private fun MobileMainScreen(
                 )
                 HorizontalDivider()
                 GroupTreeSidebar(
+                    groups = groups,
                     modifier = Modifier.fillMaxWidth(),
                     onGroupSelected = { group ->
                         selectedGroup = group
+                        onGroupSelected(group)
                         scope.launch { drawerState.close() }
                     },
                 )
@@ -230,7 +255,7 @@ private fun MobileMainScreen(
                     .fillMaxSize()
                     .padding(padding),
             ) {
-                EntryListPane(modifier = Modifier.fillMaxSize())
+                EntryListPane(entries = entries, onEntrySelected = onEntrySelected, modifier = Modifier.fillMaxSize())
             }
         }
     }
@@ -241,10 +266,9 @@ private fun MobileMainScreen(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun GroupTreeSidebar(modifier: Modifier = Modifier, onGroupSelected: (String) -> Unit = {}) {
-    val placeholderGroups = listOf("Root", "General", "Email", "Internet", "Banking")
+private fun GroupTreeSidebar(groups: List<String>, modifier: Modifier = Modifier, onGroupSelected: (String) -> Unit = {}) {
     LazyColumn(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)) {
-        items(placeholderGroups) { group ->
+        items(groups) { group ->
             Text(
                 text = group,
                 style = MaterialTheme.typography.bodyLarge,
@@ -258,9 +282,8 @@ private fun GroupTreeSidebar(modifier: Modifier = Modifier, onGroupSelected: (St
 }
 
 @Composable
-private fun EntryListPane(modifier: Modifier = Modifier) {
-    val placeholderEntries = listOf("Entry 1", "Entry 2", "Entry 3")
-    if (placeholderEntries.isEmpty()) {
+private fun EntryListPane(entries: List<KdbxEntry>, onEntrySelected: (KdbxEntry) -> Unit = {}, modifier: Modifier = Modifier) {
+    if (entries.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Text(
                 text = "No entries",
@@ -270,15 +293,23 @@ private fun EntryListPane(modifier: Modifier = Modifier) {
         }
     } else {
         LazyColumn(modifier = modifier) {
-            items(placeholderEntries) { entry ->
-                Text(
-                    text = entry,
-                    style = MaterialTheme.typography.bodyLarge,
+            items(entries) { entry ->
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { }
+                        .clickable { onEntrySelected(entry) }
                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                )
+                ) {
+                    Text(text = entry.title.ifEmpty { "Untitled" }, style = MaterialTheme.typography.bodyLarge)
+                    if (entry.userName.isNotEmpty()) {
+                        Text(
+                            text = entry.userName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                HorizontalDivider()
             }
         }
     }
