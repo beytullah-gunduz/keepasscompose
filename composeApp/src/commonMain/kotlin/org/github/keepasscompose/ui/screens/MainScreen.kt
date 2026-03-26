@@ -50,11 +50,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import kotlinx.coroutines.launch
+import org.github.keepasscompose.ui.components.DatabaseTab
+import org.github.keepasscompose.ui.components.DatabaseTabBar
 
 @Composable
 fun MainScreen(
     databaseName: String = "",
     entryCount: Int = 0,
+    tabs: List<DatabaseTab> = emptyList(),
+    selectedTabId: String = "",
+    onTabSelected: (String) -> Unit = {},
+    onTabClosed: (String) -> Unit = {},
     onNewEntry: () -> Unit = {},
     onOpenDatabase: () -> Unit = {},
     onSaveDatabase: () -> Unit = {},
@@ -76,6 +82,10 @@ fun MainScreen(
         DesktopMainScreen(
             databaseName = databaseName,
             entryCount = entryCount,
+            tabs = tabs,
+            selectedTabId = selectedTabId,
+            onTabSelected = onTabSelected,
+            onTabClosed = onTabClosed,
             onNewEntry = onNewEntry,
             onOpenDatabase = onOpenDatabase,
             onSaveDatabase = onSaveDatabase,
@@ -94,6 +104,10 @@ fun MainScreen(
 private fun DesktopMainScreen(
     databaseName: String,
     entryCount: Int,
+    tabs: List<DatabaseTab>,
+    selectedTabId: String,
+    onTabSelected: (String) -> Unit,
+    onTabClosed: (String) -> Unit,
     onNewEntry: () -> Unit,
     onOpenDatabase: () -> Unit,
     onSaveDatabase: () -> Unit,
@@ -102,8 +116,9 @@ private fun DesktopMainScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(databaseName.ifEmpty { "KeePass Compose" }) },
+            Column {
+                TopAppBar(
+                    title = { Text(databaseName.ifEmpty { "KeePass Compose" }) },
                 actions = {
                     IconButton(onClick = onNewEntry) {
                         Icon(Icons.AutoMirrored.Filled.NoteAdd, contentDescription = "New Entry")
@@ -126,6 +141,16 @@ private fun DesktopMainScreen(
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
+                if (tabs.isNotEmpty()) {
+                    DatabaseTabBar(
+                        tabs = tabs,
+                        selectedTabId = selectedTabId,
+                        onTabSelected = onTabSelected,
+                        onTabClosed = onTabClosed,
+                        onNewTab = onOpenDatabase,
+                    )
+                }
+            }
         },
         bottomBar = {
             StatusBar(databaseName = databaseName, entryCount = entryCount)
