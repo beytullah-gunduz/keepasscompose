@@ -92,10 +92,15 @@ compose.desktop {
     application {
         mainClass = "org.github.keepasscompose.MainKt"
 
+        // Argon2 KDF requires ~64MB for key derivation; ensure enough heap
+        jvmArgs += listOf("-Xmx512m")
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "org.github.keepasscompose"
             packageVersion = "1.0.0"
+
+            jvmArgs += listOf("-Xmx512m")
         }
     }
 }
