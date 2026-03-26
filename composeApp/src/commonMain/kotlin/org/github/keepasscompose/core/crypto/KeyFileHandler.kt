@@ -17,7 +17,6 @@ import kotlin.random.Random
  * - **Arbitrary binary**: Any other file — hashed with SHA-256 to produce key data
  */
 object KeyFileHandler {
-
     /**
      * Parse a key file and extract the key data bytes.
      *
@@ -60,17 +59,18 @@ object KeyFileHandler {
         val hashHex = hash.joinToString("") { it.toUByte().toString(16).padStart(2, '0') }.uppercase()
         val keyBase64 = Base64.encode(keyData)
 
-        val xml = buildString {
-            appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
-            appendLine("<KeyFile>")
-            appendLine("\t<Meta>")
-            appendLine("\t\t<Version>2.0</Version>")
-            appendLine("\t</Meta>")
-            appendLine("\t<Key>")
-            appendLine("""\t\t<Data Hash="$hashHex">$keyBase64</Data>""")
-            appendLine("\t</Key>")
-            appendLine("</KeyFile>")
-        }
+        val xml =
+            buildString {
+                appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
+                appendLine("<KeyFile>")
+                appendLine("\t<Meta>")
+                appendLine("\t\t<Version>2.0</Version>")
+                appendLine("\t</Meta>")
+                appendLine("\t<Key>")
+                appendLine("""\t\t<Data Hash="$hashHex">$keyBase64</Data>""")
+                appendLine("\t</Key>")
+                appendLine("</KeyFile>")
+            }
         return xml.encodeToByteArray()
     }
 
@@ -79,11 +79,12 @@ object KeyFileHandler {
     @OptIn(ExperimentalEncodingApi::class)
     private fun tryParseXmlKeyFile(fileBytes: ByteArray): ByteArray? {
         // Quick check: must look like XML
-        val text = try {
-            fileBytes.decodeToString()
-        } catch (_: Exception) {
-            return null
-        }
+        val text =
+            try {
+                fileBytes.decodeToString()
+            } catch (_: Exception) {
+                return null
+            }
         if (!text.trimStart().startsWith("<?xml") && !text.trimStart().startsWith("<KeyFile")) {
             return null
         }
@@ -103,25 +104,41 @@ object KeyFileHandler {
                 when (reader.next()) {
                     EventType.START_ELEMENT -> {
                         when (reader.localName) {
-                            "KeyFile" -> inKeyFile = true
-                            "Meta" -> if (inKeyFile) inMeta = true
-                            "Version" -> if (inMeta) inVersion = true
-                            "Key" -> if (inKeyFile) inKey = true
-                            "Data" -> if (inKey) {
-                                inData = true
-                                // v2.0 has a Hash attribute
-                                for (i in 0 until reader.attributeCount) {
-                                    if (reader.getAttributeLocalName(i) == "Hash") {
-                                        dataHash = reader.getAttributeValue(i)
+                            "KeyFile" -> {
+                                inKeyFile = true
+                            }
+
+                            "Meta" -> {
+                                if (inKeyFile) inMeta = true
+                            }
+
+                            "Version" -> {
+                                if (inMeta) inVersion = true
+                            }
+
+                            "Key" -> {
+                                if (inKeyFile) inKey = true
+                            }
+
+                            "Data" -> {
+                                if (inKey) {
+                                    inData = true
+                                    // v2.0 has a Hash attribute
+                                    for (i in 0 until reader.attributeCount) {
+                                        if (reader.getAttributeLocalName(i) == "Hash") {
+                                            dataHash = reader.getAttributeValue(i)
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+
                     EventType.TEXT, EventType.CDSECT -> {
                         if (inVersion) version = reader.text.trim()
                         if (inData) keyBase64 = (keyBase64 ?: "") + reader.text.trim()
                     }
+
                     EventType.END_ELEMENT -> {
                         when (reader.localName) {
                             "Version" -> inVersion = false
@@ -131,6 +148,7 @@ object KeyFileHandler {
                             "KeyFile" -> inKeyFile = false
                         }
                     }
+
                     else -> {}
                 }
             }
@@ -158,11 +176,12 @@ object KeyFileHandler {
     }
 
     private fun tryParseHexKeyFile(fileBytes: ByteArray): ByteArray? {
-        val hex = try {
-            fileBytes.decodeToString().trim()
-        } catch (_: Exception) {
-            return null
-        }
+        val hex =
+            try {
+                fileBytes.decodeToString().trim()
+            } catch (_: Exception) {
+                return null
+            }
         if (hex.length != 64) return null
         return hexToBytes(hex)
     }

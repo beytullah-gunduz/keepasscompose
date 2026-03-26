@@ -2,8 +2,8 @@ package org.github.keepasscompose.core.crypto
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -12,11 +12,11 @@ import kotlin.test.assertTrue
  * Uses NIST SP 800-38A test vectors where applicable, plus round-trip tests.
  */
 class PlatformCryptoProviderAesTest {
-
     private val crypto = PlatformCryptoProvider()
 
     // 256-bit key (32 bytes)
     private val testKey = ByteArray(32) { it.toByte() }
+
     // 128-bit IV (16 bytes)
     private val testIv = ByteArray(16) { (it + 0x10).toByte() }
 
@@ -182,20 +182,24 @@ class PlatformCryptoProviderAesTest {
     // NIST AES-256-CBC key
     private val nistKey = hexToBytes("603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4")
     private val nistIv = hexToBytes("000102030405060708090a0b0c0d0e0f")
+
     // 4 plaintext blocks from NIST SP 800-38A
-    private val nistPlaintext = hexToBytes(
-        "6bc1bee22e409f96e93d7e117393172a" +
-        "ae2d8a571e03ac9c9eb76fac45af8e51" +
-        "30c81c46a35ce411e5fbc1191a0a52ef" +
-        "f69f2445df4f9b17ad2b417be66c3710"
-    )
+    private val nistPlaintext =
+        hexToBytes(
+            "6bc1bee22e409f96e93d7e117393172a" +
+                "ae2d8a571e03ac9c9eb76fac45af8e51" +
+                "30c81c46a35ce411e5fbc1191a0a52ef" +
+                "f69f2445df4f9b17ad2b417be66c3710",
+        )
+
     // Expected ciphertext: NIST SP 800-38A Section F.2.5 (AES-256-CBC Encrypt)
-    private val nistCiphertext = hexToBytes(
-        "f58c4c04d6e5f1ba779eabfb5f7bfbd6" +
-        "9cfc4e967edb808d679f777bc6702c7d" +
-        "39f23369a9d9bacfa530e26304231461" +
-        "b2eb05e2c39be9fcda6c19078c6a9d1b"
-    )
+    private val nistCiphertext =
+        hexToBytes(
+            "f58c4c04d6e5f1ba779eabfb5f7bfbd6" +
+                "9cfc4e967edb808d679f777bc6702c7d" +
+                "39f23369a9d9bacfa530e26304231461" +
+                "b2eb05e2c39be9fcda6c19078c6a9d1b",
+        )
 
     @Test
     fun aes_nistVector_encrypt_4blocks() {
@@ -234,9 +238,7 @@ class PlatformCryptoProviderAesTest {
 
     // -- Helpers --
 
-    private fun ByteArray.toHex(): String =
-        joinToString("") { "%02x".format(it) }
+    private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
-    private fun hexToBytes(hex: String): ByteArray =
-        hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    private fun hexToBytes(hex: String): ByteArray = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 }

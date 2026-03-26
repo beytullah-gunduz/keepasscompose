@@ -9,12 +9,12 @@ import kotlinx.cinterop.ptr
 import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.value
 import org.github.keepasscompose.core.model.Argon2Variant
+import platform.CommonCrypto.CCCrypt
+import platform.CommonCrypto.CCHmac
 import platform.CommonCrypto.CC_SHA256
 import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH
 import platform.CommonCrypto.CC_SHA512
 import platform.CommonCrypto.CC_SHA512_DIGEST_LENGTH
-import platform.CommonCrypto.CCCrypt
-import platform.CommonCrypto.CCHmac
 import platform.CommonCrypto.kCCAlgorithmAES
 import platform.CommonCrypto.kCCDecrypt
 import platform.CommonCrypto.kCCEncrypt
@@ -30,7 +30,6 @@ import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH as HMAC_SHA256_LENGTH
 // - Twofish requires a pure Kotlin or C library via CInterop
 @OptIn(ExperimentalForeignApi::class)
 actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
-
     override fun sha256(data: ByteArray): ByteArray {
         val digest = UByteArray(CC_SHA256_DIGEST_LENGTH)
         digest.usePinned { digestPin ->
@@ -81,11 +80,9 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return mac.toByteArray()
     }
 
-    override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray =
-        ccCryptAes(kCCEncrypt, data, key, iv)
+    override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = ccCryptAes(kCCEncrypt, data, key, iv)
 
-    override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray =
-        ccCryptAes(kCCDecrypt, data, key, iv)
+    override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = ccCryptAes(kCCDecrypt, data, key, iv)
 
     private fun ccCryptAes(operation: Int, data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
         // Output buffer: encrypt may add up to one block of padding (16 bytes)
@@ -93,24 +90,28 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         val output = ByteArray(outputSize)
         memScoped {
             val dataOutMoved = alloc<CFIndex>()
-            val status = data.usePinned { dataPin ->
-                key.usePinned { keyPin ->
-                    iv.usePinned { ivPin ->
-                        output.usePinned { outPin ->
-                            CCCrypt(
-                                operation.convert(),
-                                kCCAlgorithmAES,
-                                kCCOptionPKCS7Padding,
-                                keyPin.addressOf(0), key.size.convert(),
-                                ivPin.addressOf(0),
-                                dataPin.addressOf(0), data.size.convert(),
-                                outPin.addressOf(0), outputSize.convert(),
-                                dataOutMoved.ptr,
-                            )
+            val status =
+                data.usePinned { dataPin ->
+                    key.usePinned { keyPin ->
+                        iv.usePinned { ivPin ->
+                            output.usePinned { outPin ->
+                                CCCrypt(
+                                    operation.convert(),
+                                    kCCAlgorithmAES,
+                                    kCCOptionPKCS7Padding,
+                                    keyPin.addressOf(0),
+                                    key.size.convert(),
+                                    ivPin.addressOf(0),
+                                    dataPin.addressOf(0),
+                                    data.size.convert(),
+                                    outPin.addressOf(0),
+                                    outputSize.convert(),
+                                    dataOutMoved.ptr,
+                                )
+                            }
                         }
                     }
                 }
-            }
             if (status != kCCSuccess) {
                 throw RuntimeException("CCCrypt failed with status: $status")
             }
@@ -118,9 +119,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         }
     }
 
-    override fun aesKdf(key: ByteArray, seed: ByteArray, rounds: Long): ByteArray {
-        return AesKdf.transform(key, seed, rounds)
-    }
+    override fun aesKdf(key: ByteArray, seed: ByteArray, rounds: Long): ByteArray = AesKdf.transform(key, seed, rounds)
 
     override fun argon2(
         password: ByteArray,
@@ -130,21 +129,13 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         memory: Long,
         iterations: Long,
         parallelism: Int,
-    ): ByteArray {
-        return Argon2.derive(password, salt, variant, version, memory, iterations, parallelism)
-    }
+    ): ByteArray = Argon2.derive(password, salt, variant, version, memory, iterations, parallelism)
 
-    override fun chaCha20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
-        return ChaCha20.encrypt(data, key, nonce)
-    }
+    override fun chaCha20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray = ChaCha20.encrypt(data, key, nonce)
 
-    override fun salsa20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
-        return Salsa20.encrypt(data, key, nonce)
-    }
+    override fun salsa20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray = Salsa20.encrypt(data, key, nonce)
 
-    override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray =
-        Twofish.encryptCbc(data, key, iv)
+    override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = Twofish.encryptCbc(data, key, iv)
 
-    override fun twofishDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray =
-        Twofish.decryptCbc(data, key, iv)
+    override fun twofishDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = Twofish.decryptCbc(data, key, iv)
 }

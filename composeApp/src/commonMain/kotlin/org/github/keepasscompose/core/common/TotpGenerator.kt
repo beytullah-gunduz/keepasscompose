@@ -12,7 +12,6 @@ import kotlin.math.pow
  * Parses `otpauth://totp/` URIs and KeePass `TimeOtp-*` entry attributes.
  */
 object TotpGenerator {
-
     enum class Algorithm {
         SHA1,
         SHA256,
@@ -36,6 +35,7 @@ object TotpGenerator {
             return secret.contentEquals(other.secret) && algorithm == other.algorithm &&
                 digits == other.digits && period == other.period
         }
+
         override fun hashCode(): Int = secret.contentHashCode() * 31 + algorithm.hashCode()
     }
 
@@ -47,11 +47,7 @@ object TotpGenerator {
      * @param timeMillis Current time in milliseconds (defaults to system time).
      * @return The TOTP code as a zero-padded string.
      */
-    fun generateCode(
-        params: TotpParams,
-        crypto: CryptoProvider? = null,
-        timeMillis: Long = currentTimeMillis(),
-    ): String {
+    fun generateCode(params: TotpParams, crypto: CryptoProvider? = null, timeMillis: Long = currentTimeMillis()): String {
         val counter = timeMillis / 1000 / params.period
         return generateHotp(params.secret, counter, params.algorithm, params.digits, crypto)
     }
@@ -83,24 +79,30 @@ object TotpGenerator {
         }
 
         // HMAC
-        val hash = when (algorithm) {
-            Algorithm.SHA1 -> hmacSha1(secret, counterBytes)
-            Algorithm.SHA256 -> {
-                requireNotNull(crypto) { "CryptoProvider required for SHA-256" }
-                crypto.hmacSha256(secret, counterBytes)
+        val hash =
+            when (algorithm) {
+                Algorithm.SHA1 -> {
+                    hmacSha1(secret, counterBytes)
+                }
+
+                Algorithm.SHA256 -> {
+                    requireNotNull(crypto) { "CryptoProvider required for SHA-256" }
+                    crypto.hmacSha256(secret, counterBytes)
+                }
+
+                Algorithm.SHA512 -> {
+                    requireNotNull(crypto) { "CryptoProvider required for SHA-512" }
+                    hmacSha512(crypto, secret, counterBytes)
+                }
             }
-            Algorithm.SHA512 -> {
-                requireNotNull(crypto) { "CryptoProvider required for SHA-512" }
-                hmacSha512(crypto, secret, counterBytes)
-            }
-        }
 
         // Dynamic truncation (RFC 4226 Section 5.4)
         val offset = hash[hash.size - 1].toInt() and 0x0F
-        val code = ((hash[offset].toInt() and 0x7F) shl 24) or
-            ((hash[offset + 1].toInt() and 0xFF) shl 16) or
-            ((hash[offset + 2].toInt() and 0xFF) shl 8) or
-            (hash[offset + 3].toInt() and 0xFF)
+        val code =
+            ((hash[offset].toInt() and 0x7F) shl 24) or
+                ((hash[offset + 1].toInt() and 0xFF) shl 16) or
+                ((hash[offset + 2].toInt() and 0xFF) shl 8) or
+                (hash[offset + 3].toInt() and 0xFF)
 
         val otp = code % 10.0.pow(digits).toInt()
         return otp.toString().padStart(digits, '0')
@@ -119,8 +121,10 @@ object TotpGenerator {
             "Invalid otpauth URI: must start with otpauth://totp/ or otpauth://hotp/"
         }
 
-        val afterScheme = uri.substringAfter("otpauth://totp/", "")
-            .ifEmpty { uri.substringAfter("otpauth://hotp/", "") }
+        val afterScheme =
+            uri
+                .substringAfter("otpauth://totp/", "")
+                .ifEmpty { uri.substringAfter("otpauth://hotp/", "") }
         val pathAndQuery = afterScheme.split("?", limit = 2)
         val label = pathAndQuery[0].decodePercent()
         val queryString = pathAndQuery.getOrElse(1) { "" }
@@ -130,11 +134,12 @@ object TotpGenerator {
         val secretBase32 = requireNotNull(params["secret"]) { "Missing 'secret' parameter" }
         val secret = base32Decode(secretBase32)
 
-        val algorithm = when (params["algorithm"]?.uppercase()) {
-            "SHA256", "SHA-256" -> Algorithm.SHA256
-            "SHA512", "SHA-512" -> Algorithm.SHA512
-            else -> Algorithm.SHA1
-        }
+        val algorithm =
+            when (params["algorithm"]?.uppercase()) {
+                "SHA256", "SHA-256" -> Algorithm.SHA256
+                "SHA512", "SHA-512" -> Algorithm.SHA512
+                else -> Algorithm.SHA1
+            }
         val digits = params["digits"]?.toIntOrNull() ?: 6
         val period = params["period"]?.toIntOrNull() ?: 30
         val issuer = params["issuer"]?.decodePercent()
@@ -175,11 +180,12 @@ object TotpGenerator {
         val secretBase32 = fields["TimeOtp-Secret-Base32"] ?: return null
         val secret = base32Decode(secretBase32)
 
-        val algorithm = when (fields["TimeOtp-Algorithm"]?.uppercase()) {
-            "HMAC-SHA-256" -> Algorithm.SHA256
-            "HMAC-SHA-512" -> Algorithm.SHA512
-            else -> Algorithm.SHA1
-        }
+        val algorithm =
+            when (fields["TimeOtp-Algorithm"]?.uppercase()) {
+                "HMAC-SHA-256" -> Algorithm.SHA256
+                "HMAC-SHA-512" -> Algorithm.SHA512
+                else -> Algorithm.SHA1
+            }
         val digits = fields["TimeOtp-Length"]?.toIntOrNull() ?: 6
         val period = fields["TimeOtp-Period"]?.toIntOrNull() ?: 30
 
@@ -215,11 +221,12 @@ object TotpGenerator {
 
     private fun hmacSha1(key: ByteArray, data: ByteArray): ByteArray {
         val blockSize = 64
-        val adjustedKey = when {
-            key.size > blockSize -> sha1(key)
-            key.size < blockSize -> key + ByteArray(blockSize - key.size)
-            else -> key
-        }
+        val adjustedKey =
+            when {
+                key.size > blockSize -> sha1(key)
+                key.size < blockSize -> key + ByteArray(blockSize - key.size)
+                else -> key
+            }
 
         val ipad = ByteArray(blockSize) { (adjustedKey[it].toInt() xor 0x36).toByte() }
         val opad = ByteArray(blockSize) { (adjustedKey[it].toInt() xor 0x5C).toByte() }
@@ -230,11 +237,12 @@ object TotpGenerator {
     private fun hmacSha512(crypto: CryptoProvider, key: ByteArray, data: ByteArray): ByteArray {
         // HMAC-SHA512 using CryptoProvider's sha512
         val blockSize = 128
-        val adjustedKey = when {
-            key.size > blockSize -> crypto.sha512(key)
-            key.size < blockSize -> key + ByteArray(blockSize - key.size)
-            else -> key
-        }
+        val adjustedKey =
+            when {
+                key.size > blockSize -> crypto.sha512(key)
+                key.size < blockSize -> key + ByteArray(blockSize - key.size)
+                else -> key
+            }
 
         val ipad = ByteArray(blockSize) { (adjustedKey[it].toInt() xor 0x36).toByte() }
         val opad = ByteArray(blockSize) { (adjustedKey[it].toInt() xor 0x5C).toByte() }
@@ -267,39 +275,59 @@ object TotpGenerator {
         for (blockStart in message.indices step 64) {
             val w = UIntArray(80)
             for (i in 0 until 16) {
-                w[i] = ((message[blockStart + i * 4].toUByte().toUInt() shl 24) or
-                    (message[blockStart + i * 4 + 1].toUByte().toUInt() shl 16) or
-                    (message[blockStart + i * 4 + 2].toUByte().toUInt() shl 8) or
-                    message[blockStart + i * 4 + 3].toUByte().toUInt())
+                w[i] = (
+                    (message[blockStart + i * 4].toUByte().toUInt() shl 24) or
+                        (message[blockStart + i * 4 + 1].toUByte().toUInt() shl 16) or
+                        (message[blockStart + i * 4 + 2].toUByte().toUInt() shl 8) or
+                        message[blockStart + i * 4 + 3].toUByte().toUInt()
+                    )
             }
             for (i in 16 until 80) {
                 w[i] = (w[i - 3] xor w[i - 8] xor w[i - 14] xor w[i - 16]).rotateLeft(1)
             }
 
-            var a = h0; var b = h1; var c = h2; var d = h3; var e = h4
+            var a = h0
+            var b = h1
+            var c = h2
+            var d = h3
+            var e = h4
 
             for (i in 0 until 80) {
-                val (f, k) = when (i) {
-                    in 0..19 -> Pair((b and c) or (b.inv() and d), 0x5A827999u)
-                    in 20..39 -> Pair(b xor c xor d, 0x6ED9EBA1u)
-                    in 40..59 -> Pair((b and c) or (b and d) or (c and d), 0x8F1BBCDCu)
-                    else -> Pair(b xor c xor d, 0xCA62C1D6u)
-                }
+                val (f, k) =
+                    when (i) {
+                        in 0..19 -> Pair((b and c) or (b.inv() and d), 0x5A827999u)
+                        in 20..39 -> Pair(b xor c xor d, 0x6ED9EBA1u)
+                        in 40..59 -> Pair((b and c) or (b and d) or (c and d), 0x8F1BBCDCu)
+                        else -> Pair(b xor c xor d, 0xCA62C1D6u)
+                    }
                 val temp = a.rotateLeft(5) + f + e + k + w[i]
-                e = d; d = c; c = b.rotateLeft(30); b = a; a = temp
+                e = d
+                d = c
+                c = b.rotateLeft(30)
+                b = a
+                a = temp
             }
 
-            h0 += a; h1 += b; h2 += c; h3 += d; h4 += e
+            h0 += a
+            h1 += b
+            h2 += c
+            h3 += d
+            h4 += e
         }
 
         val result = ByteArray(20)
+
         fun putUInt(value: UInt, offset: Int) {
             result[offset] = (value shr 24).toByte()
             result[offset + 1] = (value shr 16).toByte()
             result[offset + 2] = (value shr 8).toByte()
             result[offset + 3] = value.toByte()
         }
-        putUInt(h0, 0); putUInt(h1, 4); putUInt(h2, 8); putUInt(h3, 12); putUInt(h4, 16)
+        putUInt(h0, 0)
+        putUInt(h1, 4)
+        putUInt(h2, 8)
+        putUInt(h3, 12)
+        putUInt(h4, 16)
         return result
     }
 
@@ -313,11 +341,15 @@ object TotpGenerator {
         }
     }
 
-    private fun String.decodePercent(): String =
-        replace(Regex("%[0-9A-Fa-f]{2}")) { match ->
-            match.value.substring(1).toInt(16).toChar().toString()
-        }
+    private fun String.decodePercent(): String = replace(Regex("%[0-9A-Fa-f]{2}")) { match ->
+        match.value
+            .substring(1)
+            .toInt(16)
+            .toChar()
+            .toString()
+    }
 
-    private fun currentTimeMillis(): Long =
-        kotlin.time.Clock.System.now().toEpochMilliseconds()
+    private fun currentTimeMillis(): Long = kotlin.time.Clock.System
+        .now()
+        .toEpochMilliseconds()
 }

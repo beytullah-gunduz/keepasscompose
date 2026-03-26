@@ -1,18 +1,17 @@
 package org.github.keepasscompose.core.database
 
+import org.github.keepasscompose.core.model.KdbxEntry
+import org.github.keepasscompose.core.model.KdbxEntryField
+import org.github.keepasscompose.core.model.KdbxGroup
+import org.github.keepasscompose.core.model.KdbxMeta
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
-import org.github.keepasscompose.core.model.KdbxEntry
-import org.github.keepasscompose.core.model.KdbxEntryField
-import org.github.keepasscompose.core.model.KdbxGroup
-import org.github.keepasscompose.core.model.KdbxMeta
 
 class RecycleBinManagerTest {
-
     private val now = Instant.parse("2024-06-15T12:00:00Z")
 
     // -- deleteEntry: recycle bin enabled --
@@ -65,7 +64,11 @@ class RecycleBinManagerTest {
         val result = manager.deleteEntry(root, "e1", now)
 
         // Removed from nested group
-        assertTrue(result.rootGroup.groups[0].entries.isEmpty())
+        assertTrue(
+            result.rootGroup.groups[0]
+                .entries
+                .isEmpty(),
+        )
         // Added to recycle bin
         val bin = manager(result).findRecycleBin(result.rootGroup)
         assertNotNull(bin)
@@ -103,11 +106,12 @@ class RecycleBinManagerTest {
 
     @Test
     fun deleteGroup_movesToRecycleBin() {
-        val subGroup = KdbxGroup(
-            uuid = "sub1",
-            name = "Work",
-            entries = listOf(entry("e1", "Work Email")),
-        )
+        val subGroup =
+            KdbxGroup(
+                uuid = "sub1",
+                name = "Work",
+                entries = listOf(entry("e1", "Work Email")),
+            )
         val root = rootWith(groups = listOf(subGroup, recycleBinGroup()))
         val manager = RecycleBinManager(metaWithRecycleBin())
 
@@ -158,14 +162,16 @@ class RecycleBinManagerTest {
 
     @Test
     fun deleteGroup_recycleBinDisabled_permanentDelete() {
-        val subGroup = KdbxGroup(
-            uuid = "sub1",
-            name = "Work",
-            entries = listOf(entry("e1", "Entry1")),
-            groups = listOf(
-                KdbxGroup(uuid = "sub2", name = "Nested", entries = listOf(entry("e2", "Entry2")))
-            ),
-        )
+        val subGroup =
+            KdbxGroup(
+                uuid = "sub1",
+                name = "Work",
+                entries = listOf(entry("e1", "Entry1")),
+                groups =
+                listOf(
+                    KdbxGroup(uuid = "sub2", name = "Nested", entries = listOf(entry("e2", "Entry2"))),
+                ),
+            )
         val root = rootWith(groups = listOf(subGroup))
         val manager = RecycleBinManager(KdbxMeta(recycleBinEnabled = false))
 
@@ -192,10 +198,11 @@ class RecycleBinManagerTest {
 
     @Test
     fun emptyRecycleBin_removesAllContents() {
-        val bin = recycleBinGroup(
-            entries = listOf(entry("e1", "Deleted1"), entry("e2", "Deleted2")),
-            groups = listOf(KdbxGroup(uuid = "dg1", name = "Deleted Group")),
-        )
+        val bin =
+            recycleBinGroup(
+                entries = listOf(entry("e1", "Deleted1"), entry("e2", "Deleted2")),
+                groups = listOf(KdbxGroup(uuid = "dg1", name = "Deleted Group")),
+            )
         val root = rootWith(groups = listOf(bin))
         val manager = RecycleBinManager(metaWithRecycleBin())
 
@@ -213,14 +220,16 @@ class RecycleBinManagerTest {
 
     @Test
     fun emptyRecycleBin_nestedContents() {
-        val nestedGroup = KdbxGroup(
-            uuid = "ng1",
-            name = "Nested",
-            entries = listOf(entry("ne1", "Nested Entry")),
-        )
-        val bin = recycleBinGroup(
-            groups = listOf(nestedGroup),
-        )
+        val nestedGroup =
+            KdbxGroup(
+                uuid = "ng1",
+                name = "Nested",
+                entries = listOf(entry("ne1", "Nested Entry")),
+            )
+        val bin =
+            recycleBinGroup(
+                groups = listOf(nestedGroup),
+            )
         val root = rootWith(groups = listOf(bin))
         val manager = RecycleBinManager(metaWithRecycleBin())
 
@@ -338,15 +347,10 @@ class RecycleBinManagerTest {
         fields = listOf(KdbxEntryField(KdbxEntry.FIELD_TITLE, title)),
     )
 
-    private fun rootWith(
-        entries: List<KdbxEntry> = emptyList(),
-        groups: List<KdbxGroup> = emptyList(),
-    ) = KdbxGroup(uuid = "root", name = "Root", entries = entries, groups = groups)
+    private fun rootWith(entries: List<KdbxEntry> = emptyList(), groups: List<KdbxGroup> = emptyList()) =
+        KdbxGroup(uuid = "root", name = "Root", entries = entries, groups = groups)
 
-    private fun recycleBinGroup(
-        entries: List<KdbxEntry> = emptyList(),
-        groups: List<KdbxGroup> = emptyList(),
-    ) = KdbxGroup(
+    private fun recycleBinGroup(entries: List<KdbxEntry> = emptyList(), groups: List<KdbxGroup> = emptyList()) = KdbxGroup(
         uuid = RECYCLE_BIN_UUID,
         name = RecycleBinManager.RECYCLE_BIN_NAME,
         entries = entries,
@@ -359,8 +363,7 @@ class RecycleBinManagerTest {
     )
 
     /** Create a new manager from a result's meta, for chaining assertions. */
-    private fun manager(result: RecycleBinManager.DeleteResult) =
-        RecycleBinManager(result.meta)
+    private fun manager(result: RecycleBinManager.DeleteResult) = RecycleBinManager(result.meta)
 
     companion object {
         private const val RECYCLE_BIN_UUID = "cmVjeWNsZWJpbg=="

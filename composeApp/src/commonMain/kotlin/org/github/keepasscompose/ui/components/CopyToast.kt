@@ -24,12 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun CopyToast(
-    label: String?,
-    secondsRemaining: Int?,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun CopyToast(label: String?, secondsRemaining: Int?, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     val visible = label != null && secondsRemaining != null
 
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {

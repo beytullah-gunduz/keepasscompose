@@ -29,11 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import org.github.keepasscompose.core.model.KdbxGroup
 
-data class EditGroupResult(
-    val name: String,
-    val iconIndex: Int,
-    val notes: String,
-)
+data class EditGroupResult(val name: String, val iconIndex: Int, val notes: String)
 
 @Composable
 fun EditGroupDialog(
@@ -51,7 +47,10 @@ fun EditGroupDialog(
     if (showIconPicker) {
         IconPickerDialog(
             selectedIndex = selectedIcon,
-            onSelect = { selectedIcon = it; showIconPicker = false },
+            onSelect = {
+                selectedIcon = it
+                showIconPicker = false
+            },
             onDismiss = { showIconPicker = false },
         )
         return

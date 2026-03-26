@@ -85,6 +85,7 @@ fun AppSettingsScreen(
                     onStartAtLoginChange = { startAtLogin = it },
                     onMinimizeToTrayChange = { minimizeToTray = it },
                 )
+
                 1 -> SecuritySettingsTab(
                     autoLockTimeout = autoLockTimeout,
                     lockOnMinimize = lockOnMinimize,
@@ -93,12 +94,14 @@ fun AppSettingsScreen(
                     onLockOnMinimizeChange = { lockOnMinimize = it },
                     onClipboardClearChange = { clipboardClearTimeout = it },
                 )
+
                 2 -> AppearanceSettingsTab(
                     theme = theme,
                     fontSize = fontSize,
                     onThemeChange = { theme = it },
                     onFontSizeChange = { fontSize = it },
                 )
+
                 3 -> BrowserSettingsTab(
                     enabled = browserEnabled,
                     onEnabledChange = { browserEnabled = it },
@@ -174,12 +177,7 @@ private fun SecuritySettingsTab(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppearanceSettingsTab(
-    theme: String,
-    fontSize: String,
-    onThemeChange: (String) -> Unit,
-    onFontSizeChange: (String) -> Unit,
-) {
+private fun AppearanceSettingsTab(theme: String, fontSize: String, onThemeChange: (String) -> Unit, onFontSizeChange: (String) -> Unit) {
     Column {
         SettingDropdown("Theme", theme, listOf("system", "light", "dark"), onThemeChange)
         Spacer(modifier = Modifier.height(12.dp))
@@ -188,10 +186,7 @@ private fun AppearanceSettingsTab(
 }
 
 @Composable
-private fun BrowserSettingsTab(
-    enabled: Boolean,
-    onEnabledChange: (Boolean) -> Unit,
-) {
+private fun BrowserSettingsTab(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
     Column {
         SettingSwitchRow("Enable browser integration", enabled, onEnabledChange)
         if (enabled) {
@@ -232,7 +227,10 @@ private fun SettingDropdown(label: String, value: String, options: List<String>,
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
-                DropdownMenuItem(text = { Text(option) }, onClick = { onValueChange(option); expanded = false })
+                DropdownMenuItem(text = { Text(option) }, onClick = {
+                    onValueChange(option)
+                    expanded = false
+                })
             }
         }
     }

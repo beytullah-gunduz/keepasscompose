@@ -37,30 +37,45 @@ fun GroupContextMenu(
     ) {
         DropdownMenuItem(
             text = { Text("New Entry") },
-            onClick = { callbacks.onNewEntry(); onDismissRequest() },
+            onClick = {
+                callbacks.onNewEntry()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.AutoMirrored.Filled.NoteAdd, contentDescription = null) },
         )
         DropdownMenuItem(
             text = { Text("New Sub-Group") },
-            onClick = { callbacks.onNewSubGroup(); onDismissRequest() },
+            onClick = {
+                callbacks.onNewSubGroup()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.Filled.CreateNewFolder, contentDescription = null) },
         )
         HorizontalDivider()
         DropdownMenuItem(
             text = { Text("Edit Group") },
-            onClick = { callbacks.onEdit(); onDismissRequest() },
+            onClick = {
+                callbacks.onEdit()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
         )
         DropdownMenuItem(
             text = { Text("Delete Group") },
-            onClick = { callbacks.onDelete(); onDismissRequest() },
+            onClick = {
+                callbacks.onDelete()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
         )
         if (isRecycleBin) {
             HorizontalDivider()
             DropdownMenuItem(
                 text = { Text("Empty Recycle Bin") },
-                onClick = { callbacks.onEmptyRecycleBin(); onDismissRequest() },
+                onClick = {
+                    callbacks.onEmptyRecycleBin()
+                    onDismissRequest()
+                },
                 leadingIcon = { Icon(Icons.Filled.DeleteSweep, contentDescription = null) },
             )
         }

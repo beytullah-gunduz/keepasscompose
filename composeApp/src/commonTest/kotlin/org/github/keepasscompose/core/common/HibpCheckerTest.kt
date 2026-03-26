@@ -9,18 +9,19 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class HibpCheckerTest {
-
     private val mockResponses = mutableMapOf<String, String>()
 
-    private val mockFetcher = HibpChecker.HttpFetcher { url ->
-        mockResponses[url] ?: throw RuntimeException("No mock response for $url")
-    }
+    private val mockFetcher =
+        HibpChecker.HttpFetcher { url ->
+            mockResponses[url] ?: throw RuntimeException("No mock response for $url")
+        }
 
     private val checker = HibpChecker(mockFetcher)
 
     private fun entry(title: String, password: String): KdbxEntry = KdbxEntry(
         uuid = title,
-        fields = listOf(
+        fields =
+        listOf(
             KdbxEntryField("Title", title),
             KdbxEntryField("UserName", "user"),
             KdbxEntryField("Password", password, isProtected = true),
@@ -33,9 +34,10 @@ class HibpCheckerTest {
 
     @Test
     fun parseResponse_found() {
-        val response = "1D72CD07550416C216D8AD296BF5C0AE:10\r\n" +
-            "1E4C9B93F3F0682250B6CF8331B7EE68FD8:3861493\r\n" +
-            "2DC183F740EE76F27B78EB39C8AD972A757:2\r\n"
+        val response =
+            "1D72CD07550416C216D8AD296BF5C0AE:10\r\n" +
+                "1E4C9B93F3F0682250B6CF8331B7EE68FD8:3861493\r\n" +
+                "2DC183F740EE76F27B78EB39C8AD972A757:2\r\n"
         val result = checker.parseResponse(response, "1E4C9B93F3F0682250B6CF8331B7EE68FD8")
         assertTrue(result.isBreached)
         assertEquals(3861493, result.breachCount)
@@ -43,8 +45,9 @@ class HibpCheckerTest {
 
     @Test
     fun parseResponse_notFound() {
-        val response = "1D72CD07550416C216D8AD296BF5C0AE:10\r\n" +
-            "2DC183F740EE76F27B78EB39C8AD972A757:2\r\n"
+        val response =
+            "1D72CD07550416C216D8AD296BF5C0AE:10\r\n" +
+                "2DC183F740EE76F27B78EB39C8AD972A757:2\r\n"
         val result = checker.parseResponse(response, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         assertFalse(result.isBreached)
         assertEquals(0, result.breachCount)
@@ -97,24 +100,28 @@ class HibpCheckerTest {
 
     @Test
     fun checkAllEntries_batchCheck() {
-        val fetcher = HibpChecker.HttpFetcher { url ->
-            val prefix = url.substringAfterLast("/")
-            if (prefix == "5BAA6") {
-                "1E4C9B93F3F0682250B6CF8331B7EE68FD8:100\r\n"
-            } else {
-                "0000000000000000000000000000000000000:0\r\n"
+        val fetcher =
+            HibpChecker.HttpFetcher { url ->
+                val prefix = url.substringAfterLast("/")
+                if (prefix == "5BAA6") {
+                    "1E4C9B93F3F0682250B6CF8331B7EE68FD8:100\r\n"
+                } else {
+                    "0000000000000000000000000000000000000:0\r\n"
+                }
             }
-        }
 
         val batchChecker = HibpChecker(fetcher)
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            entries = listOf(
-                entry("Site1", "password"),
-                entry("Site2", "password"),
-                entry("Site3", "uniquepass123!"),
-            ),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                entries =
+                listOf(
+                    entry("Site1", "password"),
+                    entry("Site2", "password"),
+                    entry("Site3", "uniquepass123!"),
+                ),
+            )
 
         var progressCalls = 0
         val results = batchChecker.checkAllEntries(root) { _, _ -> progressCalls++ }
@@ -128,10 +135,12 @@ class HibpCheckerTest {
 
     @Test
     fun checkAllEntries_skipsEmptyPasswords() {
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            entries = listOf(entry("NoPass", "")),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                entries = listOf(entry("NoPass", "")),
+            )
         val results = checker.checkAllEntries(root)
         assertEquals(0, results.size)
     }
@@ -143,10 +152,11 @@ class HibpCheckerTest {
         // SHA-1("password") = 5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8
         // checkPassword should request prefix 5BAA6
         var requestedUrl: String? = null
-        val trackingFetcher = HibpChecker.HttpFetcher { url ->
-            requestedUrl = url
-            ""
-        }
+        val trackingFetcher =
+            HibpChecker.HttpFetcher { url ->
+                requestedUrl = url
+                ""
+            }
         val trackingChecker = HibpChecker(trackingFetcher)
         trackingChecker.checkPassword("password")
         assertEquals("https://api.pwnedpasswords.com/range/5BAA6", requestedUrl)

@@ -8,7 +8,6 @@ import kotlin.math.pow
  * and crack time estimation.
  */
 object PasswordStrength {
-
     /**
      * Strength levels with associated thresholds and display properties.
      */
@@ -102,8 +101,7 @@ object PasswordStrength {
         return password.length * (ln(charsetSize.toDouble()) / ln(2.0))
     }
 
-    private fun Char.isSymbol(): Boolean =
-        this in "!@#\$%^&*()-_=+[]{}|;:',.<>?/\\`~\""
+    private fun Char.isSymbol(): Boolean = this in "!@#\$%^&*()-_=+[]{}|;:',.<>?/\\`~\""
 
     /**
      * Penalize passwords with many repeated characters.
@@ -141,15 +139,40 @@ object PasswordStrength {
      */
     internal fun isCommonPattern(password: String): Boolean {
         val lower = password.lowercase()
-        val commonPatterns = listOf(
-            "password", "123456", "qwerty", "abc123", "letmein",
-            "admin", "welcome", "monkey", "master", "dragon",
-            "login", "princess", "football", "shadow", "sunshine",
-            "trustno1", "iloveyou", "batman", "access", "hello",
-            "charlie", "donald", "qwerty123", "password1",
-            "1234567890", "12345678", "1234567", "123456789",
-            "qwertyuiop", "asdfghjkl", "zxcvbnm",
-        )
+        val commonPatterns =
+            listOf(
+                "password",
+                "123456",
+                "qwerty",
+                "abc123",
+                "letmein",
+                "admin",
+                "welcome",
+                "monkey",
+                "master",
+                "dragon",
+                "login",
+                "princess",
+                "football",
+                "shadow",
+                "sunshine",
+                "trustno1",
+                "iloveyou",
+                "batman",
+                "access",
+                "hello",
+                "charlie",
+                "donald",
+                "qwerty123",
+                "password1",
+                "1234567890",
+                "12345678",
+                "1234567",
+                "123456789",
+                "qwertyuiop",
+                "asdfghjkl",
+                "zxcvbnm",
+            )
         return commonPatterns.any { lower.contains(it) }
     }
 

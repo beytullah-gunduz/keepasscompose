@@ -8,7 +8,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class PasswordGeneratorTest {
-
     // --- Basic generation ---
 
     @Test
@@ -37,11 +36,15 @@ class PasswordGeneratorTest {
         assertFailsWith<IllegalArgumentException> {
             PasswordGenerator.generate(
                 PasswordGenerator.Config(
-                    useUppercase = false, useLowercase = false,
-                    useDigits = false, useSpecial = false,
-                    useBrackets = false, useQuotes = false,
-                    useDashes = false, useMath = false,
-                )
+                    useUppercase = false,
+                    useLowercase = false,
+                    useDigits = false,
+                    useSpecial = false,
+                    useBrackets = false,
+                    useQuotes = false,
+                    useDashes = false,
+                    useMath = false,
+                ),
             )
         }
     }
@@ -50,30 +53,45 @@ class PasswordGeneratorTest {
 
     @Test
     fun generate_uppercaseOnly() {
-        val config = PasswordGenerator.Config(
-            length = 50, useUppercase = true, useLowercase = false,
-            useDigits = false, useSpecial = false, useDashes = false,
-        )
+        val config =
+            PasswordGenerator.Config(
+                length = 50,
+                useUppercase = true,
+                useLowercase = false,
+                useDigits = false,
+                useSpecial = false,
+                useDashes = false,
+            )
         val password = PasswordGenerator.generate(config)
         assertTrue(password.all { it in 'A'..'Z' }, "Should contain only uppercase: $password")
     }
 
     @Test
     fun generate_lowercaseOnly() {
-        val config = PasswordGenerator.Config(
-            length = 50, useUppercase = false, useLowercase = true,
-            useDigits = false, useSpecial = false, useDashes = false,
-        )
+        val config =
+            PasswordGenerator.Config(
+                length = 50,
+                useUppercase = false,
+                useLowercase = true,
+                useDigits = false,
+                useSpecial = false,
+                useDashes = false,
+            )
         val password = PasswordGenerator.generate(config)
         assertTrue(password.all { it in 'a'..'z' }, "Should contain only lowercase: $password")
     }
 
     @Test
     fun generate_digitsOnly() {
-        val config = PasswordGenerator.Config(
-            length = 50, useUppercase = false, useLowercase = false,
-            useDigits = true, useSpecial = false, useDashes = false,
-        )
+        val config =
+            PasswordGenerator.Config(
+                length = 50,
+                useUppercase = false,
+                useLowercase = false,
+                useDigits = true,
+                useSpecial = false,
+                useDashes = false,
+            )
         val password = PasswordGenerator.generate(config)
         assertTrue(password.all { it in '0'..'9' }, "Should contain only digits: $password")
     }
@@ -81,10 +99,15 @@ class PasswordGeneratorTest {
     @Test
     fun generate_containsAllEnabledGroups() {
         // With a long password, all enabled groups should be represented
-        val config = PasswordGenerator.Config(
-            length = 100, useUppercase = true, useLowercase = true,
-            useDigits = true, useSpecial = true, useDashes = true,
-        )
+        val config =
+            PasswordGenerator.Config(
+                length = 100,
+                useUppercase = true,
+                useLowercase = true,
+                useDigits = true,
+                useSpecial = true,
+                useDashes = true,
+            )
         val password = PasswordGenerator.generate(config, Random(42))
         assertTrue(password.any { it in 'A'..'Z' }, "Should contain uppercase")
         assertTrue(password.any { it in 'a'..'z' }, "Should contain lowercase")
@@ -97,9 +120,11 @@ class PasswordGeneratorTest {
 
     @Test
     fun generate_excludeAmbiguous() {
-        val config = PasswordGenerator.Config(
-            length = 200, excludeAmbiguous = true,
-        )
+        val config =
+            PasswordGenerator.Config(
+                length = 200,
+                excludeAmbiguous = true,
+            )
         val password = PasswordGenerator.generate(config)
         val ambiguous = "0O1lI|"
         assertFalse(password.any { it in ambiguous }, "Should not contain ambiguous chars: $password")
@@ -107,9 +132,11 @@ class PasswordGeneratorTest {
 
     @Test
     fun generate_excludeCustomCharacters() {
-        val config = PasswordGenerator.Config(
-            length = 200, excludeCharacters = "abc123",
-        )
+        val config =
+            PasswordGenerator.Config(
+                length = 200,
+                excludeCharacters = "abc123",
+            )
         val password = PasswordGenerator.generate(config)
         assertFalse(password.any { it in "abc123" }, "Should not contain excluded chars: $password")
     }
@@ -146,9 +173,10 @@ class PasswordGeneratorTest {
 
     @Test
     fun buildCharPool_excludeAmbiguous_removesCorrectChars() {
-        val pool = PasswordGenerator.buildCharPool(
-            PasswordGenerator.Config(excludeAmbiguous = true)
-        )
+        val pool =
+            PasswordGenerator.buildCharPool(
+                PasswordGenerator.Config(excludeAmbiguous = true),
+            )
         assertFalse('0' in pool, "Pool should not contain '0'")
         assertFalse('O' in pool, "Pool should not contain 'O'")
         assertFalse('1' in pool, "Pool should not contain '1'")
@@ -160,8 +188,15 @@ class PasswordGeneratorTest {
 
     @Test
     fun generate_length1() {
-        val config = PasswordGenerator.Config(length = 1, useDigits = true,
-            useUppercase = false, useLowercase = false, useSpecial = false, useDashes = false)
+        val config =
+            PasswordGenerator.Config(
+                length = 1,
+                useDigits = true,
+                useUppercase = false,
+                useLowercase = false,
+                useSpecial = false,
+                useDashes = false,
+            )
         val password = PasswordGenerator.generate(config)
         assertEquals(1, password.length)
         assertTrue(password[0] in '0'..'9')
@@ -169,12 +204,18 @@ class PasswordGeneratorTest {
 
     @Test
     fun generate_allGroupsEnabled() {
-        val config = PasswordGenerator.Config(
-            length = 50,
-            useUppercase = true, useLowercase = true, useDigits = true,
-            useSpecial = true, useBrackets = true, useQuotes = true,
-            useDashes = true, useMath = true,
-        )
+        val config =
+            PasswordGenerator.Config(
+                length = 50,
+                useUppercase = true,
+                useLowercase = true,
+                useDigits = true,
+                useSpecial = true,
+                useBrackets = true,
+                useQuotes = true,
+                useDashes = true,
+                useMath = true,
+            )
         val password = PasswordGenerator.generate(config)
         assertEquals(50, password.length)
     }

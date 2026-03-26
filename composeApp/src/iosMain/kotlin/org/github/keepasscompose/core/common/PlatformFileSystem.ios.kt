@@ -6,9 +6,12 @@ import platform.Foundation.NSUserDomainMask
 
 actual class PlatformFileSystem actual constructor() : BaseFileSystem() {
     override fun getDefaultDatabaseDirectory(): String {
-        val paths = NSSearchPathForDirectoriesInDomains(
-            NSDocumentDirectory, NSUserDomainMask, true
-        )
+        val paths =
+            NSSearchPathForDirectoriesInDomains(
+                NSDocumentDirectory,
+                NSUserDomainMask,
+                true,
+            )
         val documentsDir = paths.first() as String
         return "$documentsDir/databases"
     }

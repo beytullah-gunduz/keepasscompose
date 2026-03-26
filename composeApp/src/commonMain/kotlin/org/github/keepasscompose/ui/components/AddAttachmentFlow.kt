@@ -30,10 +30,7 @@ sealed interface AddAttachmentState {
 fun shouldWarnAboutSize(sizeBytes: Long): Boolean = sizeBytes > LARGE_FILE_WARNING_BYTES
 
 @Composable
-fun AddAttachmentProgressDialog(
-    fileName: String,
-    onDismiss: () -> Unit,
-) {
+fun AddAttachmentProgressDialog(fileName: String, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = {},
         title = { Text("Adding Attachment") },
@@ -55,12 +52,7 @@ fun AddAttachmentProgressDialog(
 }
 
 @Composable
-fun AttachmentSizeWarningDialog(
-    fileName: String,
-    sizeBytes: Long,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
+fun AttachmentSizeWarningDialog(fileName: String, sizeBytes: Long, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Large File Warning") },

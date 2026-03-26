@@ -3,10 +3,7 @@ package org.github.keepasscompose.ui.components
 import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxGroup
 
-data class EntryMoveRequest(
-    val entryUuids: List<String>,
-    val targetGroupUuid: String,
-)
+data class EntryMoveRequest(val entryUuids: List<String>, val targetGroupUuid: String)
 
 /**
  * Applies an entry move by removing entries from their current group
@@ -44,11 +41,7 @@ private fun removeEntries(group: KdbxGroup, uuids: Set<String>): KdbxGroup = gro
     groups = group.groups.map { removeEntries(it, uuids) },
 )
 
-private fun insertEntries(
-    group: KdbxGroup,
-    targetUuid: String,
-    entries: List<KdbxEntry>,
-): KdbxGroup {
+private fun insertEntries(group: KdbxGroup, targetUuid: String, entries: List<KdbxEntry>): KdbxGroup {
     if (group.uuid == targetUuid) {
         return group.copy(entries = group.entries + entries)
     }

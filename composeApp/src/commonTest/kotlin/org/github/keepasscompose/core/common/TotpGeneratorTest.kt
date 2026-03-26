@@ -8,7 +8,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class TotpGeneratorTest {
-
     // RFC 6238 test secret: "12345678901234567890" (ASCII)
     private val rfcSecret = "12345678901234567890".encodeToByteArray()
 
@@ -17,10 +16,19 @@ class TotpGeneratorTest {
 
     @Test
     fun hotp_rfc4226_testVectors() {
-        val expectedCodes = listOf(
-            "755224", "287082", "359152", "969429", "338314",
-            "254676", "287922", "162583", "399871", "520489",
-        )
+        val expectedCodes =
+            listOf(
+                "755224",
+                "287082",
+                "359152",
+                "969429",
+                "338314",
+                "254676",
+                "287922",
+                "162583",
+                "399871",
+                "520489",
+            )
         for ((counter, expected) in expectedCodes.withIndex()) {
             val code = TotpGenerator.generateHotp(rfcSecret, counter.toLong())
             assertEquals(expected, code, "HOTP counter=$counter")
@@ -32,30 +40,39 @@ class TotpGeneratorTest {
 
     @Test
     fun totp_rfc6238_sha1_time59() {
-        val params = TotpGenerator.TotpParams(
-            secret = rfcSecret, algorithm = TotpGenerator.Algorithm.SHA1,
-            digits = 8, period = 30,
-        )
+        val params =
+            TotpGenerator.TotpParams(
+                secret = rfcSecret,
+                algorithm = TotpGenerator.Algorithm.SHA1,
+                digits = 8,
+                period = 30,
+            )
         val code = TotpGenerator.generateCode(params, timeMillis = 59_000L)
         assertEquals("94287082", code)
     }
 
     @Test
     fun totp_rfc6238_sha1_time1111111109() {
-        val params = TotpGenerator.TotpParams(
-            secret = rfcSecret, algorithm = TotpGenerator.Algorithm.SHA1,
-            digits = 8, period = 30,
-        )
+        val params =
+            TotpGenerator.TotpParams(
+                secret = rfcSecret,
+                algorithm = TotpGenerator.Algorithm.SHA1,
+                digits = 8,
+                period = 30,
+            )
         val code = TotpGenerator.generateCode(params, timeMillis = 1111111109_000L)
         assertEquals("07081804", code)
     }
 
     @Test
     fun totp_rfc6238_sha1_time1234567890() {
-        val params = TotpGenerator.TotpParams(
-            secret = rfcSecret, algorithm = TotpGenerator.Algorithm.SHA1,
-            digits = 8, period = 30,
-        )
+        val params =
+            TotpGenerator.TotpParams(
+                secret = rfcSecret,
+                algorithm = TotpGenerator.Algorithm.SHA1,
+                digits = 8,
+                period = 30,
+            )
         val code = TotpGenerator.generateCode(params, timeMillis = 1234567890_000L)
         assertEquals("89005924", code)
     }
@@ -145,12 +162,13 @@ class TotpGeneratorTest {
 
     @Test
     fun parseKeePassAttributes_timeOtpFields() {
-        val fields = mapOf(
-            "TimeOtp-Secret-Base32" to "JBSWY3DPEHPK3PXP",
-            "TimeOtp-Period" to "60",
-            "TimeOtp-Length" to "8",
-            "TimeOtp-Algorithm" to "HMAC-SHA-256",
-        )
+        val fields =
+            mapOf(
+                "TimeOtp-Secret-Base32" to "JBSWY3DPEHPK3PXP",
+                "TimeOtp-Period" to "60",
+                "TimeOtp-Length" to "8",
+                "TimeOtp-Algorithm" to "HMAC-SHA-256",
+            )
         val params = TotpGenerator.parseKeePassAttributes(fields)
         assertNotNull(params)
         assertEquals(TotpGenerator.Algorithm.SHA256, params.algorithm)

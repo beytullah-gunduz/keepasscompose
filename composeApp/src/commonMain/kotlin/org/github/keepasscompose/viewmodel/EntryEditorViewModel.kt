@@ -4,22 +4,24 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlin.time.Clock
 import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxEntryField
 import org.github.keepasscompose.core.model.KdbxIcon
 import org.github.keepasscompose.ui.screens.EntryEditorField
 import org.github.keepasscompose.ui.screens.EntryEditorResult
+import kotlin.time.Clock
 
 sealed interface EntryEditorState {
     data object Idle : EntryEditorState
+
     data class Editing(val entry: KdbxEntry) : EntryEditorState
+
     data class Saved(val entry: KdbxEntry) : EntryEditorState
+
     data class ValidationError(val message: String) : EntryEditorState
 }
 
 class EntryEditorViewModel : ViewModel() {
-
     private val _state = MutableStateFlow<EntryEditorState>(EntryEditorState.Idle)
     val state: StateFlow<EntryEditorState> = _state.asStateFlow()
 
@@ -43,36 +45,39 @@ class EntryEditorViewModel : ViewModel() {
 
         val now = Clock.System.now()
 
-        val fields = buildList {
-            add(KdbxEntryField(KdbxEntry.FIELD_TITLE, result.title))
-            add(KdbxEntryField(KdbxEntry.FIELD_USER_NAME, result.userName))
-            add(KdbxEntryField(KdbxEntry.FIELD_PASSWORD, result.password, isProtected = true))
-            add(KdbxEntryField(KdbxEntry.FIELD_URL, result.url))
-            add(KdbxEntryField(KdbxEntry.FIELD_NOTES, result.notes))
-            result.customFields.forEach { cf ->
-                add(KdbxEntryField(cf.key, cf.value, cf.isProtected))
+        val fields =
+            buildList {
+                add(KdbxEntryField(KdbxEntry.FIELD_TITLE, result.title))
+                add(KdbxEntryField(KdbxEntry.FIELD_USER_NAME, result.userName))
+                add(KdbxEntryField(KdbxEntry.FIELD_PASSWORD, result.password, isProtected = true))
+                add(KdbxEntryField(KdbxEntry.FIELD_URL, result.url))
+                add(KdbxEntryField(KdbxEntry.FIELD_NOTES, result.notes))
+                result.customFields.forEach { cf ->
+                    add(KdbxEntryField(cf.key, cf.value, cf.isProtected))
+                }
             }
-        }
 
         val existingEntry = originalEntry
-        val history = if (existingEntry != null) {
-            existingEntry.history + existingEntry.copy(history = emptyList())
-        } else {
-            emptyList()
-        }
+        val history =
+            if (existingEntry != null) {
+                existingEntry.history + existingEntry.copy(history = emptyList())
+            } else {
+                emptyList()
+            }
 
-        val entry = KdbxEntry(
-            uuid = existingEntry?.uuid ?: generateUuid(),
-            icon = KdbxIcon(standardIndex = result.iconIndex),
-            tags = result.tags,
-            fields = fields,
-            history = history,
-            creationTime = existingEntry?.creationTime ?: now,
-            lastModificationTime = now,
-            lastAccessTime = now,
-            expiryTime = existingEntry?.expiryTime,
-            expires = result.expires,
-        )
+        val entry =
+            KdbxEntry(
+                uuid = existingEntry?.uuid ?: generateUuid(),
+                icon = KdbxIcon(standardIndex = result.iconIndex),
+                tags = result.tags,
+                fields = fields,
+                history = history,
+                creationTime = existingEntry?.creationTime ?: now,
+                lastModificationTime = now,
+                lastAccessTime = now,
+                expiryTime = existingEntry?.expiryTime,
+                expires = result.expires,
+            )
 
         _state.value = EntryEditorState.Saved(entry)
         return entry

@@ -16,13 +16,7 @@ import org.github.keepasscompose.core.model.KdbxGroup
  * with `/` as the path separator.
  */
 object LastPassImporter {
-
-    data class ImportResult(
-        val entries: List<KdbxEntry>,
-        val groupTree: KdbxGroup,
-        val totalRows: Int,
-        val secureNotes: Int,
-    )
+    data class ImportResult(val entries: List<KdbxEntry>, val groupTree: KdbxGroup, val totalRows: Int, val secureNotes: Int)
 
     fun import(csvContent: String): ImportResult {
         val rows = CsvImporter.parseCsvRows(csvContent, ',')
@@ -59,13 +53,14 @@ object LastPassImporter {
 
             if (title.isBlank() && userName.isBlank() && password.isBlank()) continue
 
-            val fields = mutableListOf(
-                KdbxEntryField(KdbxEntry.FIELD_TITLE, title),
-                KdbxEntryField(KdbxEntry.FIELD_USER_NAME, userName),
-                KdbxEntryField(KdbxEntry.FIELD_PASSWORD, password, isProtected = true),
-                KdbxEntryField(KdbxEntry.FIELD_URL, if (isSecureNote) "" else url),
-                KdbxEntryField(KdbxEntry.FIELD_NOTES, notes),
-            )
+            val fields =
+                mutableListOf(
+                    KdbxEntryField(KdbxEntry.FIELD_TITLE, title),
+                    KdbxEntryField(KdbxEntry.FIELD_USER_NAME, userName),
+                    KdbxEntryField(KdbxEntry.FIELD_PASSWORD, password, isProtected = true),
+                    KdbxEntryField(KdbxEntry.FIELD_URL, if (isSecureNote) "" else url),
+                    KdbxEntryField(KdbxEntry.FIELD_NOTES, notes),
+                )
             if (totp.isNotBlank()) {
                 fields.add(KdbxEntryField("otp", totp))
             }
@@ -96,9 +91,10 @@ object LastPassImporter {
             }
         }
 
-        val groups = subgroups.map { (name, groupEntries) ->
-            KdbxGroup(uuid = "lp-g-$name", name = name, entries = groupEntries)
-        }
+        val groups =
+            subgroups.map { (name, groupEntries) ->
+                KdbxGroup(uuid = "lp-g-$name", name = name, entries = groupEntries)
+            }
 
         return root.copy(entries = rootEntries, groups = groups)
     }

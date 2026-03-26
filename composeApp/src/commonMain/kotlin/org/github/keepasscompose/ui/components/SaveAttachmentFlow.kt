@@ -29,11 +29,7 @@ sealed interface SaveAttachmentState {
 }
 
 @Composable
-fun SaveAttachmentDialog(
-    attachment: KdbxAttachment,
-    onSave: (openAfterSave: Boolean) -> Unit,
-    onDismiss: () -> Unit,
-) {
+fun SaveAttachmentDialog(attachment: KdbxAttachment, onSave: (openAfterSave: Boolean) -> Unit, onDismiss: () -> Unit) {
     var openAfterSave by remember { mutableStateOf(false) }
 
     AlertDialog(

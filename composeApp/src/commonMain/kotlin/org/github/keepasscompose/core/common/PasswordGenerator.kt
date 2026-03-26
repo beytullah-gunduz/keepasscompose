@@ -10,7 +10,6 @@ import kotlin.random.Random
  * character exclusion.
  */
 object PasswordGenerator {
-
     // Character set groups
     const val UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     const val LOWERCASE = "abcdefghijklmnopqrstuvwxyz"
@@ -68,9 +67,10 @@ object PasswordGenerator {
         require(charPool.isNotEmpty()) { "At least one character set must be enabled" }
 
         // Generate password ensuring at least one character from each enabled group
-        val enabledGroups = getEnabledGroups(config)
-            .map { applyExclusions(it, config) }
-            .filter { it.isNotEmpty() }
+        val enabledGroups =
+            getEnabledGroups(config)
+                .map { applyExclusions(it, config) }
+                .filter { it.isNotEmpty() }
 
         if (enabledGroups.isEmpty() || config.length < enabledGroups.size) {
             // Not enough length to guarantee one from each group — just fill randomly
@@ -82,10 +82,11 @@ object PasswordGenerator {
         }
 
         // Pick one character from each enabled group
-        val mandatory = CharArray(enabledGroups.size) { i ->
-            val group = enabledGroups[i]
-            group[random.nextInt(group.length)]
-        }
+        val mandatory =
+            CharArray(enabledGroups.size) { i ->
+                val group = enabledGroups[i]
+                group[random.nextInt(group.length)]
+            }
 
         // Fill remaining slots from the full pool
         val remaining = config.length - mandatory.size

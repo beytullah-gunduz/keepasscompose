@@ -13,7 +13,6 @@ import kotlin.test.assertFalse
  * Tests cover both Argon2d and Argon2id variants.
  */
 class PlatformCryptoProviderArgon2Test {
-
     private val crypto = PlatformCryptoProvider()
 
     // --- Cross-validation: pure Kotlin vs BouncyCastle ---
@@ -25,7 +24,8 @@ class PlatformCryptoProviderArgon2Test {
         val bcResult = crypto.argon2(password, salt, Argon2Variant.ARGON2D, 0x13, 64, 2, 2)
         val pkResult = Argon2.derive(password, salt, Argon2Variant.ARGON2D, 0x13, 64, 2, 2)
         assertContentEquals(
-            bcResult, pkResult,
+            bcResult,
+            pkResult,
             "Pure Kotlin Argon2d must match BouncyCastle output",
         )
     }
@@ -37,7 +37,8 @@ class PlatformCryptoProviderArgon2Test {
         val bcResult = crypto.argon2(password, salt, Argon2Variant.ARGON2ID, 0x13, 64, 2, 2)
         val pkResult = Argon2.derive(password, salt, Argon2Variant.ARGON2ID, 0x13, 64, 2, 2)
         assertContentEquals(
-            bcResult, pkResult,
+            bcResult,
+            pkResult,
             "Pure Kotlin Argon2id must match BouncyCastle output",
         )
     }

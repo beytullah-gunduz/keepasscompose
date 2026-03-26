@@ -14,11 +14,7 @@ import okio.BufferedSource
  * @param innerRandomStreamKey The key for the inner random stream cipher.
  * @param binaries The binary attachment pool parsed from inner header fields.
  */
-data class KdbxInnerHeaderReadResult(
-    val innerRandomStreamId: Int,
-    val innerRandomStreamKey: ByteArray,
-    val binaries: KdbxBinaryPool,
-) {
+data class KdbxInnerHeaderReadResult(val innerRandomStreamId: Int, val innerRandomStreamKey: ByteArray, val binaries: KdbxBinaryPool) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is KdbxInnerHeaderReadResult) return false
@@ -51,7 +47,6 @@ data class KdbxInnerHeaderReadResult(
  * - Bit 0 (0x01): Memory protection flag (data should be protected in memory)
  */
 class KdbxInnerHeaderReader {
-
     fun readInnerHeader(source: BufferedSource): KdbxInnerHeaderReadResult {
         var innerStreamId = 0
         var innerStreamKey = ByteArray(0)
@@ -74,9 +69,11 @@ class KdbxInnerHeaderReader {
                     val data = source.readByteArray(fieldSize.toLong())
                     innerStreamId = data.toLittleEndianInt()
                 }
+
                 FIELD_INNER_RANDOM_STREAM_KEY -> {
                     innerStreamKey = source.readByteArray(fieldSize.toLong())
                 }
+
                 FIELD_BINARY -> {
                     val data = source.readByteArray(fieldSize.toLong())
                     if (data.isNotEmpty()) {
@@ -86,6 +83,7 @@ class KdbxInnerHeaderReader {
                     }
                     binaryIndex++
                 }
+
                 else -> {
                     // Skip unknown fields
                     source.skip(fieldSize.toLong())

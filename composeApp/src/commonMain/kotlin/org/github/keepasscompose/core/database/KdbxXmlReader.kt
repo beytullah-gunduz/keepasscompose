@@ -1,6 +1,5 @@
 package org.github.keepasscompose.core.database
 
-import kotlin.time.Instant
 import nl.adaptivity.xmlutil.EventType
 import nl.adaptivity.xmlutil.XmlReader
 import nl.adaptivity.xmlutil.xmlStreaming
@@ -14,6 +13,7 @@ import org.github.keepasscompose.core.model.KdbxIcon
 import org.github.keepasscompose.core.model.KdbxMeta
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.time.Instant
 
 /**
  * Result of parsing the KDBX XML payload.
@@ -51,7 +51,6 @@ class KdbxXmlReader(
     private val innerStreamDecryptor: InnerStreamDecryptor? = null,
     private val externalBinaryPool: KdbxBinaryPool? = null,
 ) {
-
     private var binariesPool: KdbxBinaryPool = externalBinaryPool ?: KdbxBinaryPool()
 
     fun readXml(xml: String): KdbxXmlReadResult {
@@ -66,13 +65,19 @@ class KdbxXmlReader(
 
         while (reader.nextTag() == EventType.START_ELEMENT) {
             when (reader.localName) {
-                "Meta" -> meta = parseMeta(reader)
+                "Meta" -> {
+                    meta = parseMeta(reader)
+                }
+
                 "Root" -> {
                     val result = parseRoot(reader)
                     rootGroup = result.first
                     deletedObjects = result.second
                 }
-                else -> reader.skipElement()
+
+                else -> {
+                    reader.skipElement()
+                }
             }
         }
 
@@ -106,15 +111,36 @@ class KdbxXmlReader(
 
         while (reader.nextTag() == EventType.START_ELEMENT) {
             when (reader.localName) {
-                "DatabaseName" -> databaseName = reader.readElementText()
-                "DatabaseDescription" -> description = reader.readElementText()
-                "DefaultUserName" -> defaultUserName = reader.readElementText()
-                "HistoryMaxItems" -> historyMaxItems = reader.readElementText().toIntOrNull()
-                    ?: KdbxMeta.DEFAULT_HISTORY_MAX_ITEMS
-                "HistoryMaxSize" -> historyMaxSize = reader.readElementText().toLongOrNull()
-                    ?: KdbxMeta.DEFAULT_HISTORY_MAX_SIZE
-                "RecycleBinEnabled" -> recycleBinEnabled = reader.readElementText().toBooleanKdbx()
-                "RecycleBinUUID" -> recycleBinUuid = reader.readElementText().ifBlank { null }
+                "DatabaseName" -> {
+                    databaseName = reader.readElementText()
+                }
+
+                "DatabaseDescription" -> {
+                    description = reader.readElementText()
+                }
+
+                "DefaultUserName" -> {
+                    defaultUserName = reader.readElementText()
+                }
+
+                "HistoryMaxItems" -> {
+                    historyMaxItems = reader.readElementText().toIntOrNull()
+                        ?: KdbxMeta.DEFAULT_HISTORY_MAX_ITEMS
+                }
+
+                "HistoryMaxSize" -> {
+                    historyMaxSize = reader.readElementText().toLongOrNull()
+                        ?: KdbxMeta.DEFAULT_HISTORY_MAX_SIZE
+                }
+
+                "RecycleBinEnabled" -> {
+                    recycleBinEnabled = reader.readElementText().toBooleanKdbx()
+                }
+
+                "RecycleBinUUID" -> {
+                    recycleBinUuid = reader.readElementText().ifBlank { null }
+                }
+
                 "MemoryProtection" -> {
                     val mp = parseMemoryProtection(reader)
                     protectTitle = mp.protectTitle
@@ -123,8 +149,14 @@ class KdbxXmlReader(
                     protectUrl = mp.protectUrl
                     protectNotes = mp.protectNotes
                 }
-                "Binaries" -> parseBinariesIntoPool(reader)
-                else -> reader.skipElement()
+
+                "Binaries" -> {
+                    parseBinariesIntoPool(reader)
+                }
+
+                else -> {
+                    reader.skipElement()
+                }
             }
         }
 
@@ -272,14 +304,28 @@ class KdbxXmlReader(
 
         while (reader.nextTag() == EventType.START_ELEMENT) {
             when (reader.localName) {
-                "UUID" -> uuid = reader.readElementText()
-                "IconID" -> iconId = reader.readElementText().toIntOrNull() ?: 0
-                "CustomIconUUID" -> customIconUuid = reader.readElementText().ifBlank { null }
+                "UUID" -> {
+                    uuid = reader.readElementText()
+                }
+
+                "IconID" -> {
+                    iconId = reader.readElementText().toIntOrNull() ?: 0
+                }
+
+                "CustomIconUUID" -> {
+                    customIconUuid = reader.readElementText().ifBlank { null }
+                }
+
                 "Tags" -> {
                     val tagText = reader.readElementText()
-                    tags = if (tagText.isBlank()) emptyList()
-                    else tagText.split(";").filter { it.isNotBlank() }
+                    tags =
+                        if (tagText.isBlank()) {
+                            emptyList()
+                        } else {
+                            tagText.split(";").filter { it.isNotBlank() }
+                        }
                 }
+
                 "Times" -> {
                     val times = parseTimes(reader)
                     creationTime = times.creationTime
@@ -288,11 +334,16 @@ class KdbxXmlReader(
                     expiryTime = times.expiryTime
                     expires = times.expires
                 }
-                "String" -> fields.add(parseStringField(reader))
+
+                "String" -> {
+                    fields.add(parseStringField(reader))
+                }
+
                 "Binary" -> {
                     val attachment = parseEntryBinary(reader)
                     if (attachment != null) attachments.add(attachment)
                 }
+
                 "History" -> {
                     while (reader.nextTag() == EventType.START_ELEMENT) {
                         if (reader.localName == "Entry") {
@@ -302,7 +353,10 @@ class KdbxXmlReader(
                         }
                     }
                 }
-                else -> reader.skipElement()
+
+                else -> {
+                    reader.skipElement()
+                }
             }
         }
 
@@ -361,21 +415,29 @@ class KdbxXmlReader(
 
         while (reader.nextTag() == EventType.START_ELEMENT) {
             when (reader.localName) {
-                "Key" -> key = reader.readElementText()
+                "Key" -> {
+                    key = reader.readElementText()
+                }
+
                 "Value" -> {
-                    isProtected = reader.getAttributeValue(null, "Protected")
+                    isProtected = reader
+                        .getAttributeValue(null, "Protected")
                         ?.toBooleanKdbx() ?: false
                     val rawText = reader.readElementText()
 
-                    value = if (isProtected && rawText.isNotBlank() && innerStreamDecryptor != null) {
-                        val ciphertext = Base64.decode(rawText)
-                        val plaintext = innerStreamDecryptor.decrypt(ciphertext)
-                        plaintext.decodeToString()
-                    } else {
-                        rawText
-                    }
+                    value =
+                        if (isProtected && rawText.isNotBlank() && innerStreamDecryptor != null) {
+                            val ciphertext = Base64.decode(rawText)
+                            val plaintext = innerStreamDecryptor.decrypt(ciphertext)
+                            plaintext.decodeToString()
+                        } else {
+                            rawText
+                        }
                 }
-                else -> reader.skipElement()
+
+                else -> {
+                    reader.skipElement()
+                }
             }
         }
 
@@ -390,12 +452,18 @@ class KdbxXmlReader(
 
         while (reader.nextTag() == EventType.START_ELEMENT) {
             when (reader.localName) {
-                "Key" -> name = reader.readElementText()
+                "Key" -> {
+                    name = reader.readElementText()
+                }
+
                 "Value" -> {
                     refId = reader.getAttributeValue(null, "Ref")?.toIntOrNull()
                     reader.readElementText() // consume content (may be empty for Ref)
                 }
-                else -> reader.skipElement()
+
+                else -> {
+                    reader.skipElement()
+                }
             }
         }
 
@@ -479,7 +547,7 @@ class KdbxXmlReader(
 
 private fun XmlReader.requireStart(name: String) {
     if (eventType != EventType.START_ELEMENT || localName != name) {
-        throw KdbxParseException("Expected <$name>, got <$localName> (${eventType})")
+        throw KdbxParseException("Expected <$name>, got <$localName> ($eventType)")
     }
 }
 
@@ -487,9 +555,18 @@ private fun XmlReader.readElementText(): String {
     val sb = StringBuilder()
     while (true) {
         when (next()) {
-            EventType.TEXT, EventType.CDSECT, EventType.ENTITY_REF -> sb.append(text)
-            EventType.END_ELEMENT -> return sb.toString()
-            EventType.START_ELEMENT -> throw KdbxParseException("Unexpected child element: $localName")
+            EventType.TEXT, EventType.CDSECT, EventType.ENTITY_REF -> {
+                sb.append(text)
+            }
+
+            EventType.END_ELEMENT -> {
+                return sb.toString()
+            }
+
+            EventType.START_ELEMENT -> {
+                throw KdbxParseException("Unexpected child element: $localName")
+            }
+
             else -> {} // ignore processing instructions, comments, etc.
         }
     }
@@ -499,13 +576,17 @@ private fun XmlReader.skipElement() {
     var depth = 1
     while (depth > 0) {
         when (next()) {
-            EventType.START_ELEMENT -> depth++
-            EventType.END_ELEMENT -> depth--
+            EventType.START_ELEMENT -> {
+                depth++
+            }
+
+            EventType.END_ELEMENT -> {
+                depth--
+            }
+
             else -> {}
         }
     }
 }
 
-
-private fun String.toBooleanKdbx(): Boolean =
-    equals("True", ignoreCase = true) || equals("true")
+private fun String.toBooleanKdbx(): Boolean = equals("True", ignoreCase = true) || equals("true")

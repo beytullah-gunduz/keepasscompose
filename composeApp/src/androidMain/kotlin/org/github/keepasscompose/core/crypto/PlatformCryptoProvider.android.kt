@@ -1,28 +1,25 @@
 package org.github.keepasscompose.core.crypto
 
 import org.bouncycastle.crypto.engines.AESEngine
-import org.bouncycastle.crypto.engines.TwofishEngine
-import org.bouncycastle.crypto.modes.CBCBlockCipher
-import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher
-import org.bouncycastle.crypto.paddings.PKCS7Padding
-import org.bouncycastle.crypto.params.KeyParameter
-import org.bouncycastle.crypto.params.ParametersWithIV
-import org.bouncycastle.crypto.generators.Argon2BytesGenerator
-import org.bouncycastle.crypto.params.Argon2Parameters
 import org.bouncycastle.crypto.engines.ChaCha7539Engine
 import org.bouncycastle.crypto.engines.Salsa20Engine
+import org.bouncycastle.crypto.engines.TwofishEngine
+import org.bouncycastle.crypto.generators.Argon2BytesGenerator
+import org.bouncycastle.crypto.modes.CBCBlockCipher
+import org.bouncycastle.crypto.paddings.PKCS7Padding
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher
+import org.bouncycastle.crypto.params.Argon2Parameters
+import org.bouncycastle.crypto.params.KeyParameter
+import org.bouncycastle.crypto.params.ParametersWithIV
 import org.github.keepasscompose.core.model.Argon2Variant
 import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
+    override fun sha256(data: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(data)
 
-    override fun sha256(data: ByteArray): ByteArray =
-        MessageDigest.getInstance("SHA-256").digest(data)
-
-    override fun sha512(data: ByteArray): ByteArray =
-        MessageDigest.getInstance("SHA-512").digest(data)
+    override fun sha512(data: ByteArray): ByteArray = MessageDigest.getInstance("SHA-512").digest(data)
 
     override fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
         val mac = Mac.getInstance("HmacSHA256")
@@ -31,10 +28,11 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
     }
 
     override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
-        val cipher = PaddedBufferedBlockCipher(
-            CBCBlockCipher.newInstance(AESEngine.newInstance()),
-            PKCS7Padding()
-        )
+        val cipher =
+            PaddedBufferedBlockCipher(
+                CBCBlockCipher.newInstance(AESEngine.newInstance()),
+                PKCS7Padding(),
+            )
         cipher.init(true, ParametersWithIV(KeyParameter(key), iv))
         val output = ByteArray(cipher.getOutputSize(data.size))
         val len = cipher.processBytes(data, 0, data.size, output, 0)
@@ -43,10 +41,11 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
     }
 
     override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
-        val cipher = PaddedBufferedBlockCipher(
-            CBCBlockCipher.newInstance(AESEngine.newInstance()),
-            PKCS7Padding()
-        )
+        val cipher =
+            PaddedBufferedBlockCipher(
+                CBCBlockCipher.newInstance(AESEngine.newInstance()),
+                PKCS7Padding(),
+            )
         cipher.init(false, ParametersWithIV(KeyParameter(key), iv))
         val output = ByteArray(cipher.getOutputSize(data.size))
         val len = cipher.processBytes(data, 0, data.size, output, 0)
@@ -74,17 +73,20 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         iterations: Long,
         parallelism: Int,
     ): ByteArray {
-        val type = when (variant) {
-            Argon2Variant.ARGON2D -> Argon2Parameters.ARGON2_d
-            Argon2Variant.ARGON2ID -> Argon2Parameters.ARGON2_id
-        }
-        val params = Argon2Parameters.Builder(type)
-            .withVersion(version)
-            .withSalt(salt)
-            .withParallelism(parallelism)
-            .withMemoryAsKB(memory.toInt())
-            .withIterations(iterations.toInt())
-            .build()
+        val type =
+            when (variant) {
+                Argon2Variant.ARGON2D -> Argon2Parameters.ARGON2_d
+                Argon2Variant.ARGON2ID -> Argon2Parameters.ARGON2_id
+            }
+        val params =
+            Argon2Parameters
+                .Builder(type)
+                .withVersion(version)
+                .withSalt(salt)
+                .withParallelism(parallelism)
+                .withMemoryAsKB(memory.toInt())
+                .withIterations(iterations.toInt())
+                .build()
         val generator = Argon2BytesGenerator()
         generator.init(params)
         val result = ByteArray(32)
@@ -109,10 +111,11 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
     }
 
     override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
-        val cipher = PaddedBufferedBlockCipher(
-            CBCBlockCipher.newInstance(TwofishEngine()),
-            PKCS7Padding()
-        )
+        val cipher =
+            PaddedBufferedBlockCipher(
+                CBCBlockCipher.newInstance(TwofishEngine()),
+                PKCS7Padding(),
+            )
         cipher.init(true, ParametersWithIV(KeyParameter(key), iv))
         val output = ByteArray(cipher.getOutputSize(data.size))
         val len = cipher.processBytes(data, 0, data.size, output, 0)
@@ -121,10 +124,11 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
     }
 
     override fun twofishDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
-        val cipher = PaddedBufferedBlockCipher(
-            CBCBlockCipher.newInstance(TwofishEngine()),
-            PKCS7Padding()
-        )
+        val cipher =
+            PaddedBufferedBlockCipher(
+                CBCBlockCipher.newInstance(TwofishEngine()),
+                PKCS7Padding(),
+            )
         cipher.init(false, ParametersWithIV(KeyParameter(key), iv))
         val output = ByteArray(cipher.getOutputSize(data.size))
         val len = cipher.processBytes(data, 0, data.size, output, 0)

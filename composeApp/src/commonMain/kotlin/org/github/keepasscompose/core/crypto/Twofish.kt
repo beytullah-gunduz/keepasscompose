@@ -9,7 +9,6 @@ package org.github.keepasscompose.core.crypto
  * JVM/Android use BouncyCastle's TwofishEngine instead.
  */
 internal object Twofish {
-
     const val BLOCK_SIZE = 16
     private const val ROUNDS = 16
     private const val TOTAL_SUBKEYS = 40
@@ -17,20 +16,22 @@ internal object Twofish {
     // ---- q permutation tables (Section 4.3.2) ----
 
     // q0 4-bit S-boxes from specification Table 2
-    private val Q0_T = arrayOf(
-        intArrayOf(0x8, 0x1, 0x7, 0xD, 0x6, 0xF, 0x3, 0x2, 0x0, 0xB, 0x5, 0x9, 0xE, 0xC, 0xA, 0x4),
-        intArrayOf(0xE, 0xC, 0xB, 0x8, 0x1, 0x2, 0x3, 0x5, 0xF, 0x4, 0xA, 0x6, 0x7, 0x0, 0x9, 0xD),
-        intArrayOf(0xB, 0xA, 0x5, 0xE, 0x6, 0xD, 0x9, 0x0, 0xC, 0x8, 0xF, 0x3, 0x2, 0x4, 0x7, 0x1),
-        intArrayOf(0xD, 0x7, 0xF, 0x4, 0x1, 0x2, 0x6, 0xE, 0x9, 0xB, 0x3, 0x0, 0x8, 0x5, 0xC, 0xA),
-    )
+    private val Q0_T =
+        arrayOf(
+            intArrayOf(0x8, 0x1, 0x7, 0xD, 0x6, 0xF, 0x3, 0x2, 0x0, 0xB, 0x5, 0x9, 0xE, 0xC, 0xA, 0x4),
+            intArrayOf(0xE, 0xC, 0xB, 0x8, 0x1, 0x2, 0x3, 0x5, 0xF, 0x4, 0xA, 0x6, 0x7, 0x0, 0x9, 0xD),
+            intArrayOf(0xB, 0xA, 0x5, 0xE, 0x6, 0xD, 0x9, 0x0, 0xC, 0x8, 0xF, 0x3, 0x2, 0x4, 0x7, 0x1),
+            intArrayOf(0xD, 0x7, 0xF, 0x4, 0x1, 0x2, 0x6, 0xE, 0x9, 0xB, 0x3, 0x0, 0x8, 0x5, 0xC, 0xA),
+        )
 
     // q1 4-bit S-boxes
-    private val Q1_T = arrayOf(
-        intArrayOf(0x2, 0x8, 0xB, 0xD, 0xF, 0x7, 0x6, 0xE, 0x3, 0x1, 0x9, 0x4, 0x0, 0xA, 0xC, 0x5),
-        intArrayOf(0x1, 0xE, 0x2, 0xB, 0x4, 0xC, 0x3, 0x7, 0x6, 0xD, 0xA, 0x5, 0xF, 0x9, 0x0, 0x8),
-        intArrayOf(0x4, 0xC, 0x7, 0x5, 0x1, 0x6, 0x9, 0xA, 0x0, 0xE, 0xD, 0x8, 0x2, 0xB, 0x3, 0xF),
-        intArrayOf(0xB, 0x9, 0x5, 0x1, 0xC, 0x3, 0xD, 0xE, 0x6, 0x4, 0x7, 0xF, 0x2, 0x0, 0x8, 0xA),
-    )
+    private val Q1_T =
+        arrayOf(
+            intArrayOf(0x2, 0x8, 0xB, 0xD, 0xF, 0x7, 0x6, 0xE, 0x3, 0x1, 0x9, 0x4, 0x0, 0xA, 0xC, 0x5),
+            intArrayOf(0x1, 0xE, 0x2, 0xB, 0x4, 0xC, 0x3, 0x7, 0x6, 0xD, 0xA, 0x5, 0xF, 0x9, 0x0, 0x8),
+            intArrayOf(0x4, 0xC, 0x7, 0x5, 0x1, 0x6, 0x9, 0xA, 0x0, 0xE, 0xD, 0x8, 0x2, 0xB, 0x3, 0xF),
+            intArrayOf(0xB, 0x9, 0x5, 0x1, 0xC, 0x3, 0xD, 0xE, 0x6, 0x4, 0x7, 0xF, 0x2, 0x0, 0x8, 0xA),
+        )
 
     /** Compute q permutation from 4-bit S-boxes (Section 4.3.2 algorithm) */
     private fun computeQ(x: Int, t: Array<IntArray>): Int {
@@ -56,12 +57,13 @@ internal object Twofish {
     // Primitive polynomial: x^8 + x^6 + x^5 + x^3 + 1
     private const val MDS_POLY = 0x169
 
-    private val MDS_MATRIX = arrayOf(
-        intArrayOf(0x01, 0xEF, 0x5B, 0x5B),
-        intArrayOf(0x5B, 0xEF, 0xEF, 0x01),
-        intArrayOf(0xEF, 0x5B, 0x01, 0xEF),
-        intArrayOf(0xEF, 0x01, 0xEF, 0x5B),
-    )
+    private val MDS_MATRIX =
+        arrayOf(
+            intArrayOf(0x01, 0xEF, 0x5B, 0x5B),
+            intArrayOf(0x5B, 0xEF, 0xEF, 0x01),
+            intArrayOf(0xEF, 0x5B, 0x01, 0xEF),
+            intArrayOf(0xEF, 0x01, 0xEF, 0x5B),
+        )
 
     private fun gfMult(a: Int, b: Int, poly: Int): Int {
         var result = 0
@@ -83,16 +85,17 @@ internal object Twofish {
     // gMDS[col][i] = Q_perm(i) → packed 32-bit MDS column product
     // Includes the Q permutation (like BouncyCastle), giving the correct
     // total of 5 Q layers for 256-bit keys (4 explicit + 1 here).
-    private val gMDS = Array(4) { col ->
-        val qPerm = if (P_X0[col] == 1) Q1 else Q0
-        IntArray(256) { i ->
-            val b = qPerm[i]
-            gfMult(MDS_MATRIX[0][col], b, MDS_POLY) or
-                (gfMult(MDS_MATRIX[1][col], b, MDS_POLY) shl 8) or
-                (gfMult(MDS_MATRIX[2][col], b, MDS_POLY) shl 16) or
-                (gfMult(MDS_MATRIX[3][col], b, MDS_POLY) shl 24)
+    private val gMDS =
+        Array(4) { col ->
+            val qPerm = if (P_X0[col] == 1) Q1 else Q0
+            IntArray(256) { i ->
+                val b = qPerm[i]
+                gfMult(MDS_MATRIX[0][col], b, MDS_POLY) or
+                    (gfMult(MDS_MATRIX[1][col], b, MDS_POLY) shl 8) or
+                    (gfMult(MDS_MATRIX[2][col], b, MDS_POLY) shl 16) or
+                    (gfMult(MDS_MATRIX[3][col], b, MDS_POLY) shl 24)
+            }
         }
-    }
 
     // ---- RS matrix for key schedule (Section 4.3.4) ----
 
@@ -117,8 +120,11 @@ internal object Twofish {
     // ---- Byte extraction ----
 
     private fun b0(x: Int) = x and 0xFF
+
     private fun b1(x: Int) = (x ushr 8) and 0xFF
+
     private fun b2(x: Int) = (x ushr 16) and 0xFF
+
     private fun b3(x: Int) = (x ushr 24) and 0xFF
 
     // ---- h function for key schedule (Section 4.3.5) ----
@@ -142,10 +148,7 @@ internal object Twofish {
 
     // ---- Key expansion (Section 4.3.1 / 4.3.5) ----
 
-    class ExpandedKey(
-        val subKeys: IntArray,
-        val sBoxes: Array<IntArray>,
-    )
+    class ExpandedKey(val subKeys: IntArray, val sBoxes: Array<IntArray>)
 
     fun expandKey(key: ByteArray): ExpandedKey {
         require(key.size == 32) { "Twofish key must be 32 bytes, got ${key.size}" }
@@ -176,10 +179,37 @@ internal object Twofish {
         IntArray(256) { b ->
             var x = b
             when (pos) {
-                0 -> { x = Q1[x] xor b0(sk[3]); x = Q1[x] xor b0(sk[2]); x = Q0[x] xor b0(sk[1]); x = Q0[x] xor b0(sk[0]) }
-                1 -> { x = Q0[x] xor b1(sk[3]); x = Q1[x] xor b1(sk[2]); x = Q1[x] xor b1(sk[1]); x = Q0[x] xor b1(sk[0]) }
-                2 -> { x = Q0[x] xor b2(sk[3]); x = Q0[x] xor b2(sk[2]); x = Q0[x] xor b2(sk[1]); x = Q1[x] xor b2(sk[0]) }
-                3 -> { x = Q1[x] xor b3(sk[3]); x = Q0[x] xor b3(sk[2]); x = Q1[x] xor b3(sk[1]); x = Q1[x] xor b3(sk[0]) }
+                0 -> {
+                    x = Q1[x] xor b0(sk[3])
+                    x = Q1[x] xor b0(sk[2])
+                    x = Q0[x] xor b0(sk[1])
+                    x =
+                        Q0[x] xor b0(sk[0])
+                }
+
+                1 -> {
+                    x = Q0[x] xor b1(sk[3])
+                    x = Q1[x] xor b1(sk[2])
+                    x = Q1[x] xor b1(sk[1])
+                    x =
+                        Q0[x] xor b1(sk[0])
+                }
+
+                2 -> {
+                    x = Q0[x] xor b2(sk[3])
+                    x = Q0[x] xor b2(sk[2])
+                    x = Q0[x] xor b2(sk[1])
+                    x =
+                        Q1[x] xor b2(sk[0])
+                }
+
+                3 -> {
+                    x = Q1[x] xor b3(sk[3])
+                    x = Q0[x] xor b3(sk[2])
+                    x = Q1[x] xor b3(sk[1])
+                    x =
+                        Q1[x] xor b3(sk[0])
+                }
             }
             gMDS[pos][x]
         }
@@ -187,8 +217,7 @@ internal object Twofish {
 
     // ---- Round function ----
 
-    private fun g(x: Int, s: Array<IntArray>): Int =
-        s[0][b0(x)] xor s[1][b1(x)] xor s[2][b2(x)] xor s[3][b3(x)]
+    private fun g(x: Int, s: Array<IntArray>): Int = s[0][b0(x)] xor s[1][b1(x)] xor s[2][b2(x)] xor s[3][b3(x)]
 
     // ---- Block encrypt / decrypt ----
 
@@ -290,11 +319,10 @@ internal object Twofish {
 
     // ---- Little-endian conversion ----
 
-    private fun leToInt(b: ByteArray, off: Int): Int =
-        (b[off].toInt() and 0xFF) or
-            ((b[off + 1].toInt() and 0xFF) shl 8) or
-            ((b[off + 2].toInt() and 0xFF) shl 16) or
-            ((b[off + 3].toInt() and 0xFF) shl 24)
+    private fun leToInt(b: ByteArray, off: Int): Int = (b[off].toInt() and 0xFF) or
+        ((b[off + 1].toInt() and 0xFF) shl 8) or
+        ((b[off + 2].toInt() and 0xFF) shl 16) or
+        ((b[off + 3].toInt() and 0xFF) shl 24)
 
     private fun intToLe(v: Int, b: ByteArray, off: Int) {
         b[off] = v.toByte()

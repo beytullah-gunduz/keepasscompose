@@ -8,7 +8,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class PassphraseGeneratorTest {
-
     @Test
     fun generate_defaultConfig_hasFiveWords() {
         val passphrase = PassphraseGenerator.generate(PassphraseGenerator.Config())
@@ -149,9 +148,12 @@ class PassphraseGeneratorTest {
 
     @Test
     fun generate_capitalizeAndNumber() {
-        val config = PassphraseGenerator.Config(
-            wordCount = 3, capitalize = true, includeNumber = true,
-        )
+        val config =
+            PassphraseGenerator.Config(
+                wordCount = 3,
+                capitalize = true,
+                includeNumber = true,
+            )
         val passphrase = PassphraseGenerator.generate(config, Random(42))
         assertTrue(passphrase.any { it.isDigit() }, "Should have a digit")
         assertTrue(passphrase.any { it.isUpperCase() }, "Should have uppercase")

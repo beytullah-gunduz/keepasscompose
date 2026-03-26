@@ -37,12 +37,7 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun IconPicker(
-    selectedIndex: Int,
-    onSelectStandardIcon: (Int) -> Unit,
-    onUploadCustomIcon: () -> Unit = {},
-    onDismiss: () -> Unit,
-) {
+fun IconPicker(selectedIndex: Int, onSelectStandardIcon: (Int) -> Unit, onUploadCustomIcon: () -> Unit = {}, onDismiss: () -> Unit) {
     var previewIndex by remember { mutableIntStateOf(selectedIndex) }
 
     AlertDialog(
@@ -124,7 +119,10 @@ fun IconPicker(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSelectStandardIcon(previewIndex); onDismiss() }) {
+            TextButton(onClick = {
+                onSelectStandardIcon(previewIndex)
+                onDismiss()
+            }) {
                 Text("Select")
             }
         },

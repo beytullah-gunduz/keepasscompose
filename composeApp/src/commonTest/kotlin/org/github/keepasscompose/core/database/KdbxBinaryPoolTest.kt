@@ -8,7 +8,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class KdbxBinaryPoolTest {
-
     @Test
     fun emptyPool() {
         val pool = KdbxBinaryPool()
@@ -83,10 +82,13 @@ class KdbxBinaryPoolTest {
 
     @Test
     fun clear() {
-        val pool = KdbxBinaryPool(mapOf(
-            0 to "a".encodeToByteArray(),
-            1 to "b".encodeToByteArray(),
-        ))
+        val pool =
+            KdbxBinaryPool(
+                mapOf(
+                    0 to "a".encodeToByteArray(),
+                    1 to "b".encodeToByteArray(),
+                ),
+            )
 
         pool.clear()
 

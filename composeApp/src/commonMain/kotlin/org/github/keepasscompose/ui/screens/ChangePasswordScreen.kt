@@ -105,7 +105,9 @@ fun ChangePasswordScreen(
             isError = confirmPassword.isNotEmpty() && !passwordsMatch,
             supportingText = if (confirmPassword.isNotEmpty() && !passwordsMatch) {
                 { Text("Passwords do not match") }
-            } else null,
+            } else {
+                null
+            },
             modifier = Modifier.fillMaxWidth(),
         )
 

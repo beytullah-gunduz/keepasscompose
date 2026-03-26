@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class PasswordStrengthTest {
-
     // --- Strength levels ---
 
     @Test

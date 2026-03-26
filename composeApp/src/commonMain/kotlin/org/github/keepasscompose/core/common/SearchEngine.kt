@@ -14,14 +14,10 @@ import org.github.keepasscompose.core.model.KdbxGroup
  * - Recursive group traversal
  */
 object SearchEngine {
-
     /**
      * A search result containing the matched entry and its group path.
      */
-    data class SearchResult(
-        val entry: KdbxEntry,
-        val groupPath: List<String>,
-    )
+    data class SearchResult(val entry: KdbxEntry, val groupPath: List<String>)
 
     /**
      * Search all entries under [rootGroup] matching the [query].
@@ -31,11 +27,7 @@ object SearchEngine {
      * @param includeProtected Whether to search protected field values (e.g., passwords).
      * @return List of matching entries with their group paths.
      */
-    fun search(
-        rootGroup: KdbxGroup,
-        query: String,
-        includeProtected: Boolean = false,
-    ): List<SearchResult> {
+    fun search(rootGroup: KdbxGroup, query: String, includeProtected: Boolean = false): List<SearchResult> {
         if (query.isBlank()) return emptyList()
 
         val matcher = parseQuery(query)
@@ -60,29 +52,41 @@ object SearchEngine {
     }
 
     private class AndMatcher(val terms: List<Matcher>) : Matcher() {
-        override fun matches(entry: KdbxEntry, includeProtected: Boolean) =
-            terms.all { it.matches(entry, includeProtected) }
+        override fun matches(entry: KdbxEntry, includeProtected: Boolean) = terms.all { it.matches(entry, includeProtected) }
     }
 
     private class NotMatcher(val inner: Matcher) : Matcher() {
-        override fun matches(entry: KdbxEntry, includeProtected: Boolean) =
-            !inner.matches(entry, includeProtected)
+        override fun matches(entry: KdbxEntry, includeProtected: Boolean) = !inner.matches(entry, includeProtected)
     }
 
     private class TextMatcher(val text: String) : Matcher() {
-        override fun matches(entry: KdbxEntry, includeProtected: Boolean) =
-            entryContainsText(entry, text, includeProtected)
+        override fun matches(entry: KdbxEntry, includeProtected: Boolean) = entryContainsText(entry, text, includeProtected)
     }
 
     private class FieldMatcher(val field: String, val text: String) : Matcher() {
         override fun matches(entry: KdbxEntry, includeProtected: Boolean): Boolean {
             val lower = text.lowercase()
             return when (field) {
-                "title" -> entry.title.lowercase().contains(lower)
-                "user", "username" -> entry.userName.lowercase().contains(lower)
-                "url" -> entry.url.lowercase().contains(lower)
-                "notes" -> entry.notes.lowercase().contains(lower)
-                "tag" -> entry.tags.any { it.lowercase().contains(lower) }
+                "title" -> {
+                    entry.title.lowercase().contains(lower)
+                }
+
+                "user", "username" -> {
+                    entry.userName.lowercase().contains(lower)
+                }
+
+                "url" -> {
+                    entry.url.lowercase().contains(lower)
+                }
+
+                "notes" -> {
+                    entry.notes.lowercase().contains(lower)
+                }
+
+                "tag" -> {
+                    entry.tags.any { it.lowercase().contains(lower) }
+                }
+
                 else -> {
                     // Search custom field by key name
                     entry.fields.any {
@@ -96,8 +100,7 @@ object SearchEngine {
     }
 
     private class RegexMatcher(val pattern: Regex) : Matcher() {
-        override fun matches(entry: KdbxEntry, includeProtected: Boolean) =
-            entryMatchesRegex(entry, pattern, includeProtected)
+        override fun matches(entry: KdbxEntry, includeProtected: Boolean) = entryMatchesRegex(entry, pattern, includeProtected)
     }
 
     private fun parseQuery(query: String): Matcher {
@@ -109,15 +112,19 @@ object SearchEngine {
 
         // Tokenize: split by whitespace, respecting quoted strings
         val tokens = tokenize(query)
-        val matchers = tokens.map { token ->
-            when {
-                // Negation
-                token.startsWith("-") && token.length > 1 -> {
-                    NotMatcher(parseSingleTerm(token.substring(1)))
+        val matchers =
+            tokens.map { token ->
+                when {
+                    // Negation
+                    token.startsWith("-") && token.length > 1 -> {
+                        NotMatcher(parseSingleTerm(token.substring(1)))
+                    }
+
+                    else -> {
+                        parseSingleTerm(token)
+                    }
                 }
-                else -> parseSingleTerm(token)
             }
-        }
 
         return if (matchers.size == 1) matchers[0] else AndMatcher(matchers)
     }
@@ -197,13 +204,7 @@ object SearchEngine {
 
     // --- Group traversal ---
 
-    private fun searchGroup(
-        group: KdbxGroup,
-        matcher: Matcher,
-        includeProtected: Boolean,
-        path: List<String>,
-        results: MutableList<SearchResult>,
-    ) {
+    private fun searchGroup(group: KdbxGroup, matcher: Matcher, includeProtected: Boolean, path: List<String>, results: MutableList<SearchResult>) {
         val currentPath = path + group.name
         for (entry in group.entries) {
             if (matcher.matches(entry, includeProtected)) {
@@ -215,11 +216,7 @@ object SearchEngine {
         }
     }
 
-    private fun collectEntries(
-        group: KdbxGroup,
-        path: List<String>,
-        results: MutableList<SearchResult>,
-    ) {
+    private fun collectEntries(group: KdbxGroup, path: List<String>, results: MutableList<SearchResult>) {
         val currentPath = path + group.name
         for (entry in group.entries) {
             results.add(SearchResult(entry, currentPath))

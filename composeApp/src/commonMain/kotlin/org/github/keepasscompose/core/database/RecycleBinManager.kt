@@ -1,15 +1,15 @@
 package org.github.keepasscompose.core.database
 
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.time.Instant
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 import org.github.keepasscompose.core.model.DeletedObject
 import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxGroup
 import org.github.keepasscompose.core.model.KdbxIcon
 import org.github.keepasscompose.core.model.KdbxMeta
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.time.Instant
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Manages the KeePass Recycle Bin: moving deleted entries and groups to a
@@ -20,26 +20,18 @@ import org.github.keepasscompose.core.model.KdbxMeta
  */
 @OptIn(ExperimentalEncodingApi::class, ExperimentalUuidApi::class)
 class RecycleBinManager(private val meta: KdbxMeta) {
-
     /**
      * Result of a delete operation. Contains the updated group tree,
      * updated metadata (may include a new recycle bin UUID), and any
      * deleted-object tombstones (only for permanent deletions).
      */
-    data class DeleteResult(
-        val rootGroup: KdbxGroup,
-        val meta: KdbxMeta,
-        val deletedObjects: List<DeletedObject> = emptyList(),
-    )
+    data class DeleteResult(val rootGroup: KdbxGroup, val meta: KdbxMeta, val deletedObjects: List<DeletedObject> = emptyList())
 
     /**
      * Result of emptying the recycle bin. Contains the updated group tree
      * and tombstones for all permanently deleted items.
      */
-    data class EmptyResult(
-        val rootGroup: KdbxGroup,
-        val deletedObjects: List<DeletedObject>,
-    )
+    data class EmptyResult(val rootGroup: KdbxGroup, val deletedObjects: List<DeletedObject>)
 
     /**
      * Deletes an entry by moving it to the recycle bin, or permanently
@@ -114,17 +106,20 @@ class RecycleBinManager(private val meta: KdbxMeta) {
      * @return Updated state with empty recycle bin and tombstones.
      */
     fun emptyRecycleBin(rootGroup: KdbxGroup, now: Instant): EmptyResult {
-        val recycleBinUuid = meta.recycleBinUuid
-            ?: return EmptyResult(rootGroup = rootGroup, deletedObjects = emptyList())
+        val recycleBinUuid =
+            meta.recycleBinUuid
+                ?: return EmptyResult(rootGroup = rootGroup, deletedObjects = emptyList())
 
-        val recycleBin = findGroup(rootGroup, recycleBinUuid)
-            ?: return EmptyResult(rootGroup = rootGroup, deletedObjects = emptyList())
+        val recycleBin =
+            findGroup(rootGroup, recycleBinUuid)
+                ?: return EmptyResult(rootGroup = rootGroup, deletedObjects = emptyList())
 
         val tombstones = collectContentsUuids(recycleBin, now)
 
-        val cleared = replaceGroup(rootGroup, recycleBinUuid) { bin ->
-            bin.copy(entries = emptyList(), groups = emptyList())
-        }
+        val cleared =
+            replaceGroup(rootGroup, recycleBinUuid) { bin ->
+                bin.copy(entries = emptyList(), groups = emptyList())
+            }
 
         return EmptyResult(rootGroup = cleared, deletedObjects = tombstones)
     }
@@ -139,8 +134,7 @@ class RecycleBinManager(private val meta: KdbxMeta) {
 
     // -- Internal helpers --
 
-    private fun noChange(rootGroup: KdbxGroup) =
-        DeleteResult(rootGroup = rootGroup, meta = meta)
+    private fun noChange(rootGroup: KdbxGroup) = DeleteResult(rootGroup = rootGroup, meta = meta)
 
     /**
      * Ensures a recycle bin group exists. Creates one if needed.
@@ -153,11 +147,12 @@ class RecycleBinManager(private val meta: KdbxMeta) {
         }
 
         val newUuid = generateUuid()
-        val recycleBin = KdbxGroup(
-            uuid = newUuid,
-            name = RECYCLE_BIN_NAME,
-            icon = KdbxIcon(standardIndex = RECYCLE_BIN_ICON),
-        )
+        val recycleBin =
+            KdbxGroup(
+                uuid = newUuid,
+                name = RECYCLE_BIN_NAME,
+                icon = KdbxIcon(standardIndex = RECYCLE_BIN_ICON),
+            )
 
         val updatedRoot = rootGroup.copy(groups = rootGroup.groups + recycleBin)
         val updatedMeta = meta.copy(recycleBinUuid = newUuid)
@@ -168,8 +163,7 @@ class RecycleBinManager(private val meta: KdbxMeta) {
         const val RECYCLE_BIN_NAME = "Recycle Bin"
         const val RECYCLE_BIN_ICON = 43
 
-        internal fun generateUuid(): String =
-            Base64.encode(Uuid.random().toByteArray())
+        internal fun generateUuid(): String = Base64.encode(Uuid.random().toByteArray())
 
         /** Find an entry by UUID anywhere in the group tree. */
         fun findEntry(group: KdbxGroup, entryUuid: String): KdbxEntry? {
@@ -196,15 +190,16 @@ class RecycleBinManager(private val meta: KdbxMeta) {
                 return group.copy(entries = group.entries.filter { it.uuid != entryUuid })
             }
             var found = false
-            val updatedGroups = group.groups.map { sub ->
-                val result = removeEntry(sub, entryUuid)
-                if (result != null) {
-                    found = true
-                    result
-                } else {
-                    sub
+            val updatedGroups =
+                group.groups.map { sub ->
+                    val result = removeEntry(sub, entryUuid)
+                    if (result != null) {
+                        found = true
+                        result
+                    } else {
+                        sub
+                    }
                 }
-            }
             return if (found) group.copy(groups = updatedGroups) else null
         }
 
@@ -215,15 +210,16 @@ class RecycleBinManager(private val meta: KdbxMeta) {
                 return group.copy(groups = group.groups.filter { it.uuid != groupUuid })
             }
             var found = false
-            val updatedGroups = group.groups.map { sub ->
-                val result = removeGroup(sub, groupUuid)
-                if (result != null) {
-                    found = true
-                    result
-                } else {
-                    sub
+            val updatedGroups =
+                group.groups.map { sub ->
+                    val result = removeGroup(sub, groupUuid)
+                    if (result != null) {
+                        found = true
+                        result
+                    } else {
+                        sub
+                    }
                 }
-            }
             return if (found) group.copy(groups = updatedGroups) else null
         }
 
@@ -232,9 +228,12 @@ class RecycleBinManager(private val meta: KdbxMeta) {
             if (root.uuid == targetUuid) {
                 return root.copy(entries = root.entries + entry)
             }
-            return root.copy(groups = root.groups.map { sub ->
-                addEntryToGroup(sub, targetUuid, entry)
-            })
+            return root.copy(
+                groups =
+                root.groups.map { sub ->
+                    addEntryToGroup(sub, targetUuid, entry)
+                },
+            )
         }
 
         /** Add a child group to a specific group by UUID. */
@@ -242,17 +241,23 @@ class RecycleBinManager(private val meta: KdbxMeta) {
             if (root.uuid == targetUuid) {
                 return root.copy(groups = root.groups + group)
             }
-            return root.copy(groups = root.groups.map { sub ->
-                addGroupToGroup(sub, targetUuid, group)
-            })
+            return root.copy(
+                groups =
+                root.groups.map { sub ->
+                    addGroupToGroup(sub, targetUuid, group)
+                },
+            )
         }
 
         /** Replace a group in the tree using a transform function. */
         fun replaceGroup(root: KdbxGroup, targetUuid: String, transform: (KdbxGroup) -> KdbxGroup): KdbxGroup {
             if (root.uuid == targetUuid) return transform(root)
-            return root.copy(groups = root.groups.map { sub ->
-                replaceGroup(sub, targetUuid, transform)
-            })
+            return root.copy(
+                groups =
+                root.groups.map { sub ->
+                    replaceGroup(sub, targetUuid, transform)
+                },
+            )
         }
 
         /** Collect tombstones for a group and all its contents (entries + subgroups). */
@@ -270,11 +275,7 @@ class RecycleBinManager(private val meta: KdbxMeta) {
             return result
         }
 
-        private fun collectContentsUuidsInto(
-            group: KdbxGroup,
-            now: Instant,
-            result: MutableList<DeletedObject>,
-        ) {
+        private fun collectContentsUuidsInto(group: KdbxGroup, now: Instant, result: MutableList<DeletedObject>) {
             for (entry in group.entries) {
                 result.add(DeletedObject(uuid = entry.uuid, deletionTime = now))
             }

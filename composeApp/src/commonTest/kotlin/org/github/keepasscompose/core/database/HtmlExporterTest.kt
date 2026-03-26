@@ -8,19 +8,32 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class HtmlExporterTest {
-
-    private fun entry(title: String, userName: String = "", password: String = "", url: String = "", notes: String = "") =
-        KdbxEntry(uuid = title, fields = listOf(
-            KdbxEntryField("Title", title), KdbxEntryField("UserName", userName),
+    private fun entry(title: String, userName: String = "", password: String = "", url: String = "", notes: String = "") = KdbxEntry(
+        uuid = title,
+        fields =
+        listOf(
+            KdbxEntryField("Title", title),
+            KdbxEntryField("UserName", userName),
             KdbxEntryField("Password", password, isProtected = true),
-            KdbxEntryField("URL", url), KdbxEntryField("Notes", notes),
-        ))
-
-    private val root = KdbxGroup(uuid = "root", name = "Root",
-        entries = listOf(entry("GitHub", "john", "secret", "https://github.com", "Dev")),
-        groups = listOf(KdbxGroup(uuid = "sub", name = "Email",
-            entries = listOf(entry("Gmail", "john@gmail.com", "mailpass", "https://gmail.com")))),
+            KdbxEntryField("URL", url),
+            KdbxEntryField("Notes", notes),
+        ),
     )
+
+    private val root =
+        KdbxGroup(
+            uuid = "root",
+            name = "Root",
+            entries = listOf(entry("GitHub", "john", "secret", "https://github.com", "Dev")),
+            groups =
+            listOf(
+                KdbxGroup(
+                    uuid = "sub",
+                    name = "Email",
+                    entries = listOf(entry("Gmail", "john@gmail.com", "mailpass", "https://gmail.com")),
+                ),
+            ),
+        )
 
     @Test
     fun export_producesValidHtml() {

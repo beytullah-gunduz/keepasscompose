@@ -7,8 +7,9 @@ import org.github.keepasscompose.core.common.createDataStore
 import org.github.keepasscompose.core.common.dataStoreFilePath
 import org.koin.dsl.module
 
-val appModule = module {
-    single<FileSystem> { PlatformFileSystem() }
-    single { createDataStore { dataStoreFilePath() } }
-    single { AppSettings(get()) }
-}
+val appModule =
+    module {
+        single<FileSystem> { PlatformFileSystem() }
+        single { createDataStore { dataStoreFilePath() } }
+        single { AppSettings(get()) }
+    }

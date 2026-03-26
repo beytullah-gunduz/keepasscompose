@@ -30,10 +30,7 @@ import org.jetbrains.skia.Image as SkiaImage
 private enum class PreviewType { IMAGE, TEXT, UNSUPPORTED }
 
 @Composable
-fun AttachmentPreview(
-    attachment: KdbxAttachment,
-    modifier: Modifier = Modifier,
-) {
+fun AttachmentPreview(attachment: KdbxAttachment, modifier: Modifier = Modifier) {
     val previewType = remember(attachment.name) { detectPreviewType(attachment.name) }
 
     Column(

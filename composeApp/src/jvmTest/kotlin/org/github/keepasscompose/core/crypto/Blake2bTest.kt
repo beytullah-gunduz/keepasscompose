@@ -10,7 +10,6 @@ import kotlin.test.assertEquals
  * Cross-validates against BouncyCastle's Blake2bDigest.
  */
 class Blake2bTest {
-
     private fun bouncyCastleBlake2b(data: ByteArray, digestSize: Int): ByteArray {
         val digest = Blake2bDigest(digestSize * 8)
         digest.update(data, 0, data.size)

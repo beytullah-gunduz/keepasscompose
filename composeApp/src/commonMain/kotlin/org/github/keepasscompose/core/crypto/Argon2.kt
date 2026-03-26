@@ -16,7 +16,6 @@ import org.github.keepasscompose.core.model.Argon2Variant
  */
 @OptIn(ExperimentalUnsignedTypes::class)
 internal object Argon2 {
-
     private const val BLOCK_SIZE = 1024 // bytes per block
     private const val QWORDS_PER_BLOCK = 128 // 1024 / 8
     private const val SYNC_POINTS = 4
@@ -32,10 +31,11 @@ internal object Argon2 {
         iterations: Long,
         parallelism: Int,
     ): ByteArray {
-        val type = when (variant) {
-            Argon2Variant.ARGON2D -> 0
-            Argon2Variant.ARGON2ID -> 2
-        }
+        val type =
+            when (variant) {
+                Argon2Variant.ARGON2D -> 0
+                Argon2Variant.ARGON2ID -> 2
+            }
         val tagLength = ARGON2_HASH_LENGTH
 
         // Compute memory size: must be at least 8 * parallelism blocks
@@ -50,10 +50,17 @@ internal object Argon2 {
         val memory = Array(totalBlocks) { ULongArray(QWORDS_PER_BLOCK) }
 
         // H0 = H(p, salt, ...) — initial hash
-        val h0 = initialHash(
-            password, salt, type, version, tagLength,
-            memoryKB.toInt(), iterations.toInt(), parallelism,
-        )
+        val h0 =
+            initialHash(
+                password,
+                salt,
+                type,
+                version,
+                tagLength,
+                memoryKB.toInt(),
+                iterations.toInt(),
+                parallelism,
+            )
 
         // Initialize first two blocks of each lane
         for (lane in 0 until parallelism) {
@@ -79,9 +86,17 @@ internal object Argon2 {
             for (slice in 0 until SYNC_POINTS) {
                 for (lane in 0 until parallelism) {
                     fillSegment(
-                        memory, pass, lane, slice,
-                        type, version, iterations.toInt(), parallelism,
-                        segmentLength, laneLength, totalBlocks,
+                        memory,
+                        pass,
+                        lane,
+                        slice,
+                        type,
+                        version,
+                        iterations.toInt(),
+                        parallelism,
+                        segmentLength,
+                        laneLength,
+                        totalBlocks,
                     )
                 }
             }
@@ -118,25 +133,31 @@ internal object Argon2 {
         //                   LE32(v) || LE32(y) || LE32(|P|) || P ||
         //                   LE32(|S|) || S || LE32(|K|) || K || LE32(|X|) || X)
         // where K = empty, X = empty for our use case
-        val bufSize = 4 * 7 + // 7 LE32 fields before P
-            password.size + 4 + salt.size + 4 + 4 // |P|, P, |S|, S, |K|=0, |X|=0
+        val bufSize =
+            4 * 7 + // 7 LE32 fields before P
+                password.size + 4 + salt.size + 4 + 4 // |P|, P, |S|, S, |K|=0, |X|=0
         val buf = ByteArray(bufSize + 4) // extra 4 for |X|
         var off = 0
 
-        fun putInt(v: Int) { intToLittleEndian(v, buf, off); off += 4 }
+        fun putInt(v: Int) {
+            intToLittleEndian(v, buf, off)
+            off += 4
+        }
 
-        putInt(parallelism)       // p (lanes)
-        putInt(tagLength)         // τ (tag length)
-        putInt(memoryKB)          // m (memory in KB)
-        putInt(iterations)        // t (iterations)
-        putInt(version)           // v (version)
-        putInt(type)              // y (type: 0=d, 2=id)
-        putInt(password.size)     // |P|
-        password.copyInto(buf, off); off += password.size
-        putInt(salt.size)         // |S|
-        salt.copyInto(buf, off); off += salt.size
-        putInt(0)                 // |K| = 0 (no secret)
-        putInt(0)                 // |X| = 0 (no associated data)
+        putInt(parallelism) // p (lanes)
+        putInt(tagLength) // τ (tag length)
+        putInt(memoryKB) // m (memory in KB)
+        putInt(iterations) // t (iterations)
+        putInt(version) // v (version)
+        putInt(type) // y (type: 0=d, 2=id)
+        putInt(password.size) // |P|
+        password.copyInto(buf, off)
+        off += password.size
+        putInt(salt.size) // |S|
+        salt.copyInto(buf, off)
+        off += salt.size
+        putInt(0) // |K| = 0 (no secret)
+        putInt(0) // |X| = 0 (no associated data)
 
         return Blake2b.hash(buf.copyOf(off), ARGON2_PREHASH_DIGEST_LENGTH)
     }
@@ -242,21 +263,23 @@ internal object Argon2 {
                 j2 = (addressBlock[addrIdx] shr 32).toUInt().toULong()
             } else {
                 // Argon2d: data-dependent
-                val prevIndex = if (currentIndex == 0) {
-                    lane * laneLength + laneLength - 1
-                } else {
-                    absoluteIndex - 1
-                }
+                val prevIndex =
+                    if (currentIndex == 0) {
+                        lane * laneLength + laneLength - 1
+                    } else {
+                        absoluteIndex - 1
+                    }
                 j1 = memory[prevIndex][0].toUInt().toULong()
                 j2 = (memory[prevIndex][0] shr 32).toUInt().toULong()
             }
 
             // Compute reference lane and index
-            val refLane = if (pass == 0 && slice == 0) {
-                lane // Can only reference own lane in first slice of first pass
-            } else {
-                (j2 % parallelism.toULong()).toInt()
-            }
+            val refLane =
+                if (pass == 0 && slice == 0) {
+                    lane // Can only reference own lane in first slice of first pass
+                } else {
+                    (j2 % parallelism.toULong()).toInt()
+                }
 
             // Compute reference index within the reference lane
             val referenceAreaSize: Int
@@ -264,21 +287,23 @@ internal object Argon2 {
                 if (refLane == lane) {
                     referenceAreaSize = slice * segmentLength + s - 1
                 } else {
-                    referenceAreaSize = if (s == 0) {
-                        slice * segmentLength - 1
-                    } else {
-                        slice * segmentLength
-                    }
+                    referenceAreaSize =
+                        if (s == 0) {
+                            slice * segmentLength - 1
+                        } else {
+                            slice * segmentLength
+                        }
                 }
             } else {
                 if (refLane == lane) {
                     referenceAreaSize = laneLength - segmentLength + s - 1
                 } else {
-                    referenceAreaSize = if (s == 0) {
-                        laneLength - segmentLength - 1
-                    } else {
-                        laneLength - segmentLength
-                    }
+                    referenceAreaSize =
+                        if (s == 0) {
+                            laneLength - segmentLength - 1
+                        } else {
+                            laneLength - segmentLength
+                        }
                 }
             }
 
@@ -287,19 +312,21 @@ internal object Argon2 {
             val y = (referenceAreaSize.toULong() * x) shr 32
             val relativePosition = (referenceAreaSize.toULong() - 1uL - y).toInt()
 
-            val startPosition = if (pass == 0) {
-                0
-            } else {
-                (slice + 1) * segmentLength
-            }
+            val startPosition =
+                if (pass == 0) {
+                    0
+                } else {
+                    (slice + 1) * segmentLength
+                }
             val refIndex = refLane * laneLength + ((startPosition + relativePosition) % laneLength)
 
             // Previous block
-            val prevIndex = if (currentIndex == 0) {
-                lane * laneLength + laneLength - 1
-            } else {
-                absoluteIndex - 1
-            }
+            val prevIndex =
+                if (currentIndex == 0) {
+                    lane * laneLength + laneLength - 1
+                } else {
+                    absoluteIndex - 1
+                }
 
             // Compute new block: G(prev, ref) XOR current (if not first pass and version 0x13)
             val newBlock = compressG(memory[prevIndex], memory[refIndex])
@@ -335,10 +362,23 @@ internal object Argon2 {
         for (row in 0 until 8) {
             val base = row * 16
             permutationP(
-                r, base, base + 1, base + 2, base + 3,
-                base + 4, base + 5, base + 6, base + 7,
-                base + 8, base + 9, base + 10, base + 11,
-                base + 12, base + 13, base + 14, base + 15,
+                r,
+                base,
+                base + 1,
+                base + 2,
+                base + 3,
+                base + 4,
+                base + 5,
+                base + 6,
+                base + 7,
+                base + 8,
+                base + 9,
+                base + 10,
+                base + 11,
+                base + 12,
+                base + 13,
+                base + 14,
+                base + 15,
             )
         }
 
@@ -346,10 +386,23 @@ internal object Argon2 {
         for (col in 0 until 8) {
             val i0 = col * 2
             permutationP(
-                r, i0, i0 + 1, i0 + 16, i0 + 17,
-                i0 + 32, i0 + 33, i0 + 48, i0 + 49,
-                i0 + 64, i0 + 65, i0 + 80, i0 + 81,
-                i0 + 96, i0 + 97, i0 + 112, i0 + 113,
+                r,
+                i0,
+                i0 + 1,
+                i0 + 16,
+                i0 + 17,
+                i0 + 32,
+                i0 + 33,
+                i0 + 48,
+                i0 + 49,
+                i0 + 64,
+                i0 + 65,
+                i0 + 80,
+                i0 + 81,
+                i0 + 96,
+                i0 + 97,
+                i0 + 112,
+                i0 + 113,
             )
         }
 
@@ -367,10 +420,22 @@ internal object Argon2 {
      */
     private fun permutationP(
         v: ULongArray,
-        i0: Int, i1: Int, i2: Int, i3: Int,
-        i4: Int, i5: Int, i6: Int, i7: Int,
-        i8: Int, i9: Int, i10: Int, i11: Int,
-        i12: Int, i13: Int, i14: Int, i15: Int,
+        i0: Int,
+        i1: Int,
+        i2: Int,
+        i3: Int,
+        i4: Int,
+        i5: Int,
+        i6: Int,
+        i7: Int,
+        i8: Int,
+        i9: Int,
+        i10: Int,
+        i11: Int,
+        i12: Int,
+        i13: Int,
+        i14: Int,
+        i15: Int,
     ) {
         gb(v, i0, i4, i8, i12)
         gb(v, i1, i5, i9, i13)

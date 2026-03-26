@@ -26,12 +26,7 @@ data class EntryContextMenuCallbacks(
 )
 
 @Composable
-fun EntryContextMenu(
-    expanded: Boolean,
-    onDismissRequest: () -> Unit,
-    callbacks: EntryContextMenuCallbacks,
-    modifier: Modifier = Modifier,
-) {
+fun EntryContextMenu(expanded: Boolean, onDismissRequest: () -> Unit, callbacks: EntryContextMenuCallbacks, modifier: Modifier = Modifier) {
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismissRequest,
@@ -39,34 +34,52 @@ fun EntryContextMenu(
     ) {
         DropdownMenuItem(
             text = { Text("Copy Username") },
-            onClick = { callbacks.onCopyUsername(); onDismissRequest() },
+            onClick = {
+                callbacks.onCopyUsername()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
         )
         DropdownMenuItem(
             text = { Text("Copy Password") },
-            onClick = { callbacks.onCopyPassword(); onDismissRequest() },
+            onClick = {
+                callbacks.onCopyPassword()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.Filled.Key, contentDescription = null) },
         )
         DropdownMenuItem(
             text = { Text("Copy URL") },
-            onClick = { callbacks.onCopyUrl(); onDismissRequest() },
+            onClick = {
+                callbacks.onCopyUrl()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.Filled.Link, contentDescription = null) },
         )
         HorizontalDivider()
         DropdownMenuItem(
             text = { Text("Edit Entry") },
-            onClick = { callbacks.onEdit(); onDismissRequest() },
+            onClick = {
+                callbacks.onEdit()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
         )
         DropdownMenuItem(
             text = { Text("Delete Entry") },
-            onClick = { callbacks.onDelete(); onDismissRequest() },
+            onClick = {
+                callbacks.onDelete()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
         )
         HorizontalDivider()
         DropdownMenuItem(
             text = { Text("Open URL") },
-            onClick = { callbacks.onOpenUrl(); onDismissRequest() },
+            onClick = {
+                callbacks.onOpenUrl()
+                onDismissRequest()
+            },
             leadingIcon = { Icon(Icons.Filled.OpenInBrowser, contentDescription = null) },
         )
     }

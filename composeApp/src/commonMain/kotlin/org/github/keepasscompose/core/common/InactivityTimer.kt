@@ -8,9 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class InactivityTimer(
-    private val scope: CoroutineScope,
-) {
+class InactivityTimer(private val scope: CoroutineScope) {
     private var timerJob: Job? = null
 
     private val _isExpired = MutableStateFlow(false)
@@ -28,10 +26,11 @@ class InactivityTimer(
         timerJob?.cancel()
         if (timeoutMillis <= 0) return
 
-        timerJob = scope.launch {
-            delay(timeoutMillis)
-            _isExpired.value = true
-        }
+        timerJob =
+            scope.launch {
+                delay(timeoutMillis)
+                _isExpired.value = true
+            }
     }
 
     fun onUserActivity() {

@@ -8,12 +8,7 @@ import androidx.compose.runtime.Composable
 import org.github.keepasscompose.core.model.KdbxGroup
 
 @Composable
-fun DeleteGroupDialog(
-    group: KdbxGroup,
-    hasRecycleBin: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
+fun DeleteGroupDialog(group: KdbxGroup, hasRecycleBin: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     val totalEntries = countEntriesRecursive(group)
     val totalSubGroups = countSubGroupsRecursive(group)
 
@@ -55,8 +50,6 @@ fun DeleteGroupDialog(
     )
 }
 
-private fun countEntriesRecursive(group: KdbxGroup): Int =
-    group.entries.size + group.groups.sumOf { countEntriesRecursive(it) }
+private fun countEntriesRecursive(group: KdbxGroup): Int = group.entries.size + group.groups.sumOf { countEntriesRecursive(it) }
 
-private fun countSubGroupsRecursive(group: KdbxGroup): Int =
-    group.groups.size + group.groups.sumOf { countSubGroupsRecursive(it) }
+private fun countSubGroupsRecursive(group: KdbxGroup): Int = group.groups.size + group.groups.sumOf { countSubGroupsRecursive(it) }

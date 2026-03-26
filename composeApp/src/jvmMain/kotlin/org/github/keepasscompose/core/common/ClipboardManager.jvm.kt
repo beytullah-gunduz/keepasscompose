@@ -4,7 +4,6 @@ import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 
 actual class ClipboardManager actual constructor() {
-
     private val clipboard: java.awt.datatransfer.Clipboard
         get() = Toolkit.getDefaultToolkit().systemClipboard
 

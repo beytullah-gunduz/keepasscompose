@@ -14,16 +14,15 @@ import org.github.keepasscompose.core.model.KdbxDatabase
 
 sealed interface UnlockState {
     data object Idle : UnlockState
+
     data object Loading : UnlockState
+
     data class Success(val database: KdbxDatabase) : UnlockState
+
     data class Error(val message: String) : UnlockState
 }
 
-class UnlockViewModel(
-    private val kdbxReader: KdbxReader,
-    private val fileSystem: FileSystem,
-) : ViewModel() {
-
+class UnlockViewModel(private val kdbxReader: KdbxReader, private val fileSystem: FileSystem) : ViewModel() {
     private val _state = MutableStateFlow<UnlockState>(UnlockState.Idle)
     val state: StateFlow<UnlockState> = _state.asStateFlow()
 
@@ -53,23 +52,26 @@ class UnlockViewModel(
         viewModelScope.launch(Dispatchers.Default) {
             try {
                 val data = fileSystem.readFile(databasePath)
-                val keyFileData = _keyFilePath.value.let { path ->
-                    if (path.isNotEmpty() && fileSystem.fileExists(path)) {
-                        fileSystem.readFile(path)
-                    } else {
-                        null
+                val keyFileData =
+                    _keyFilePath.value.let { path ->
+                        if (path.isNotEmpty() && fileSystem.fileExists(path)) {
+                            fileSystem.readFile(path)
+                        } else {
+                            null
+                        }
                     }
-                }
-                val compositeKey = CompositeKey(
-                    password = password,
-                    keyFileData = keyFileData,
-                )
+                val compositeKey =
+                    CompositeKey(
+                        password = password,
+                        keyFileData = keyFileData,
+                    )
                 val database = kdbxReader.readDatabase(data, compositeKey)
                 _state.value = UnlockState.Success(database)
             } catch (e: Exception) {
-                _state.value = UnlockState.Error(
-                    e.message ?: "Failed to unlock database",
-                )
+                _state.value =
+                    UnlockState.Error(
+                        e.message ?: "Failed to unlock database",
+                    )
             }
         }
     }

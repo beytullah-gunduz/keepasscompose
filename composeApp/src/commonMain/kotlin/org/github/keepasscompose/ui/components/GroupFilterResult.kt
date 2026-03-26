@@ -2,10 +2,7 @@ package org.github.keepasscompose.ui.components
 
 import org.github.keepasscompose.core.model.KdbxGroup
 
-data class GroupFilterResult(
-    val matchingUuids: Set<String>,
-    val expandedUuids: Set<String>,
-)
+data class GroupFilterResult(val matchingUuids: Set<String>, val expandedUuids: Set<String>)
 
 /**
  * Filters a group tree by name, returning the UUIDs of matching groups

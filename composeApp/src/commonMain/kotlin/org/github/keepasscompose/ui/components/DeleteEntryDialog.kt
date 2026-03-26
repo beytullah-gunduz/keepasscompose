@@ -8,13 +8,7 @@ import androidx.compose.runtime.Composable
 import org.github.keepasscompose.core.model.KdbxEntry
 
 @Composable
-fun DeleteEntryDialog(
-    entries: List<KdbxEntry>,
-    hasRecycleBin: Boolean,
-    isPermanent: Boolean = false,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
+fun DeleteEntryDialog(entries: List<KdbxEntry>, hasRecycleBin: Boolean, isPermanent: Boolean = false, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     val isBatch = entries.size > 1
     val actionText = when {
         isPermanent -> "permanently deleted"

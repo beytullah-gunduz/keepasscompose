@@ -5,13 +5,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class LastPassImporterTest {
-
-    private val sampleCsv = """
+    private val sampleCsv =
+        """
         url,username,password,totp,extra,name,grouping,fav
         https://github.com,john@example.com,pass123,,Dev account,GitHub,Development,0
         https://gmail.com,john@gmail.com,mailpass,otpauth://totp/Gmail?secret=ABC,Personal email,Gmail,Email,1
         http://sn,,,,Secret note content,My Secure Note,Notes,0
-    """.trimIndent()
+        """.trimIndent()
 
     @Test
     fun import_parsesEntries() {
@@ -53,7 +53,10 @@ class LastPassImporterTest {
     @Test
     fun import_groupsByFolder() {
         val result = LastPassImporter.import(sampleCsv)
-        val groupNames = result.groupTree.groups.map { it.name }.toSet()
+        val groupNames =
+            result.groupTree.groups
+                .map { it.name }
+                .toSet()
         assertTrue("Development" in groupNames)
         assertTrue("Email" in groupNames)
         assertTrue("Notes" in groupNames)

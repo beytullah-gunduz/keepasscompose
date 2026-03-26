@@ -13,7 +13,6 @@ import kotlin.test.assertFalse
  * the full KDF round loop.
  */
 class PlatformCryptoProviderAesKdfTest {
-
     private val crypto = PlatformCryptoProvider()
 
     // --- AES-ECB single-block cross-validation ---
@@ -182,6 +181,5 @@ class PlatformCryptoProviderAesKdfTest {
 
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
-    private fun hexToBytes(hex: String): ByteArray =
-        hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    private fun hexToBytes(hex: String): ByteArray = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 }

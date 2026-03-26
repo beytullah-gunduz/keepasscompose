@@ -18,15 +18,11 @@ import org.github.keepasscompose.core.model.KdfParameters
  *   SHA-512(masterSeed || transformedKey || 0x01)
  */
 class CompositeKeyDerivation(private val crypto: CryptoProvider) {
-
     /**
      * Result of the full key derivation, containing both the master key
      * (used for payload encryption) and the transformed key (used for HMAC).
      */
-    data class DerivedKeys(
-        val masterKey: ByteArray,
-        val transformedKey: ByteArray,
-    ) {
+    data class DerivedKeys(val masterKey: ByteArray, val transformedKey: ByteArray) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is DerivedKeys) return false
@@ -50,11 +46,7 @@ class CompositeKeyDerivation(private val crypto: CryptoProvider) {
      * @return [DerivedKeys] containing the master key and transformed key.
      * @throws IllegalArgumentException if the composite key has no credentials.
      */
-    fun deriveKeys(
-        compositeKey: CompositeKey,
-        masterSeed: ByteArray,
-        kdfParameters: KdfParameters,
-    ): DerivedKeys {
+    fun deriveKeys(compositeKey: CompositeKey, masterSeed: ByteArray, kdfParameters: KdfParameters): DerivedKeys {
         val compositeKeyHash = deriveCompositeKeyHash(compositeKey)
         val transformedKey = deriveTransformedKey(compositeKeyHash, kdfParameters)
         val masterKey = crypto.sha256(masterSeed + transformedKey)
@@ -88,14 +80,12 @@ class CompositeKeyDerivation(private val crypto: CryptoProvider) {
     /**
      * Apply the KDF to the composite key hash to produce the transformed key.
      */
-    fun deriveTransformedKey(
-        compositeKeyHash: ByteArray,
-        kdfParameters: KdfParameters,
-    ): ByteArray = when (kdfParameters) {
+    fun deriveTransformedKey(compositeKeyHash: ByteArray, kdfParameters: KdfParameters): ByteArray = when (kdfParameters) {
         is KdfParameters.AesKdf -> {
             val transformed = crypto.aesKdf(compositeKeyHash, kdfParameters.seed, kdfParameters.rounds)
             crypto.sha256(transformed)
         }
+
         is KdfParameters.Argon2 -> {
             crypto.argon2(
                 password = compositeKeyHash,

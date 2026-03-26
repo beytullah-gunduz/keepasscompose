@@ -8,7 +8,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ProtectedStringTest {
-
     @Test
     fun fromString_preservesContent() {
         val p = ProtectedString.fromString("hello")

@@ -75,7 +75,8 @@ fun EntryList(
                 sortDirection = sortDirection,
                 onSort = { column ->
                     if (sortColumn == column) {
-                        sortDirection = if (sortDirection == SortDirection.ASC) SortDirection.DESC else SortDirection.ASC
+                        sortDirection =
+                            if (sortDirection == SortDirection.ASC) SortDirection.DESC else SortDirection.ASC
                     } else {
                         sortColumn = column
                         sortDirection = SortDirection.ASC
@@ -112,11 +113,7 @@ fun EntryList(
 }
 
 @Composable
-private fun EntryListHeader(
-    sortColumn: SortColumn,
-    sortDirection: SortDirection,
-    onSort: (SortColumn) -> Unit,
-) {
+private fun EntryListHeader(sortColumn: SortColumn, sortDirection: SortDirection, onSort: (SortColumn) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,11 +160,7 @@ private fun SortableHeader(
 }
 
 @Composable
-private fun EntryListRow(
-    entry: KdbxEntry,
-    contentColor: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier,
-) {
+private fun EntryListRow(entry: KdbxEntry, contentColor: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier,

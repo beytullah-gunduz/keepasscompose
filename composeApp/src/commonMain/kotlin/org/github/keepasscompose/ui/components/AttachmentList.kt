@@ -62,12 +62,7 @@ fun AttachmentList(
 }
 
 @Composable
-private fun AttachmentItem(
-    attachment: KdbxAttachment,
-    onPreview: () -> Unit,
-    onSave: () -> Unit,
-    onDelete: () -> Unit,
-) {
+private fun AttachmentItem(attachment: KdbxAttachment, onPreview: () -> Unit, onSave: () -> Unit, onDelete: () -> Unit) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,

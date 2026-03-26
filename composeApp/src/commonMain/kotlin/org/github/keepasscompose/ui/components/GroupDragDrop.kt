@@ -2,11 +2,7 @@ package org.github.keepasscompose.ui.components
 
 import org.github.keepasscompose.core.model.KdbxGroup
 
-data class GroupMoveRequest(
-    val sourceGroupUuid: String,
-    val targetParentUuid: String,
-    val targetIndex: Int,
-)
+data class GroupMoveRequest(val sourceGroupUuid: String, val targetParentUuid: String, val targetIndex: Int)
 
 /**
  * Validates whether a group can be moved to the target parent.
@@ -52,18 +48,14 @@ private fun isDescendant(parent: KdbxGroup, targetUuid: String): Boolean {
 }
 
 private fun removeGroup(group: KdbxGroup, uuid: String): KdbxGroup? {
-    val newChildren = group.groups.filter { it.uuid != uuid }.map {
-        removeGroup(it, uuid) ?: it
-    }
+    val newChildren =
+        group.groups.filter { it.uuid != uuid }.map {
+            removeGroup(it, uuid) ?: it
+        }
     return group.copy(groups = newChildren)
 }
 
-private fun insertGroup(
-    group: KdbxGroup,
-    targetParentUuid: String,
-    toInsert: KdbxGroup,
-    index: Int,
-): KdbxGroup {
+private fun insertGroup(group: KdbxGroup, targetParentUuid: String, toInsert: KdbxGroup, index: Int): KdbxGroup {
     if (group.uuid == targetParentUuid) {
         val newChildren = group.groups.toMutableList()
         val clampedIndex = index.coerceIn(0, newChildren.size)

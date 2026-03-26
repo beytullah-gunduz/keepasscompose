@@ -5,56 +5,56 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class BitwardenImporterTest {
-
-    private val sampleJson = """
-    {
-      "folders": [
-        {"id": "f1", "name": "Email"},
-        {"id": "f2", "name": "Social"}
-      ],
-      "items": [
+    private val sampleJson =
+        """
         {
-          "type": 1,
-          "name": "Gmail",
-          "notes": "Personal email",
-          "folderId": "f1",
-          "login": {
-            "username": "john@gmail.com",
-            "password": "mailpass",
-            "totp": "otpauth://totp/Gmail?secret=ABC",
-            "uris": [{"uri": "https://gmail.com"}]
-          }
-        },
-        {
-          "type": 1,
-          "name": "Twitter",
-          "folderId": "f2",
-          "login": {
-            "username": "john",
-            "password": "tweetpass",
-            "uris": [{"uri": "https://twitter.com"}]
-          },
-          "fields": [
-            {"name": "Recovery Email", "value": "backup@email.com", "type": 0},
-            {"name": "PIN", "value": "1234", "type": 1}
+          "folders": [
+            {"id": "f1", "name": "Email"},
+            {"id": "f2", "name": "Social"}
+          ],
+          "items": [
+            {
+              "type": 1,
+              "name": "Gmail",
+              "notes": "Personal email",
+              "folderId": "f1",
+              "login": {
+                "username": "john@gmail.com",
+                "password": "mailpass",
+                "totp": "otpauth://totp/Gmail?secret=ABC",
+                "uris": [{"uri": "https://gmail.com"}]
+              }
+            },
+            {
+              "type": 1,
+              "name": "Twitter",
+              "folderId": "f2",
+              "login": {
+                "username": "john",
+                "password": "tweetpass",
+                "uris": [{"uri": "https://twitter.com"}]
+              },
+              "fields": [
+                {"name": "Recovery Email", "value": "backup@email.com", "type": 0},
+                {"name": "PIN", "value": "1234", "type": 1}
+              ]
+            },
+            {
+              "type": 2,
+              "name": "Secret Note",
+              "notes": "Very secret"
+            },
+            {
+              "type": 3,
+              "name": "Visa Card"
+            },
+            {
+              "type": 4,
+              "name": "My Identity"
+            }
           ]
-        },
-        {
-          "type": 2,
-          "name": "Secret Note",
-          "notes": "Very secret"
-        },
-        {
-          "type": 3,
-          "name": "Visa Card"
-        },
-        {
-          "type": 4,
-          "name": "My Identity"
         }
-      ]
-    }
-    """.trimIndent()
+        """.trimIndent()
 
     @Test
     fun import_parsesLoginItems() {
@@ -107,7 +107,10 @@ class BitwardenImporterTest {
     @Test
     fun import_folderMapping() {
         val result = BitwardenImporter.import(sampleJson)
-        val groupNames = result.groupTree.groups.map { it.name }.toSet()
+        val groupNames =
+            result.groupTree.groups
+                .map { it.name }
+                .toSet()
         assertTrue("Email" in groupNames)
         assertTrue("Social" in groupNames)
     }

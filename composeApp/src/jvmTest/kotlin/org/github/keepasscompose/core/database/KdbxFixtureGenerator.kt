@@ -23,7 +23,6 @@ import kotlin.time.Instant
  * All fixtures use deterministic seeds/IVs for reproducibility.
  */
 object KdbxFixtureGenerator {
-
     private val crypto = PlatformCryptoProvider()
     private val writer = KdbxWriter(crypto)
 
@@ -38,7 +37,8 @@ object KdbxFixtureGenerator {
         buildV4Database(
             databaseName = "V4 AES Argon2d Fixture",
             cipher = CipherId.AES_256,
-            kdf = KdfParameters.Argon2(
+            kdf =
+            KdfParameters.Argon2(
                 variant = Argon2Variant.ARGON2D,
                 salt = ByteArray(32) { (it + 1).toByte() },
                 parallelism = 2,
@@ -54,7 +54,8 @@ object KdbxFixtureGenerator {
         buildV4Database(
             databaseName = "V4 ChaCha20 Fixture",
             cipher = CipherId.CHACHA20,
-            kdf = KdfParameters.AesKdf(
+            kdf =
+            KdfParameters.AesKdf(
                 rounds = 2,
                 seed = ByteArray(32) { (it + 2).toByte() },
             ),
@@ -67,7 +68,8 @@ object KdbxFixtureGenerator {
         buildV4Database(
             databaseName = "V4 Twofish Fixture",
             cipher = CipherId.TWOFISH,
-            kdf = KdfParameters.AesKdf(
+            kdf =
+            KdfParameters.AesKdf(
                 rounds = 2,
                 seed = ByteArray(32) { (it + 3).toByte() },
             ),
@@ -90,19 +92,20 @@ object KdbxFixtureGenerator {
         CompositeKey(password = V3_PASSWORD),
     )
 
-    private fun buildV4Database(
-        databaseName: String,
-        cipher: CipherId,
-        kdf: KdfParameters,
-    ): KdbxDatabase = KdbxDatabase(
+    private fun buildV4Database(databaseName: String, cipher: CipherId, kdf: KdfParameters): KdbxDatabase = KdbxDatabase(
         meta = buildMeta(databaseName),
-        header = KdbxHeader(
+        header =
+        KdbxHeader(
             version = KdbxVersion(4, 0),
             cipher = cipher,
             compression = CompressionAlgorithm.GZIP,
             masterSeed = ByteArray(32) { (it + 0x10).toByte() },
-            encryptionIv = if (cipher == CipherId.CHACHA20) ByteArray(12) { (it + 0x20).toByte() }
-            else ByteArray(16) { (it + 0x20).toByte() },
+            encryptionIv =
+            if (cipher == CipherId.CHACHA20) {
+                ByteArray(12) { (it + 0x20).toByte() }
+            } else {
+                ByteArray(16) { (it + 0x20).toByte() }
+            },
             kdfParameters = kdf,
             innerRandomStreamId = InnerStreamCipher.CHACHA20,
             innerRandomStreamKey = ByteArray(64) { (it + 0x30).toByte() },
@@ -110,18 +113,17 @@ object KdbxFixtureGenerator {
         rootGroup = buildSampleRootGroup(),
     )
 
-    private fun buildV3Database(
-        databaseName: String,
-        cipher: CipherId = CipherId.AES_256,
-    ): KdbxDatabase = KdbxDatabase(
+    private fun buildV3Database(databaseName: String, cipher: CipherId = CipherId.AES_256): KdbxDatabase = KdbxDatabase(
         meta = buildMeta(databaseName),
-        header = KdbxHeader(
+        header =
+        KdbxHeader(
             version = KdbxVersion(3, 1),
             cipher = cipher,
             compression = CompressionAlgorithm.GZIP,
             masterSeed = ByteArray(32) { (it + 0x10).toByte() },
             encryptionIv = ByteArray(16) { (it + 0x20).toByte() },
-            kdfParameters = KdfParameters.AesKdf(
+            kdfParameters =
+            KdfParameters.AesKdf(
                 rounds = 2,
                 seed = ByteArray(32) { (it + 0x40).toByte() },
             ),
@@ -145,10 +147,12 @@ object KdbxFixtureGenerator {
     private fun buildSampleRootGroup() = KdbxGroup(
         uuid = "fixture-root",
         name = "Root",
-        entries = listOf(
+        entries =
+        listOf(
             KdbxEntry(
                 uuid = "entry-email",
-                fields = listOf(
+                fields =
+                listOf(
                     KdbxEntryField("Title", "Email Account"),
                     KdbxEntryField("UserName", "user@example.com"),
                     KdbxEntryField("Password", "email-p@ssw0rd!", isProtected = true),
@@ -160,15 +164,18 @@ object KdbxFixtureGenerator {
                 lastModificationTime = Instant.parse("2024-06-01T12:00:00Z"),
             ),
         ),
-        groups = listOf(
+        groups =
+        listOf(
             KdbxGroup(
                 uuid = "group-banking",
                 name = "Banking",
                 icon = KdbxIcon(standardIndex = 37),
-                entries = listOf(
+                entries =
+                listOf(
                     KdbxEntry(
                         uuid = "entry-bank",
-                        fields = listOf(
+                        fields =
+                        listOf(
                             KdbxEntryField("Title", "Bank Account"),
                             KdbxEntryField("UserName", "bankuser"),
                             KdbxEntryField("Password", "b@nk-s3cure!", isProtected = true),
@@ -183,10 +190,12 @@ object KdbxFixtureGenerator {
                 uuid = "group-work",
                 name = "Work",
                 icon = KdbxIcon(standardIndex = 38),
-                entries = listOf(
+                entries =
+                listOf(
                     KdbxEntry(
                         uuid = "entry-vpn",
-                        fields = listOf(
+                        fields =
+                        listOf(
                             KdbxEntryField("Title", "VPN Access"),
                             KdbxEntryField("UserName", "vpnuser"),
                             KdbxEntryField("Password", "vpn-k3y!", isProtected = true),

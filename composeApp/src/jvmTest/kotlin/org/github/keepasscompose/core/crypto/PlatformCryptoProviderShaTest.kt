@@ -122,8 +122,7 @@ class PlatformCryptoProviderShaTest {
 
     // -- Helpers --
 
-    private fun ByteArray.toHex(): String =
-        joinToString("") { "%02x".format(it) }
+    private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
     private fun assertFalse(condition: Boolean) {
         kotlin.test.assertFalse(condition)

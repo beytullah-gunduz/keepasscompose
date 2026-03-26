@@ -29,12 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-data class KdfConfig(
-    val algorithm: String,
-    val iterations: Long,
-    val memoryMb: Int = 64,
-    val parallelism: Int = 2,
-)
+data class KdfConfig(val algorithm: String, val iterations: Long, val memoryMb: Int = 64, val parallelism: Int = 2)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +76,10 @@ fun KdfConfigScreen(
                 options.forEach { option ->
                     DropdownMenuItem(
                         text = { Text(option) },
-                        onClick = { algorithm = option; expanded = false },
+                        onClick = {
+                            algorithm = option
+                            expanded = false
+                        },
                     )
                 }
             }

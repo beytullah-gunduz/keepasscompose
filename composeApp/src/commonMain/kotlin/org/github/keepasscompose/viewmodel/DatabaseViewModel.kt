@@ -20,10 +20,7 @@ sealed interface SaveState {
     data class Error(val message: String) : SaveState
 }
 
-class DatabaseViewModel(
-    private val kdbxWriter: KdbxWriter,
-    private val fileSystem: FileSystem,
-) : ViewModel() {
+class DatabaseViewModel(private val kdbxWriter: KdbxWriter, private val fileSystem: FileSystem) : ViewModel() {
 
     private val _database = MutableStateFlow<KdbxDatabase?>(null)
     val database: StateFlow<KdbxDatabase?> = _database.asStateFlow()
@@ -31,6 +28,7 @@ class DatabaseViewModel(
     private val _filePath = MutableStateFlow<String?>(null)
     val filePath: StateFlow<String?> = _filePath.asStateFlow()
 
+    @Suppress("ktlint:standard:backing-property-naming")
     private val _compositeKey = MutableStateFlow<CompositeKey?>(null)
 
     private val _isDirty = MutableStateFlow(false)

@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.github.keepasscompose.core.model.KdbxGroup
 
 class GroupNavigationViewModel : ViewModel() {
-
     private val _selectedGroup = MutableStateFlow<KdbxGroup?>(null)
     val selectedGroup: StateFlow<KdbxGroup?> = _selectedGroup.asStateFlow()
 
@@ -44,11 +43,7 @@ class GroupNavigationViewModel : ViewModel() {
         return listOf(target)
     }
 
-    private fun findPath(
-        current: KdbxGroup,
-        targetUuid: String,
-        path: MutableList<KdbxGroup>,
-    ): Boolean {
+    private fun findPath(current: KdbxGroup, targetUuid: String, path: MutableList<KdbxGroup>): Boolean {
         path.add(current)
         if (current.uuid == targetUuid) return true
         for (child in current.groups) {

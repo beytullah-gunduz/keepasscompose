@@ -45,11 +45,7 @@ import org.github.keepasscompose.core.common.PasswordStrength
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PasswordGeneratorScreen(
-    onApply: ((String) -> Unit)? = null,
-    onCopy: (String) -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
+fun PasswordGeneratorScreen(onApply: ((String) -> Unit)? = null, onCopy: (String) -> Unit = {}, modifier: Modifier = Modifier) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     // Password mode state
@@ -179,10 +175,16 @@ fun PasswordGeneratorScreen(
 
         // Password / Passphrase tabs
         TabRow(selectedTabIndex = selectedTab) {
-            Tab(selected = selectedTab == 0, onClick = { selectedTab = 0; regenerate() }) {
+            Tab(selected = selectedTab == 0, onClick = {
+                selectedTab = 0
+                regenerate()
+            }) {
                 Text("Password", modifier = Modifier.padding(12.dp))
             }
-            Tab(selected = selectedTab == 1, onClick = { selectedTab = 1; regenerate() }) {
+            Tab(selected = selectedTab == 1, onClick = {
+                selectedTab = 1
+                regenerate()
+            }) {
                 Text("Passphrase", modifier = Modifier.padding(12.dp))
             }
         }
@@ -194,7 +196,10 @@ fun PasswordGeneratorScreen(
             Text("Length: ${passwordLength.toInt()}", style = MaterialTheme.typography.titleSmall)
             Slider(
                 value = passwordLength,
-                onValueChange = { passwordLength = it; regenerate() },
+                onValueChange = {
+                    passwordLength = it
+                    regenerate()
+                },
                 valueRange = 4f..128f,
                 steps = 123,
                 modifier = Modifier.fillMaxWidth(),
@@ -208,19 +213,46 @@ fun PasswordGeneratorScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                CharsetChip("A-Z", useUppercase) { useUppercase = it; regenerate() }
-                CharsetChip("a-z", useLowercase) { useLowercase = it; regenerate() }
-                CharsetChip("0-9", useDigits) { useDigits = it; regenerate() }
-                CharsetChip("!@#\$%", useSpecial) { useSpecial = it; regenerate() }
-                CharsetChip("()[]{}",useBrackets) { useBrackets = it; regenerate() }
-                CharsetChip("\"'`", useQuotes) { useQuotes = it; regenerate() }
-                CharsetChip("-_", useDashes) { useDashes = it; regenerate() }
-                CharsetChip("+=/|~", useMath) { useMath = it; regenerate() }
+                CharsetChip("A-Z", useUppercase) {
+                    useUppercase = it
+                    regenerate()
+                }
+                CharsetChip("a-z", useLowercase) {
+                    useLowercase = it
+                    regenerate()
+                }
+                CharsetChip("0-9", useDigits) {
+                    useDigits = it
+                    regenerate()
+                }
+                CharsetChip("!@#\$%", useSpecial) {
+                    useSpecial = it
+                    regenerate()
+                }
+                CharsetChip("()[]{}", useBrackets) {
+                    useBrackets = it
+                    regenerate()
+                }
+                CharsetChip("\"'`", useQuotes) {
+                    useQuotes = it
+                    regenerate()
+                }
+                CharsetChip("-_", useDashes) {
+                    useDashes = it
+                    regenerate()
+                }
+                CharsetChip("+=/|~", useMath) {
+                    useMath = it
+                    regenerate()
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = excludeAmbiguous, onCheckedChange = { excludeAmbiguous = it; regenerate() })
+                Checkbox(checked = excludeAmbiguous, onCheckedChange = {
+                    excludeAmbiguous = it
+                    regenerate()
+                })
                 Text("Exclude ambiguous characters (0O1lI|)", style = MaterialTheme.typography.bodyMedium)
             }
         } else {
@@ -228,7 +260,10 @@ fun PasswordGeneratorScreen(
             Text("Word Count: ${wordCount.toInt()}", style = MaterialTheme.typography.titleSmall)
             Slider(
                 value = wordCount,
-                onValueChange = { wordCount = it; regenerate() },
+                onValueChange = {
+                    wordCount = it
+                    regenerate()
+                },
                 valueRange = 3f..10f,
                 steps = 6,
                 modifier = Modifier.fillMaxWidth(),
@@ -253,7 +288,10 @@ fun PasswordGeneratorScreen(
                     }
                     FilterChip(
                         selected = separator == sep,
-                        onClick = { separator = sep; regenerate() },
+                        onClick = {
+                            separator = sep
+                            regenerate()
+                        },
                         label = { Text(label) },
                     )
                 }
@@ -261,11 +299,17 @@ fun PasswordGeneratorScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = capitalize, onCheckedChange = { capitalize = it; regenerate() })
+                Checkbox(checked = capitalize, onCheckedChange = {
+                    capitalize = it
+                    regenerate()
+                })
                 Text("Capitalize words", style = MaterialTheme.typography.bodyMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(checked = includeNumber, onCheckedChange = { includeNumber = it; regenerate() })
+                Checkbox(checked = includeNumber, onCheckedChange = {
+                    includeNumber = it
+                    regenerate()
+                })
                 Text("Include number", style = MaterialTheme.typography.bodyMedium)
             }
         }

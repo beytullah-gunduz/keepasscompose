@@ -12,7 +12,6 @@ import kotlin.test.assertFalse
  * Cross-validates the pure Kotlin implementation against BouncyCastle.
  */
 class PlatformCryptoProviderTwofishTest {
-
     private val crypto = PlatformCryptoProvider()
 
     private val testKey = ByteArray(32) { it.toByte() }
@@ -184,6 +183,5 @@ class PlatformCryptoProviderTwofishTest {
         assertContentEquals(expectedCiphertext, firstBlock, "Pure Kotlin must match Twofish spec")
     }
 
-    private fun hexToBytes(hex: String): ByteArray =
-        hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    private fun hexToBytes(hex: String): ByteArray = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 }

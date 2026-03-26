@@ -8,19 +8,40 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class XmlExporterTest {
-
-    private fun entry(title: String, userName: String = "", password: String = "", url: String = "", notes: String = "", tags: List<String> = emptyList()) =
-        KdbxEntry(uuid = title, fields = listOf(
-            KdbxEntryField("Title", title), KdbxEntryField("UserName", userName),
+    private fun entry(
+        title: String,
+        userName: String = "",
+        password: String = "",
+        url: String = "",
+        notes: String = "",
+        tags: List<String> = emptyList(),
+    ) = KdbxEntry(
+        uuid = title,
+        fields =
+        listOf(
+            KdbxEntryField("Title", title),
+            KdbxEntryField("UserName", userName),
             KdbxEntryField("Password", password, isProtected = true),
-            KdbxEntryField("URL", url), KdbxEntryField("Notes", notes),
-        ), tags = tags)
-
-    private val root = KdbxGroup(uuid = "root", name = "Root",
-        entries = listOf(entry("GitHub", "john", "secret", "https://github.com", "Dev", listOf("dev", "code"))),
-        groups = listOf(KdbxGroup(uuid = "sub", name = "Email",
-            entries = listOf(entry("Gmail", "john@gmail.com", "mailpass")))),
+            KdbxEntryField("URL", url),
+            KdbxEntryField("Notes", notes),
+        ),
+        tags = tags,
     )
+
+    private val root =
+        KdbxGroup(
+            uuid = "root",
+            name = "Root",
+            entries = listOf(entry("GitHub", "john", "secret", "https://github.com", "Dev", listOf("dev", "code"))),
+            groups =
+            listOf(
+                KdbxGroup(
+                    uuid = "sub",
+                    name = "Email",
+                    entries = listOf(entry("Gmail", "john@gmail.com", "mailpass")),
+                ),
+            ),
+        )
 
     @Test
     fun export_validXmlStructure() {

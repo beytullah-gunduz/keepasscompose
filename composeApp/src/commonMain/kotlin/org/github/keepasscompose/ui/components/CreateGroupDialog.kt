@@ -30,19 +30,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
-data class CreateGroupResult(
-    val name: String,
-    val iconIndex: Int,
-    val notes: String,
-)
+data class CreateGroupResult(val name: String, val iconIndex: Int, val notes: String)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CreateGroupDialog(
-    parentGroupName: String,
-    onDismiss: () -> Unit,
-    onCreate: (CreateGroupResult) -> Unit,
-) {
+fun CreateGroupDialog(parentGroupName: String, onDismiss: () -> Unit, onCreate: (CreateGroupResult) -> Unit) {
     var name by remember { mutableStateOf("") }
     var selectedIcon by remember { mutableIntStateOf(48) } // 48 = Folder icon in KeePass
     var notes by remember { mutableStateOf("") }
@@ -51,7 +43,10 @@ fun CreateGroupDialog(
     if (showIconPicker) {
         IconPickerDialog(
             selectedIndex = selectedIcon,
-            onSelect = { selectedIcon = it; showIconPicker = false },
+            onSelect = {
+                selectedIcon = it
+                showIconPicker = false
+            },
             onDismiss = { showIconPicker = false },
         )
         return
@@ -120,11 +115,7 @@ fun CreateGroupDialog(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun IconPickerDialog(
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-    onDismiss: () -> Unit,
-) {
+fun IconPickerDialog(selectedIndex: Int, onSelect: (Int) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Choose Icon") },

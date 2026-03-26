@@ -12,10 +12,7 @@ fun resolveIsDarkTheme(preference: String): Boolean = when (preference) {
 }
 
 @Composable
-fun KeePassTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit,
-) {
+fun KeePassTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
