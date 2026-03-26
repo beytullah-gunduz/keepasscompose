@@ -20,18 +20,22 @@ fun resolveIsDarkTheme(preference: String): Boolean = when (preference) {
 fun KeePassTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     useDynamicColor: Boolean = true,
+    fontScale: FontScale = FontScale.MEDIUM,
     content: @Composable () -> Unit,
 ) {
     val dynamicScheme = if (useDynamicColor) dynamicColorScheme(darkTheme) else null
     val targetScheme = dynamicScheme ?: if (darkTheme) DarkColorScheme else LightColorScheme
     val animatedScheme = animateColorScheme(targetScheme)
+    val scaledTypography = KeePassTypography.scaled(fontScale.factor)
 
-    MaterialTheme(
-        colorScheme = animatedScheme,
-        typography = KeePassTypography,
-        shapes = KeePassShapes,
-        content = content,
-    )
+    ProvideFontScale(fontScale) {
+        MaterialTheme(
+            colorScheme = animatedScheme,
+            typography = scaledTypography,
+            shapes = KeePassShapes,
+            content = content,
+        )
+    }
 }
 
 @Composable
