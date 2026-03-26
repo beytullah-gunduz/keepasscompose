@@ -69,7 +69,7 @@ class UnlockViewModel(private val kdbxReader: KdbxReader, private val fileSystem
                     kdbxReader.readDatabase(data, key)
                 }
                 _state.value = UnlockState.Success(database)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 _state.value =
                     UnlockState.Error(
                         e.message ?: "Failed to unlock database",
