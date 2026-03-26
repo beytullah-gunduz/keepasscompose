@@ -70,13 +70,18 @@ actual class FilePicker actual constructor() {
     }
 
     private fun extensionToMimeType(ext: String): String = when (ext.lowercase()) {
-        "kdbx" -> "application/x-keepass-database"
-        "kdb" -> "application/x-keepass-database"
+        // kdbx/kdb have no standard MIME type registered on Android;
+        // using application/octet-stream so the picker allows selecting them.
+        "kdbx", "kdb", "keyx", "key" -> "application/octet-stream"
+
         "xml" -> "text/xml"
+
         "csv" -> "text/csv"
+
         "html", "htm" -> "text/html"
+
         "json" -> "application/json"
-        "key" -> "application/octet-stream"
+
         else -> "application/octet-stream"
     }
 }
