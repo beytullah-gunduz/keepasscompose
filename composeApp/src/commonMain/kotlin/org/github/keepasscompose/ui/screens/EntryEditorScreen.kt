@@ -20,14 +20,17 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 
 data class EntryEditorField(
     val key: String,
@@ -61,6 +65,7 @@ data class EntryEditorResult(
     val expiryDate: String,
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EntryEditorScreen(
     initialTitle: String = "",
@@ -76,7 +81,7 @@ fun EntryEditorScreen(
     isEditMode: Boolean = false,
     onSave: (EntryEditorResult) -> Unit = {},
     onCancel: () -> Unit = {},
-    onGeneratePassword: () -> Unit = {},
+    onCopyToClipboard: (String) -> Unit = {},
     onRevert: (() -> Unit)? = null,
 ) {
     var title by remember { mutableStateOf(initialTitle) }
@@ -90,6 +95,28 @@ fun EntryEditorScreen(
     var expires by remember { mutableStateOf(initialExpires) }
     var expiryDate by remember { mutableStateOf(initialExpiryDate) }
     var passwordVisible by remember { mutableStateOf(false) }
+    var showGeneratorDialog by remember { mutableStateOf(false) }
+
+    if (showGeneratorDialog) {
+        BasicAlertDialog(
+            onDismissRequest = { showGeneratorDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                tonalElevation = 6.dp,
+                modifier = Modifier.fillMaxWidth(0.9f),
+            ) {
+                PasswordGeneratorScreen(
+                    onApply = { generated ->
+                        password = generated
+                        showGeneratorDialog = false
+                    },
+                    onCopy = onCopyToClipboard,
+                )
+            }
+        }
+    }
 
     val isTitleModified = isEditMode && title != initialTitle
     val isUserNameModified = isEditMode && userName != initialUserName
@@ -154,7 +181,7 @@ fun EntryEditorScreen(
                             contentDescription = null,
                         )
                     }
-                    IconButton(onClick = onGeneratePassword) {
+                    IconButton(onClick = { showGeneratorDialog = true }) {
                         Icon(Icons.Filled.AutoAwesome, contentDescription = "Generate password")
                     }
                 }
