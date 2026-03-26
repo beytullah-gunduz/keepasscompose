@@ -14,27 +14,43 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowSizeClass
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     databaseName: String = "",
@@ -44,6 +60,45 @@ fun MainScreen(
     onSaveDatabase: () -> Unit = {},
     onLockDatabase: () -> Unit = {},
     onSearch: () -> Unit = {},
+) {
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val isCompact = !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
+
+    if (isCompact) {
+        MobileMainScreen(
+            databaseName = databaseName,
+            onNewEntry = onNewEntry,
+            onOpenDatabase = onOpenDatabase,
+            onLockDatabase = onLockDatabase,
+            onSearch = onSearch,
+        )
+    } else {
+        DesktopMainScreen(
+            databaseName = databaseName,
+            entryCount = entryCount,
+            onNewEntry = onNewEntry,
+            onOpenDatabase = onOpenDatabase,
+            onSaveDatabase = onSaveDatabase,
+            onLockDatabase = onLockDatabase,
+            onSearch = onSearch,
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Desktop layout — split pane with sidebar, top bar, and status bar
+// ---------------------------------------------------------------------------
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DesktopMainScreen(
+    databaseName: String,
+    entryCount: Int,
+    onNewEntry: () -> Unit,
+    onOpenDatabase: () -> Unit,
+    onSaveDatabase: () -> Unit,
+    onLockDatabase: () -> Unit,
+    onSearch: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -88,8 +143,100 @@ fun MainScreen(
     }
 }
 
+// ---------------------------------------------------------------------------
+// Mobile layout — navigation drawer, single pane, FAB, pull-to-refresh
+// ---------------------------------------------------------------------------
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GroupTreeSidebar(modifier: Modifier = Modifier) {
+private fun MobileMainScreen(
+    databaseName: String,
+    onNewEntry: () -> Unit,
+    onOpenDatabase: () -> Unit,
+    onLockDatabase: () -> Unit,
+    onSearch: () -> Unit,
+) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    var selectedGroup by remember { mutableStateOf("Root") }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Text(
+                    text = "Groups",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(16.dp),
+                )
+                HorizontalDivider()
+                GroupTreeSidebar(
+                    modifier = Modifier.fillMaxWidth(),
+                    onGroupSelected = { group ->
+                        selectedGroup = group
+                        scope.launch { drawerState.close() }
+                    },
+                )
+            }
+        },
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(selectedGroup) },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Filled.Menu, contentDescription = "Open drawer")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onSearch) {
+                            Icon(Icons.Filled.Search, contentDescription = "Search")
+                        }
+                        IconButton(onClick = onLockDatabase) {
+                            Icon(Icons.Filled.Lock, contentDescription = "Lock Database")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = onNewEntry) {
+                    Icon(Icons.Filled.Add, contentDescription = "New Entry")
+                }
+            },
+        ) { padding ->
+            var isRefreshing by remember { mutableStateOf(false) }
+
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    isRefreshing = true
+                    // Placeholder: actual refresh logic will be wired later
+                    isRefreshing = false
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                EntryListPane(modifier = Modifier.fillMaxSize())
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Shared components
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun GroupTreeSidebar(
+    modifier: Modifier = Modifier,
+    onGroupSelected: (String) -> Unit = {},
+) {
     val placeholderGroups = listOf("Root", "General", "Email", "Internet", "Banking")
     LazyColumn(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)) {
         items(placeholderGroups) { group ->
@@ -98,7 +245,7 @@ private fun GroupTreeSidebar(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { }
+                    .clickable { onGroupSelected(group) }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             )
         }
