@@ -17,8 +17,13 @@ fun resolveIsDarkTheme(preference: String): Boolean = when (preference) {
 }
 
 @Composable
-fun KeePassTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    val targetScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+fun KeePassTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    useDynamicColor: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    val dynamicScheme = if (useDynamicColor) dynamicColorScheme(darkTheme) else null
+    val targetScheme = dynamicScheme ?: if (darkTheme) DarkColorScheme else LightColorScheme
     val animatedScheme = animateColorScheme(targetScheme)
 
     MaterialTheme(
