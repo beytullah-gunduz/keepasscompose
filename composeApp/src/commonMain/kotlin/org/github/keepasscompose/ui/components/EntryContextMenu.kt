@@ -1,13 +1,13 @@
 package org.github.keepasscompose.ui.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -20,6 +20,7 @@ data class EntryContextMenuCallbacks(
     val onCopyUsername: () -> Unit = {},
     val onCopyPassword: () -> Unit = {},
     val onCopyUrl: () -> Unit = {},
+    val onCopyTotp: (() -> Unit)? = null,
     val onEdit: () -> Unit = {},
     val onDelete: () -> Unit = {},
     val onOpenUrl: () -> Unit = {},
@@ -56,6 +57,16 @@ fun EntryContextMenu(expanded: Boolean, onDismissRequest: () -> Unit, callbacks:
             },
             leadingIcon = { Icon(Icons.Filled.Link, contentDescription = null) },
         )
+        if (callbacks.onCopyTotp != null) {
+            DropdownMenuItem(
+                text = { Text("Copy TOTP") },
+                onClick = {
+                    callbacks.onCopyTotp.invoke()
+                    onDismissRequest()
+                },
+                leadingIcon = { Icon(Icons.Filled.Timer, contentDescription = null) },
+            )
+        }
         HorizontalDivider()
         DropdownMenuItem(
             text = { Text("Edit Entry") },
