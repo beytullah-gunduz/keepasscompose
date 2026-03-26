@@ -9,9 +9,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
 import org.github.keepasscompose.core.common.FilePicker
-import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxGroup
-import org.github.keepasscompose.ui.screens.EntryDetailScreen
 import org.github.keepasscompose.ui.screens.MainScreen
 import org.github.keepasscompose.ui.screens.UnlockScreen
 import org.github.keepasscompose.ui.screens.WelcomeScreen
@@ -25,7 +23,6 @@ private sealed interface AppScreen {
     data object Welcome : AppScreen
     data class Unlock(val databasePath: String) : AppScreen
     data object Main : AppScreen
-    data class Detail(val entry: KdbxEntry) : AppScreen
 }
 
 @Composable
@@ -52,7 +49,7 @@ fun AppNavigator() {
         else -> {}
     }
 
-    when (val screen = currentScreen) {
+    when (currentScreen) {
         is AppScreen.Welcome -> {
             WelcomeScreen(
                 onOpenDatabase = {
@@ -68,6 +65,7 @@ fun AppNavigator() {
         }
 
         is AppScreen.Unlock -> {
+            val screen = currentScreen as AppScreen.Unlock
             val keyFilePath by unlockViewModel.keyFilePath.collectAsState()
 
             UnlockScreen(
@@ -99,7 +97,6 @@ fun AppNavigator() {
                     val root = database?.rootGroup ?: return@MainScreen
                     findGroup(root, groupName)?.let { groupNavViewModel.navigateTo(it) }
                 },
-                onEntrySelected = { entry -> currentScreen = AppScreen.Detail(entry) },
                 onLockDatabase = {
                     databaseViewModel.lock()
                     unlockViewModel.resetState()
@@ -114,13 +111,6 @@ fun AppNavigator() {
                         }
                     }
                 },
-            )
-        }
-
-        is AppScreen.Detail -> {
-            EntryDetailScreen(
-                entry = screen.entry,
-                onBack = { currentScreen = AppScreen.Main },
             )
         }
     }

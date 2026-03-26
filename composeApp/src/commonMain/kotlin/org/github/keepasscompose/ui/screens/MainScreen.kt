@@ -6,14 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
@@ -28,12 +27,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.layout.AnimatedPane
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
+import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
+import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,15 +47,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.window.core.layout.WindowSizeClass
 import kotlinx.coroutines.launch
 import org.github.keepasscompose.core.model.KdbxEntry
-import org.github.keepasscompose.ui.components.DatabaseTab
-import org.github.keepasscompose.ui.components.DatabaseTabBar
-import org.github.keepasscompose.ui.components.Toolbar
-import org.github.keepasscompose.ui.components.ToolbarCallbacks
-import org.github.keepasscompose.ui.shortcuts.keyboardShortcuts
+import org.github.keepasscompose.ui.common.BackHandler
 
+@OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     databaseName: String = "",
@@ -60,159 +59,26 @@ fun MainScreen(
     groups: List<String> = emptyList(),
     entries: List<KdbxEntry> = emptyList(),
     onGroupSelected: (String) -> Unit = {},
-    onEntrySelected: (KdbxEntry) -> Unit = {},
     onCopyField: (String) -> Unit = {},
     onLockDatabase: () -> Unit = {},
     onOpenDatabase: () -> Unit = {},
-    tabs: List<DatabaseTab> = emptyList(),
-    selectedTabId: String = "",
-    hasSelectedEntry: Boolean = false,
-    toolbarCallbacks: ToolbarCallbacks = ToolbarCallbacks(),
-    onTabSelected: (String) -> Unit = {},
-    onTabClosed: (String) -> Unit = {},
+    onNewEntry: () -> Unit = {},
+    onSearch: () -> Unit = {},
 ) {
-    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    val isCompact = !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
-
-    if (isCompact) {
-        MobileMainScreen(
-            databaseName = databaseName,
-            groups = groups,
-            entries = entries,
-            onGroupSelected = onGroupSelected,
-            onEntrySelected = onEntrySelected,
-            onNewEntry = toolbarCallbacks.onNewEntry,
-            onOpenDatabase = onOpenDatabase,
-            onLockDatabase = onLockDatabase,
-            onSearch = toolbarCallbacks.onSearch,
-        )
-    } else {
-        DesktopMainScreen(
-            databaseName = databaseName,
-            entryCount = entryCount,
-            groups = groups,
-            entries = entries,
-            onGroupSelected = onGroupSelected,
-            onEntrySelected = onEntrySelected,
-            onCopyField = onCopyField,
-            tabs = tabs,
-            selectedTabId = selectedTabId,
-            hasSelectedEntry = hasSelectedEntry,
-            toolbarCallbacks = toolbarCallbacks,
-            onTabSelected = onTabSelected,
-            onTabClosed = onTabClosed,
-        )
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Desktop layout — split pane with sidebar, top bar, and status bar
-// ---------------------------------------------------------------------------
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DesktopMainScreen(
-    databaseName: String,
-    entryCount: Int,
-    groups: List<String>,
-    entries: List<KdbxEntry>,
-    onGroupSelected: (String) -> Unit,
-    onEntrySelected: (KdbxEntry) -> Unit,
-    onCopyField: (String) -> Unit = {},
-    tabs: List<DatabaseTab>,
-    selectedTabId: String,
-    hasSelectedEntry: Boolean,
-    toolbarCallbacks: ToolbarCallbacks,
-    onTabSelected: (String) -> Unit,
-    onTabClosed: (String) -> Unit,
-) {
-    var selectedEntry by remember { mutableStateOf<KdbxEntry?>(null) }
-
-    Scaffold(
-        modifier = Modifier.keyboardShortcuts(
-            callbacks = toolbarCallbacks,
-            hasSelectedEntry = hasSelectedEntry || selectedEntry != null,
-        ),
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = { Text(databaseName.ifEmpty { "KeePass Compose" }) },
-                    actions = {
-                        Toolbar(
-                            callbacks = toolbarCallbacks,
-                            hasSelectedEntry = hasSelectedEntry || selectedEntry != null,
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-                )
-                if (tabs.isNotEmpty()) {
-                    DatabaseTabBar(
-                        tabs = tabs,
-                        selectedTabId = selectedTabId,
-                        onTabSelected = onTabSelected,
-                        onTabClosed = onTabClosed,
-                        onNewTab = toolbarCallbacks.onOpenDatabase,
-                    )
-                }
-            }
-        },
-        bottomBar = {
-            StatusBar(databaseName = databaseName, entryCount = entryCount)
-        },
-    ) { padding ->
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            GroupTreeSidebar(groups = groups, onGroupSelected = onGroupSelected, modifier = Modifier.width(260.dp).fillMaxHeight())
-            VerticalDivider()
-            EntryListPane(
-                entries = entries,
-                selectedEntryUuid = selectedEntry?.uuid,
-                onEntrySelected = { entry ->
-                    selectedEntry = entry
-                    onEntrySelected(entry)
-                },
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-            )
-            if (selectedEntry != null) {
-                VerticalDivider()
-                EntryDetailScreen(
-                    entry = selectedEntry!!,
-                    onCopyField = onCopyField,
-                    modifier = Modifier.weight(1.2f).fillMaxHeight(),
-                )
-            }
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Mobile layout — navigation drawer, single pane, FAB, pull-to-refresh
-// ---------------------------------------------------------------------------
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MobileMainScreen(
-    databaseName: String,
-    groups: List<String>,
-    entries: List<KdbxEntry>,
-    onGroupSelected: (String) -> Unit,
-    onEntrySelected: (KdbxEntry) -> Unit,
-    onNewEntry: () -> Unit,
-    onOpenDatabase: () -> Unit,
-    onLockDatabase: () -> Unit,
-    onSearch: () -> Unit,
-) {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val navigator = rememberListDetailPaneScaffoldNavigator<KdbxEntry>()
     val scope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
     var selectedGroup by remember { mutableStateOf("Root") }
 
+    val isListHidden = navigator.scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Hidden
+    val isDetailHidden = navigator.scaffoldValue[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Hidden
+
+    BackHandler(navigator.canNavigateBack()) {
+        scope.launch { navigator.navigateBack() }
+    }
+
     ModalNavigationDrawer(
+        gesturesEnabled = !isListHidden,
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
@@ -234,51 +100,115 @@ private fun MobileMainScreen(
             }
         },
     ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text(selectedGroup) },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Filled.Menu, contentDescription = "Open drawer")
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onSearch) {
-                            Icon(Icons.Filled.Search, contentDescription = "Search")
-                        }
-                        IconButton(onClick = onLockDatabase) {
-                            Icon(Icons.Filled.Lock, contentDescription = "Lock Database")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(onClick = onNewEntry) {
-                    Icon(Icons.Filled.Add, contentDescription = "New Entry")
+        ListDetailPaneScaffold(
+            directive = navigator.scaffoldDirective,
+            value = navigator.scaffoldValue,
+            listPane = {
+                AnimatedPane {
+                    Scaffold(
+                        topBar = {
+                            Column {
+                                TopAppBar(
+                                    title = { Text(databaseName.ifEmpty { "KeePass Compose" }) },
+                                    navigationIcon = {
+                                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                            Icon(Icons.Filled.Menu, contentDescription = "Open drawer")
+                                        }
+                                    },
+                                    actions = {
+                                        IconButton(onClick = onSearch) {
+                                            Icon(Icons.Filled.Search, contentDescription = "Search")
+                                        }
+                                        IconButton(onClick = onLockDatabase) {
+                                            Icon(Icons.Filled.Lock, contentDescription = "Lock Database")
+                                        }
+                                    },
+                                    colors = TopAppBarDefaults.topAppBarColors(
+                                        containerColor = MaterialTheme.colorScheme.surface,
+                                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                                    ),
+                                )
+                                if (!isDetailHidden) {
+                                    StatusBar(databaseName = databaseName, entryCount = entryCount)
+                                }
+                            }
+                        },
+                        floatingActionButton = {
+                            if (isDetailHidden) {
+                                FloatingActionButton(onClick = onNewEntry) {
+                                    Icon(Icons.Filled.Add, contentDescription = "New Entry")
+                                }
+                            }
+                        },
+                        bottomBar = {
+                            if (isDetailHidden) {
+                                StatusBar(databaseName = databaseName, entryCount = entryCount)
+                            }
+                        },
+                    ) { padding ->
+                        EntryListPane(
+                            entries = entries,
+                            selectedEntryUuid = navigator.currentDestination?.contentKey?.uuid,
+                            onEntrySelected = { entry ->
+                                scope.launch {
+                                    navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, entry)
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize().padding(padding),
+                        )
+                    }
                 }
             },
-        ) { padding ->
-            var isRefreshing by remember { mutableStateOf(false) }
-
-            PullToRefreshBox(
-                isRefreshing = isRefreshing,
-                onRefresh = {
-                    isRefreshing = true
-                    // Placeholder: actual refresh logic will be wired later
-                    isRefreshing = false
-                },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-            ) {
-                EntryListPane(entries = entries, onEntrySelected = onEntrySelected, modifier = Modifier.fillMaxSize())
-            }
-        }
+            detailPane = {
+                AnimatedPane {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        val entry = navigator.currentDestination?.contentKey
+                        if (entry != null) {
+                            Scaffold(
+                                topBar = {
+                                    if (isListHidden) {
+                                        TopAppBar(
+                                            title = { Text(entry.title.ifEmpty { "Entry" }) },
+                                            navigationIcon = {
+                                                IconButton(
+                                                    onClick = { scope.launch { navigator.navigateBack() } },
+                                                ) {
+                                                    Icon(
+                                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                                        contentDescription = "Back",
+                                                    )
+                                                }
+                                            },
+                                            colors = TopAppBarDefaults.topAppBarColors(
+                                                containerColor = MaterialTheme.colorScheme.surface,
+                                                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                                            ),
+                                        )
+                                    }
+                                },
+                            ) { padding ->
+                                EntryDetailScreen(
+                                    entry = entry,
+                                    onCopyField = onCopyField,
+                                    modifier = Modifier.padding(padding),
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "Select an entry",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+        )
     }
 }
 
