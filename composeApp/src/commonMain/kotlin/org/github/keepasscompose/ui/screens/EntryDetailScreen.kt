@@ -39,7 +39,7 @@ import org.github.keepasscompose.ui.components.TotpDisplay
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun EntryDetailScreen(entry: KdbxEntry, onCopyField: (String) -> Unit = {}, modifier: Modifier = Modifier) {
+fun EntryDetailScreen(entry: KdbxEntry, onCopyField: (String) -> Unit = {}, onBack: () -> Unit = {}, modifier: Modifier = Modifier) {
     var passwordVisible by remember { mutableStateOf(false) }
 
     Column(

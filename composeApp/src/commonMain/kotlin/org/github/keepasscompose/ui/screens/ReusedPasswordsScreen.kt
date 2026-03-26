@@ -39,7 +39,8 @@ fun ReusedPasswordsScreen(
         Text("Reused Passwords", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "$totalEntries ${if (totalEntries == 1) "entry" else "entries"} sharing ${reusedGroups.size} ${if (reusedGroups.size == 1) "password" else "passwords"}",
+            text = "$totalEntries ${if (totalEntries == 1) "entry" else "entries"} sharing " +
+                "${reusedGroups.size} ${if (reusedGroups.size == 1) "password" else "passwords"}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -88,10 +89,7 @@ fun ReusedPasswordsScreen(
 }
 
 @Composable
-private fun ReusedPasswordRow(
-    entryHealth: PasswordHealthAnalyzer.EntryHealth,
-    onClick: () -> Unit,
-) {
+private fun ReusedPasswordRow(entryHealth: PasswordHealthAnalyzer.EntryHealth, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
