@@ -102,6 +102,7 @@ private fun GroupTreeItem(
         if (hasChildren) {
             IconButton(onClick = onToggleExpand, modifier = Modifier.size(24.dp)) {
                 Icon(
+                    @Suppress("DEPRECATION")
                     if (isExpanded) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowRight,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
                     tint = contentColor,

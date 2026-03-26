@@ -105,6 +105,7 @@ private fun AttachmentItem(attachment: KdbxAttachment, onPreview: () -> Unit, on
     }
 }
 
+@Suppress("DEPRECATION")
 private fun getFileIcon(name: String): ImageVector {
     val ext = name.substringAfterLast('.', "").lowercase()
     return when (ext) {

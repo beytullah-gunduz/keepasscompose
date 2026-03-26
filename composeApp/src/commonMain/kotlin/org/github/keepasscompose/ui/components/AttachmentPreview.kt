@@ -108,7 +108,7 @@ private fun UnsupportedPreview(message: String = "No preview available for this 
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
-                Icons.Filled.InsertDriveFile,
+                @Suppress("DEPRECATION") Icons.Filled.InsertDriveFile,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
