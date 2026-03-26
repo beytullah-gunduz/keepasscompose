@@ -77,6 +77,7 @@ fun EntryEditorScreen(
     onSave: (EntryEditorResult) -> Unit = {},
     onCancel: () -> Unit = {},
     onGeneratePassword: () -> Unit = {},
+    onRevert: (() -> Unit)? = null,
 ) {
     var title by remember { mutableStateOf(initialTitle) }
     var userName by remember { mutableStateOf(initialUserName) }
@@ -89,6 +90,13 @@ fun EntryEditorScreen(
     var expires by remember { mutableStateOf(initialExpires) }
     var expiryDate by remember { mutableStateOf(initialExpiryDate) }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val isTitleModified = isEditMode && title != initialTitle
+    val isUserNameModified = isEditMode && userName != initialUserName
+    val isPasswordModified = isEditMode && password != initialPassword
+    val isUrlModified = isEditMode && url != initialUrl
+    val isNotesModified = isEditMode && notes != initialNotes
+    val hasAnyModification = isTitleModified || isUserNameModified || isPasswordModified || isUrlModified || isNotesModified
 
     Column(
         modifier = Modifier
@@ -244,7 +252,22 @@ fun EntryEditorScreen(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (isEditMode && hasAnyModification) {
+                Text(
+                    text = "Modified",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+            }
+            if (onRevert != null && isEditMode && hasAnyModification) {
+                OutlinedButton(onClick = onRevert) {
+                    Text("Revert")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             TextButton(onClick = onCancel) {
                 Text("Cancel")
             }
