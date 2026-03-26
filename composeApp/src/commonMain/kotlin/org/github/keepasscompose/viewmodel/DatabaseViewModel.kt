@@ -107,18 +107,20 @@ class DatabaseViewModel(private val kdbxWriter: KdbxWriter, private val fileSyst
     fun needsSaveBeforeClose(): Boolean = _isDirty.value
 
     fun lock() {
-        // Clear sensitive data but preserve file path for re-unlock
-        _database.value = null
+        // Zero sensitive byte arrays in CompositeKey before releasing references
+        _compositeKey.value?.close()
         _compositeKey.value = null
+        _database.value = null
         _isLocked.value = true
         _isDirty.value = false
         inactivityTimer.stop()
     }
 
     fun close() {
+        _compositeKey.value?.close()
+        _compositeKey.value = null
         _database.value = null
         _filePath.value = null
-        _compositeKey.value = null
         _isDirty.value = false
         _isLocked.value = false
         _saveState.value = SaveState.Idle

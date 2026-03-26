@@ -99,6 +99,7 @@ class MultiDatabaseViewModel(private val kdbxWriter: KdbxWriter, private val fil
     }
 
     fun lock(id: String) {
+        _instances.value.find { it.id == id }?.compositeKey?.close()
         updateInstance(id) {
             it.copy(database = null, compositeKey = null, isLocked = true, isDirty = false)
         }
@@ -117,6 +118,7 @@ class MultiDatabaseViewModel(private val kdbxWriter: KdbxWriter, private val fil
     }
 
     fun close(id: String) {
+        _instances.value.find { it.id == id }?.compositeKey?.close()
         _instances.update { list -> list.filter { it.id != id } }
         if (_activeId.value == id) {
             _activeId.value = _instances.value.firstOrNull()?.id
