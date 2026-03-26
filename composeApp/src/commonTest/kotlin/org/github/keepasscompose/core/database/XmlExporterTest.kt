@@ -64,17 +64,17 @@ class XmlExporterTest {
     }
 
     @Test
-    fun export_passwordsIncludedByDefault() {
+    fun export_passwordsExcludedByDefault() {
         val xml = XmlExporter.export(root)
-        assertTrue(xml.contains("secret"))
-        assertTrue(xml.contains("Protected=\"True\""))
+        assertFalse(xml.contains("secret"))
+        assertFalse(xml.contains("mailpass"))
     }
 
     @Test
-    fun export_passwordsExcludedWhenConfigured() {
-        val xml = XmlExporter.export(root, XmlExporter.Config(includePasswords = false))
-        assertFalse(xml.contains("secret"))
-        assertFalse(xml.contains("mailpass"))
+    fun export_passwordsIncludedWhenConfigured() {
+        val xml = XmlExporter.export(root, XmlExporter.Config(includePasswords = true))
+        assertTrue(xml.contains("secret"))
+        assertTrue(xml.contains("Protected=\"True\""))
     }
 
     @Test
