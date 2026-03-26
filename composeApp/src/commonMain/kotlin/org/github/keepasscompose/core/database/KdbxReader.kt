@@ -2,13 +2,13 @@ package org.github.keepasscompose.core.database
 
 import okio.Buffer
 import okio.BufferedSource
+import org.github.keepasscompose.core.crypto.CompositeKeyDerivation
 import org.github.keepasscompose.core.crypto.CryptoProvider
 import org.github.keepasscompose.core.model.CipherId
 import org.github.keepasscompose.core.model.CompositeKey
 import org.github.keepasscompose.core.model.CompressionAlgorithm
 import org.github.keepasscompose.core.model.InnerStreamCipher
 import org.github.keepasscompose.core.model.KdbxDatabase
-import org.github.keepasscompose.core.model.KdfParameters
 
 /**
  * Orchestrates reading a KDBX file by combining header parsing, key derivation,
@@ -19,6 +19,8 @@ import org.github.keepasscompose.core.model.KdfParameters
  * @param crypto Platform-specific cryptographic provider.
  */
 class KdbxReader(private val crypto: CryptoProvider) {
+
+    private val keyDerivation = CompositeKeyDerivation(crypto)
 
     /**
      * Reads and decrypts a KDBX database from a byte array.
@@ -47,9 +49,9 @@ class KdbxReader(private val crypto: CryptoProvider) {
         val header = headerResult.header
 
         // 2. Derive keys
-        val compositeKeyHash = deriveCompositeKeyHash(compositeKey)
-        val transformedKey = deriveTransformedKey(compositeKeyHash, header.kdfParameters)
-        val masterKey = crypto.sha256(header.masterSeed + transformedKey)
+        val keys = keyDerivation.deriveKeys(compositeKey, header.masterSeed, header.kdfParameters)
+        val masterKey = keys.masterKey
+        val transformedKey = keys.transformedKey
 
         // 3. Verify and read encrypted payload
         val encryptedPayload: ByteArray
@@ -112,56 +114,6 @@ class KdbxReader(private val crypto: CryptoProvider) {
         )
     }
 
-    // -- Composite key derivation --
-
-    /**
-     * Builds the composite key hash: SHA-256 of the concatenation of each credential's
-     * individual hash. For password: SHA-256(SHA-256(utf8Bytes)). For key file: SHA-256(data).
-     */
-    private fun deriveCompositeKeyHash(compositeKey: CompositeKey): ByteArray {
-        val parts = mutableListOf<ByteArray>()
-
-        compositeKey.password?.let { password ->
-            parts.add(crypto.sha256(password.encodeToByteArray()))
-        }
-        compositeKey.keyFileData?.let { keyData ->
-            parts.add(crypto.sha256(keyData))
-        }
-        compositeKey.hardwareKeyChallenge?.let { challenge ->
-            parts.add(challenge)
-        }
-
-        if (parts.isEmpty()) {
-            throw KdbxParseException("Composite key must contain at least one credential")
-        }
-
-        val concatenated = parts.fold(ByteArray(0)) { acc, part -> acc + part }
-        return crypto.sha256(concatenated)
-    }
-
-    // -- KDF --
-
-    private fun deriveTransformedKey(
-        compositeKeyHash: ByteArray,
-        kdfParameters: KdfParameters,
-    ): ByteArray = when (kdfParameters) {
-        is KdfParameters.AesKdf -> {
-            val transformed = crypto.aesKdf(compositeKeyHash, kdfParameters.seed, kdfParameters.rounds)
-            crypto.sha256(transformed)
-        }
-        is KdfParameters.Argon2 -> {
-            crypto.argon2(
-                password = compositeKeyHash,
-                salt = kdfParameters.salt,
-                variant = kdfParameters.variant,
-                version = kdfParameters.version,
-                memory = kdfParameters.memory,
-                iterations = kdfParameters.iterations,
-                parallelism = kdfParameters.parallelism,
-            )
-        }
-    }
-
     // -- Header verification (KDBX 4.x) --
 
     private fun verifyHeaderHash(headerResult: KdbxHeaderReadResult) {
@@ -181,7 +133,7 @@ class KdbxReader(private val crypto: CryptoProvider) {
         val expected = headerResult.headerHmac
             ?: throw KdbxParseException("KDBX 4.x file missing header HMAC")
 
-        val hmacBaseKey = computeHmacBaseKey(masterSeed, transformedKey)
+        val hmacBaseKey = keyDerivation.computeHmacBaseKey(masterSeed, transformedKey)
         val blockKey = computeHmacBlockKey(hmacBaseKey, HEADER_HMAC_BLOCK_INDEX)
         val actual = crypto.hmacSha256(blockKey, headerResult.rawHeaderBytes)
 
@@ -205,7 +157,7 @@ class KdbxReader(private val crypto: CryptoProvider) {
         masterSeed: ByteArray,
         transformedKey: ByteArray,
     ): ByteArray {
-        val hmacBaseKey = computeHmacBaseKey(masterSeed, transformedKey)
+        val hmacBaseKey = keyDerivation.computeHmacBaseKey(masterSeed, transformedKey)
         val output = Buffer()
         var blockIndex = 0L
 
@@ -342,9 +294,6 @@ class KdbxReader(private val crypto: CryptoProvider) {
     }
 
     // -- HMAC helpers --
-
-    private fun computeHmacBaseKey(masterSeed: ByteArray, transformedKey: ByteArray): ByteArray =
-        crypto.sha512(masterSeed + transformedKey + byteArrayOf(0x01))
 
     private fun computeHmacBlockKey(hmacBaseKey: ByteArray, blockIndex: Long): ByteArray {
         val indexBytes = Buffer().apply { writeLongLe(blockIndex) }.readByteArray()
