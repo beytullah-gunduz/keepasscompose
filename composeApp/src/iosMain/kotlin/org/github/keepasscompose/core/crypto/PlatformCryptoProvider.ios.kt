@@ -139,7 +139,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
     }
 
     override fun salsa20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
-        TODO("iOS: Implement via libsodium crypto_stream_salsa20_xor")
+        return Salsa20.encrypt(data, key, nonce)
     }
 
     override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray =
