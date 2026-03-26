@@ -145,4 +145,43 @@ class PlatformCryptoProviderSalsa20Test {
         val decrypted = Salsa20.encrypt(encrypted, key, nonce)
         assertContentEquals(plaintext, decrypted)
     }
+
+    // -- Known test vectors (DJB Salsa20 spec / ECRYPT Stream Cipher Project) --
+    // Salsa20 with all-zero key and all-zero nonce: the keystream for the first block
+    // is a well-known test vector.
+
+    @Test
+    fun salsa20_knownVector_zeroKeyZeroNonce() {
+        // Encrypt 64 zero bytes = first keystream block
+        val key = ByteArray(32)
+        val nonce = ByteArray(8)
+        val plaintext = ByteArray(64)
+
+        val bcResult = crypto.salsa20(plaintext, key, nonce)
+        val pkResult = Salsa20.encrypt(plaintext, key, nonce)
+        assertContentEquals(bcResult, pkResult, "Zero key/nonce: BC and pure Kotlin must match")
+
+        // Hardcoded regression vector (verified via BouncyCastle Salsa20Engine)
+        val expectedStart = hexToBytes("9a97f65b9b4c721b960a672145fca8d4")
+        assertContentEquals(expectedStart, bcResult.copyOf(16), "First 16 bytes must match known Salsa20 vector")
+    }
+
+    @Test
+    fun salsa20_knownVector_key1_nonce0() {
+        // Key = 0x80 0x00...00 (256-bit), nonce = 0x00...00
+        val key = ByteArray(32).also { it[0] = 0x80.toByte() }
+        val nonce = ByteArray(8)
+        val plaintext = ByteArray(64)
+
+        val bcResult = crypto.salsa20(plaintext, key, nonce)
+        val pkResult = Salsa20.encrypt(plaintext, key, nonce)
+        assertContentEquals(bcResult, pkResult, "Key=0x80: BC and pure Kotlin must match")
+
+        // Hardcoded regression vector (verified via BouncyCastle Salsa20Engine)
+        val expectedStart = hexToBytes("e3be8fdd8beca2e3ea8ef9475b29a6e7")
+        assertContentEquals(expectedStart, bcResult.copyOf(16), "First 16 bytes must match known vector")
+    }
+
+    private fun hexToBytes(hex: String): ByteArray =
+        hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 }

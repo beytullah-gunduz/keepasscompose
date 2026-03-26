@@ -134,4 +134,54 @@ class PlatformCryptoProviderAesKdfTest {
         val result2 = crypto.aesKdf(key, seed, 11)
         assertFalse(result1.contentEquals(result2), "Different round counts must produce different output")
     }
+
+    // -- NIST AES-256-ECB known answer test --
+    // AES-KDF uses AES-256-ECB internally. Verify the pure Kotlin Aes.encryptBlock
+    // against the NIST SP 800-38A Section F.1.5 ECB-AES256 test vector.
+
+    @Test
+    fun aesEcb_nistVector() {
+        // NIST SP 800-38A F.1.5: AES-256 ECB Encrypt
+        val key = hexToBytes("603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4")
+        val plaintext = hexToBytes("6bc1bee22e409f96e93d7e117393172a")
+        val expected = hexToBytes("f3eed1bdb5d2a03c064b5a7e3db181f8")
+
+        val roundKeys = Aes.expandKey(key)
+        val block = plaintext.copyOf()
+        Aes.encryptBlock(block, 0, roundKeys)
+        assertContentEquals(expected, block, "Must match NIST SP 800-38A AES-256-ECB test vector")
+    }
+
+    @Test
+    fun aesEcb_nistVector_block2() {
+        // NIST SP 800-38A F.1.5: second plaintext block
+        val key = hexToBytes("603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4")
+        val plaintext = hexToBytes("ae2d8a571e03ac9c9eb76fac45af8e51")
+        val expected = hexToBytes("591ccb10d410ed26dc5ba74a31362870")
+
+        val roundKeys = Aes.expandKey(key)
+        val block = plaintext.copyOf()
+        Aes.encryptBlock(block, 0, roundKeys)
+        assertContentEquals(expected, block, "Must match NIST AES-256-ECB block 2")
+    }
+
+    @Test
+    fun aesKdf_knownOutput() {
+        // Hardcoded known-good output for regression testing.
+        // AES-KDF with all-zero key and all-zero seed, 1 round:
+        // Result = AES-ECB(key=0, block0=0) || AES-ECB(key=0, block1=0)
+        // NIST: AES-256-ECB(key=0, pt=0) = dc95c078a2408989ad48a21492842087
+        val key = ByteArray(32)
+        val seed = ByteArray(32)
+        val result = crypto.aesKdf(key, seed, 1)
+        val pkResult = AesKdf.transform(key, seed, 1)
+        assertContentEquals(result, pkResult)
+        // Verify first 16 bytes match known AES-256-ECB(key=0, pt=0)
+        assertEquals("dc95c078a2408989ad48a21492842087", result.copyOf(16).toHex())
+    }
+
+    private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
+
+    private fun hexToBytes(hex: String): ByteArray =
+        hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 }

@@ -152,4 +152,38 @@ class PlatformCryptoProviderTwofishTest {
         val decrypted = Twofish.decryptCbc(encrypted, key, iv)
         assertContentEquals(plaintext, decrypted)
     }
+
+    // -- Known answer tests from the Twofish specification --
+    // Twofish paper (Schneier et al.): 256-bit key, ECB mode single-block test.
+    // We test via CBC with zero IV, which is equivalent to ECB for the first block.
+
+    @Test
+    fun twofish_knownVector_zeroKeyZeroPlaintext() {
+        // Twofish-256 ECB: key=0x00...00, plaintext=0x00...00
+        // Known ciphertext from Twofish specification Table 4
+        val key = ByteArray(32)
+        val iv = ByteArray(16) // zero IV = ECB for first block
+        val plaintext = ByteArray(16)
+        val expectedCiphertext = hexToBytes("57ff739d4dc92c1bd7fc01700cc8216f")
+
+        val encrypted = crypto.twofishEncrypt(plaintext, key, iv)
+        val firstBlock = encrypted.copyOf(16)
+        assertContentEquals(expectedCiphertext, firstBlock, "Must match Twofish spec known answer test")
+    }
+
+    @Test
+    fun twofish_knownVector_pureKotlin_matchesSpec() {
+        // Same vector, validate pure Kotlin implementation
+        val key = ByteArray(32)
+        val iv = ByteArray(16)
+        val plaintext = ByteArray(16)
+        val expectedCiphertext = hexToBytes("57ff739d4dc92c1bd7fc01700cc8216f")
+
+        val encrypted = Twofish.encryptCbc(plaintext, key, iv)
+        val firstBlock = encrypted.copyOf(16)
+        assertContentEquals(expectedCiphertext, firstBlock, "Pure Kotlin must match Twofish spec")
+    }
+
+    private fun hexToBytes(hex: String): ByteArray =
+        hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 }
