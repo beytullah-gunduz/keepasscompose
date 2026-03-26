@@ -65,7 +65,9 @@ class UnlockViewModel(private val kdbxReader: KdbxReader, private val fileSystem
                         password = password,
                         keyFileData = keyFileData,
                     )
-                val database = kdbxReader.readDatabase(data, compositeKey)
+                val database = compositeKey.use { key ->
+                    kdbxReader.readDatabase(data, key)
+                }
                 _state.value = UnlockState.Success(database)
             } catch (e: Exception) {
                 _state.value =
