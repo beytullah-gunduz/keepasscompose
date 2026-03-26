@@ -13,6 +13,7 @@ import org.github.keepasscompose.core.model.KdbxHeader
 import org.github.keepasscompose.core.model.KdbxMeta
 import org.github.keepasscompose.core.model.KdbxVersion
 import org.github.keepasscompose.core.model.KdfParameters
+import org.github.keepasscompose.core.model.Argon2Variant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -152,6 +153,114 @@ class KdbxReaderTest {
         assertEquals("Root", result.rootGroup.name)
         assertEquals("V3 Entry", result.rootGroup.entries[0].title)
         assertTrue(result.header.version.isV3)
+    }
+
+    @Test
+    fun readDatabase_v4_argon2d_roundTrip() {
+        val compositeKey = CompositeKey(password = "argon2dReader")
+        val meta = KdbxMeta(databaseName = "Argon2d DB")
+        val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
+
+        val fileBytes = buildKdbx4File(
+            compositeKey = compositeKey,
+            meta = meta,
+            rootGroup = rootGroup,
+            cipher = CipherId.AES_256,
+            ivSize = 16,
+            kdfParams = KdfParameters.Argon2(
+                variant = Argon2Variant.ARGON2D,
+                salt = ByteArray(32) { (it + 5).toByte() },
+                parallelism = 2,
+                memory = 1024,
+                iterations = 1,
+            ),
+        )
+
+        val result = reader.readDatabase(fileBytes, compositeKey)
+
+        assertEquals("Argon2d DB", result.meta.databaseName)
+    }
+
+    @Test
+    fun readDatabase_v4_argon2id_roundTrip() {
+        val compositeKey = CompositeKey(password = "argon2idReader")
+        val meta = KdbxMeta(databaseName = "Argon2id DB")
+        val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
+
+        val fileBytes = buildKdbx4File(
+            compositeKey = compositeKey,
+            meta = meta,
+            rootGroup = rootGroup,
+            cipher = CipherId.CHACHA20,
+            ivSize = 12,
+            kdfParams = KdfParameters.Argon2(
+                variant = Argon2Variant.ARGON2ID,
+                salt = ByteArray(32) { (it + 15).toByte() },
+                parallelism = 2,
+                memory = 1024,
+                iterations = 1,
+            ),
+        )
+
+        val result = reader.readDatabase(fileBytes, compositeKey)
+
+        assertEquals("Argon2id DB", result.meta.databaseName)
+    }
+
+    // -- Corrupted file handling tests --
+
+    @Test
+    fun readDatabase_invalidSignature_throwsDescriptiveError() {
+        val garbageBytes = ByteArray(200) { 0x42.toByte() }
+        val key = CompositeKey(password = "test")
+
+        val exception = assertFailsWith<KdbxParseException> {
+            reader.readDatabase(garbageBytes, key)
+        }
+        assertTrue(exception.message!!.contains("signature", ignoreCase = true))
+    }
+
+    @Test
+    fun readDatabase_truncatedHeader_throwsException() {
+        // Valid KDBX signature but truncated after 8 bytes
+        val truncated = byteArrayOf(
+            0x03.toByte(), 0xD9.toByte(), 0xA2.toByte(), 0x9A.toByte(), // sig1
+            0x67.toByte(), 0xFB.toByte(), 0x4B.toByte(), 0xB5.toByte(), // sig2
+            0x00, 0x04, // partial version
+        )
+        val key = CompositeKey(password = "test")
+
+        assertFailsWith<Exception> {
+            reader.readDatabase(truncated, key)
+        }
+    }
+
+    @Test
+    fun readDatabase_v4_corruptedHmac_throwsInvalidCredentials() {
+        val compositeKey = CompositeKey(password = "hmac-test")
+        val meta = KdbxMeta(databaseName = "HMAC Test")
+        val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
+
+        val fileBytes = buildKdbx4File(
+            compositeKey = compositeKey,
+            meta = meta,
+            rootGroup = rootGroup,
+            cipher = CipherId.AES_256,
+            ivSize = 16,
+        )
+
+        // Corrupt the HMAC area (after header hash - find and corrupt)
+        val corrupted = fileBytes.copyOf()
+        // The header HMAC starts after the header + 32 bytes (SHA-256 hash)
+        // Flip some bytes in that area
+        val hmacStart = corrupted.size / 3 // approximate area
+        for (i in hmacStart until minOf(hmacStart + 10, corrupted.size)) {
+            corrupted[i] = (corrupted[i].toInt() xor 0xFF).toByte()
+        }
+
+        assertFailsWith<Exception> {
+            reader.readDatabase(corrupted, compositeKey)
+        }
     }
 
     // -- Error handling tests --
@@ -295,13 +404,13 @@ class KdbxReaderTest {
         compression: CompressionAlgorithm = CompressionAlgorithm.GZIP,
         innerStreamKey: ByteArray = ByteArray(32) { (it + 0x20).toByte() },
         useInnerStreamEncryption: Boolean = false,
+        kdfParams: KdfParameters = KdfParameters.AesKdf(
+            rounds = 2,
+            seed = ByteArray(32) { (it + 0x30).toByte() },
+        ),
     ): ByteArray {
         val masterSeed = ByteArray(32) { (it + 1).toByte() }
         val encryptionIv = ByteArray(ivSize) { (it + 0x10).toByte() }
-        val kdfParams = KdfParameters.AesKdf(
-            rounds = 2,
-            seed = ByteArray(32) { (it + 0x30).toByte() },
-        )
 
         val header = KdbxHeader(
             version = KdbxVersion(4, 0),
