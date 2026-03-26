@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "org.github.keepasscompose"
+    namespace = "org.github.keepasscompose.app"
     compileSdk =
         libs.versions.android.compileSdk
             .get()
