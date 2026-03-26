@@ -61,6 +61,7 @@ fun MainScreen(
     entries: List<KdbxEntry> = emptyList(),
     onGroupSelected: (String) -> Unit = {},
     onEntrySelected: (KdbxEntry) -> Unit = {},
+    onCopyField: (String) -> Unit = {},
     onLockDatabase: () -> Unit = {},
     onOpenDatabase: () -> Unit = {},
     tabs: List<DatabaseTab> = emptyList(),
@@ -93,6 +94,7 @@ fun MainScreen(
             entries = entries,
             onGroupSelected = onGroupSelected,
             onEntrySelected = onEntrySelected,
+            onCopyField = onCopyField,
             tabs = tabs,
             selectedTabId = selectedTabId,
             hasSelectedEntry = hasSelectedEntry,
@@ -116,6 +118,7 @@ private fun DesktopMainScreen(
     entries: List<KdbxEntry>,
     onGroupSelected: (String) -> Unit,
     onEntrySelected: (KdbxEntry) -> Unit,
+    onCopyField: (String) -> Unit = {},
     tabs: List<DatabaseTab>,
     selectedTabId: String,
     hasSelectedEntry: Boolean,
@@ -123,10 +126,12 @@ private fun DesktopMainScreen(
     onTabSelected: (String) -> Unit,
     onTabClosed: (String) -> Unit,
 ) {
+    var selectedEntry by remember { mutableStateOf<KdbxEntry?>(null) }
+
     Scaffold(
         modifier = Modifier.keyboardShortcuts(
             callbacks = toolbarCallbacks,
-            hasSelectedEntry = hasSelectedEntry,
+            hasSelectedEntry = hasSelectedEntry || selectedEntry != null,
         ),
         topBar = {
             Column {
@@ -135,7 +140,7 @@ private fun DesktopMainScreen(
                     actions = {
                         Toolbar(
                             callbacks = toolbarCallbacks,
-                            hasSelectedEntry = hasSelectedEntry,
+                            hasSelectedEntry = hasSelectedEntry || selectedEntry != null,
                         )
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -165,7 +170,23 @@ private fun DesktopMainScreen(
         ) {
             GroupTreeSidebar(groups = groups, onGroupSelected = onGroupSelected, modifier = Modifier.width(260.dp).fillMaxHeight())
             VerticalDivider()
-            EntryListPane(entries = entries, onEntrySelected = onEntrySelected, modifier = Modifier.weight(1f).fillMaxHeight())
+            EntryListPane(
+                entries = entries,
+                selectedEntryUuid = selectedEntry?.uuid,
+                onEntrySelected = { entry ->
+                    selectedEntry = entry
+                    onEntrySelected(entry)
+                },
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+            )
+            if (selectedEntry != null) {
+                VerticalDivider()
+                EntryDetailScreen(
+                    entry = selectedEntry!!,
+                    onCopyField = onCopyField,
+                    modifier = Modifier.weight(1.2f).fillMaxHeight(),
+                )
+            }
         }
     }
 }
@@ -282,7 +303,12 @@ private fun GroupTreeSidebar(groups: List<String>, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun EntryListPane(entries: List<KdbxEntry>, onEntrySelected: (KdbxEntry) -> Unit = {}, modifier: Modifier = Modifier) {
+private fun EntryListPane(
+    entries: List<KdbxEntry>,
+    selectedEntryUuid: String? = null,
+    onEntrySelected: (KdbxEntry) -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     if (entries.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Text(
@@ -294,18 +320,23 @@ private fun EntryListPane(entries: List<KdbxEntry>, onEntrySelected: (KdbxEntry)
     } else {
         LazyColumn(modifier = modifier) {
             items(entries) { entry ->
+                val isSelected = entry.uuid == selectedEntryUuid
+                val bg = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .background(bg)
                         .clickable { onEntrySelected(entry) }
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 ) {
-                    Text(text = entry.title.ifEmpty { "Untitled" }, style = MaterialTheme.typography.bodyLarge)
+                    Text(text = entry.title.ifEmpty { "Untitled" }, style = MaterialTheme.typography.bodyLarge, color = contentColor)
                     if (entry.userName.isNotEmpty()) {
                         Text(
                             text = entry.userName,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (isSelected) contentColor.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
