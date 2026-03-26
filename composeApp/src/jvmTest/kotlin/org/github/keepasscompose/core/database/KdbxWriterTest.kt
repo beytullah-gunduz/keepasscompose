@@ -1,6 +1,7 @@
 package org.github.keepasscompose.core.database
 
 import org.github.keepasscompose.core.crypto.PlatformCryptoProvider
+import org.github.keepasscompose.core.model.Argon2Variant
 import org.github.keepasscompose.core.model.CipherId
 import org.github.keepasscompose.core.model.CompositeKey
 import org.github.keepasscompose.core.model.CompressionAlgorithm
@@ -11,12 +12,15 @@ import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxEntryField
 import org.github.keepasscompose.core.model.KdbxGroup
 import org.github.keepasscompose.core.model.KdbxHeader
+import org.github.keepasscompose.core.model.KdbxIcon
 import org.github.keepasscompose.core.model.KdbxMeta
 import org.github.keepasscompose.core.model.KdbxVersion
 import org.github.keepasscompose.core.model.KdfParameters
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 /**
  * Integration tests for KdbxWriter using real cryptographic operations.
@@ -338,6 +342,377 @@ class KdbxWriterTest {
         val result = reader.readDatabase(bytes, key)
 
         assertDatabaseEquals(database, result)
+    }
+
+    // -- KDBX 3.1 additional cipher tests --
+
+    @Test
+    fun roundTrip_v3_twofish_gzip() {
+        val database = buildDatabase(
+            version = KdbxVersion(3, 1),
+            cipher = CipherId.TWOFISH,
+            compression = CompressionAlgorithm.GZIP,
+            innerStreamCipher = InnerStreamCipher.SALSA20,
+            kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { it.toByte() }),
+            streamStartBytes = ByteArray(32) { 0x77.toByte() },
+            innerStreamKey = ByteArray(32) { 0x88.toByte() },
+        )
+        val key = CompositeKey(password = "v3-twofish")
+
+        val bytes = writer.writeDatabase(database, key)
+        val result = reader.readDatabase(bytes, key)
+
+        assertDatabaseEquals(database, result)
+    }
+
+    @Test
+    fun roundTrip_v3_twofish_noCompression() {
+        val database = buildDatabase(
+            version = KdbxVersion(3, 1),
+            cipher = CipherId.TWOFISH,
+            compression = CompressionAlgorithm.NONE,
+            innerStreamCipher = InnerStreamCipher.SALSA20,
+            kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { (it + 5).toByte() }),
+            streamStartBytes = ByteArray(32) { 0x99.toByte() },
+            innerStreamKey = ByteArray(32) { 0xAA.toByte() },
+        )
+        val key = CompositeKey(password = "v3-twofish-no-compress")
+
+        val bytes = writer.writeDatabase(database, key)
+        val result = reader.readDatabase(bytes, key)
+
+        assertDatabaseEquals(database, result)
+    }
+
+    // -- Argon2 KDF tests --
+
+    @Test
+    fun roundTrip_v4_argon2d_kdf() {
+        val database = buildDatabase(
+            version = KdbxVersion(4, 0),
+            cipher = CipherId.AES_256,
+            compression = CompressionAlgorithm.GZIP,
+            innerStreamCipher = InnerStreamCipher.CHACHA20,
+            kdf = KdfParameters.Argon2(
+                variant = Argon2Variant.ARGON2D,
+                salt = ByteArray(32) { it.toByte() },
+                parallelism = 2,
+                memory = 1024, // 1 MB - keep small for test speed
+                iterations = 1,
+            ),
+        )
+        val key = CompositeKey(password = "argon2d-test")
+
+        val bytes = writer.writeDatabase(database, key)
+        val result = reader.readDatabase(bytes, key)
+
+        assertDatabaseEquals(database, result)
+    }
+
+    @Test
+    fun roundTrip_v4_argon2id_kdf() {
+        val database = buildDatabase(
+            version = KdbxVersion(4, 0),
+            cipher = CipherId.CHACHA20,
+            compression = CompressionAlgorithm.GZIP,
+            innerStreamCipher = InnerStreamCipher.CHACHA20,
+            kdf = KdfParameters.Argon2(
+                variant = Argon2Variant.ARGON2ID,
+                salt = ByteArray(32) { (it + 10).toByte() },
+                parallelism = 2,
+                memory = 1024,
+                iterations = 1,
+            ),
+        )
+        val key = CompositeKey(password = "argon2id-test")
+
+        val bytes = writer.writeDatabase(database, key)
+        val result = reader.readDatabase(bytes, key)
+
+        assertDatabaseEquals(database, result)
+    }
+
+    // -- Read → Modify → Write → Re-read tests --
+
+    @Test
+    fun roundTrip_v4_readModifyWriteReread_addEntry() {
+        val database = buildDatabase(
+            version = KdbxVersion(4, 0),
+            cipher = CipherId.AES_256,
+            compression = CompressionAlgorithm.GZIP,
+            innerStreamCipher = InnerStreamCipher.CHACHA20,
+            kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { it.toByte() }),
+        )
+        val key = CompositeKey(password = "modify-test")
+
+        // Write original
+        val bytes1 = writer.writeDatabase(database, key)
+        // Read back
+        val read1 = reader.readDatabase(bytes1, key)
+
+        // Modify: add new entry
+        val newEntry = KdbxEntry(
+            uuid = "new-entry-uuid",
+            fields = listOf(
+                KdbxEntryField("Title", "Added Entry"),
+                KdbxEntryField("Password", "newpass", isProtected = true),
+            ),
+        )
+        val modifiedDb = KdbxDatabase(
+            meta = read1.meta,
+            header = read1.header,
+            rootGroup = read1.rootGroup.copy(
+                entries = read1.rootGroup.entries + newEntry,
+            ),
+        )
+
+        // Write modified
+        val bytes2 = writer.writeDatabase(modifiedDb, key)
+        // Re-read
+        val read2 = reader.readDatabase(bytes2, key)
+
+        assertEquals(2, read2.rootGroup.entries.size)
+        assertEquals("Test Entry", read2.rootGroup.entries[0].title)
+        assertEquals("Added Entry", read2.rootGroup.entries[1].title)
+        assertEquals("newpass", read2.rootGroup.entries[1].password)
+    }
+
+    @Test
+    fun roundTrip_v4_readModifyWriteReread_changePassword() {
+        val database = buildDatabase(
+            version = KdbxVersion(4, 0),
+            cipher = CipherId.AES_256,
+            compression = CompressionAlgorithm.GZIP,
+            innerStreamCipher = InnerStreamCipher.CHACHA20,
+            kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { it.toByte() }),
+        )
+        val originalKey = CompositeKey(password = "original-password")
+        val newKey = CompositeKey(password = "new-password")
+
+        // Write with original password
+        val bytes1 = writer.writeDatabase(database, originalKey)
+        val read1 = reader.readDatabase(bytes1, originalKey)
+
+        // Re-write with new password
+        val bytes2 = writer.writeDatabase(
+            KdbxDatabase(meta = read1.meta, header = read1.header, rootGroup = read1.rootGroup),
+            newKey,
+        )
+
+        // Can read with new password
+        val read2 = reader.readDatabase(bytes2, newKey)
+        assertDatabaseEquals(database, read2)
+
+        // Cannot read with old password
+        assertFailsWith<KdbxParseException> {
+            reader.readDatabase(bytes2, originalKey)
+        }
+    }
+
+    @Test
+    fun roundTrip_v3_readModifyWriteReread_addGroup() {
+        val database = buildDatabase(
+            version = KdbxVersion(3, 1),
+            cipher = CipherId.AES_256,
+            compression = CompressionAlgorithm.GZIP,
+            innerStreamCipher = InnerStreamCipher.SALSA20,
+            kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { it.toByte() }),
+            streamStartBytes = ByteArray(32) { 0xDD.toByte() },
+            innerStreamKey = ByteArray(32) { 0xEE.toByte() },
+        )
+        val key = CompositeKey(password = "v3-modify")
+
+        val bytes1 = writer.writeDatabase(database, key)
+        val read1 = reader.readDatabase(bytes1, key)
+
+        // Modify: add subgroup with entry
+        val newGroup = KdbxGroup(
+            uuid = "new-group-uuid",
+            name = "New Group",
+            entries = listOf(
+                KdbxEntry(
+                    uuid = "nested-entry",
+                    fields = listOf(KdbxEntryField("Title", "Nested")),
+                ),
+            ),
+        )
+        val modifiedDb = KdbxDatabase(
+            meta = read1.meta,
+            header = read1.header,
+            rootGroup = read1.rootGroup.copy(
+                groups = read1.rootGroup.groups + newGroup,
+            ),
+        )
+
+        val bytes2 = writer.writeDatabase(modifiedDb, key)
+        val read2 = reader.readDatabase(bytes2, key)
+
+        assertEquals(1, read2.rootGroup.groups.size)
+        assertEquals("New Group", read2.rootGroup.groups[0].name)
+        assertEquals("Nested", read2.rootGroup.groups[0].entries[0].title)
+    }
+
+    // -- Entry history and metadata round-trip --
+
+    @Test
+    fun roundTrip_v4_entryWithHistory() {
+        val historyEntry = KdbxEntry(
+            uuid = "test-entry-uuid",
+            fields = listOf(
+                KdbxEntryField("Title", "Old Title"),
+                KdbxEntryField("Password", "old-pass", isProtected = true),
+            ),
+            lastModificationTime = Instant.parse("2024-01-01T00:00:00Z"),
+        )
+        val currentEntry = KdbxEntry(
+            uuid = "test-entry-uuid",
+            fields = listOf(
+                KdbxEntryField("Title", "New Title"),
+                KdbxEntryField("Password", "new-pass", isProtected = true),
+            ),
+            lastModificationTime = Instant.parse("2024-06-01T00:00:00Z"),
+            history = listOf(historyEntry),
+        )
+        val database = KdbxDatabase(
+            meta = KdbxMeta(
+                databaseName = "History Test",
+                historyMaxItems = 20,
+                historyMaxSize = 10_000_000,
+            ),
+            header = buildHeader(
+                version = KdbxVersion(4, 0),
+                cipher = CipherId.AES_256,
+                compression = CompressionAlgorithm.GZIP,
+                innerStreamCipher = InnerStreamCipher.CHACHA20,
+                kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { it.toByte() }),
+            ),
+            rootGroup = KdbxGroup(uuid = "root", name = "Root", entries = listOf(currentEntry)),
+        )
+        val key = CompositeKey(password = "history-test")
+
+        val bytes = writer.writeDatabase(database, key)
+        val result = reader.readDatabase(bytes, key)
+
+        assertEquals(20, result.meta.historyMaxItems)
+        assertEquals(10_000_000L, result.meta.historyMaxSize)
+        val entry = result.rootGroup.entries[0]
+        assertEquals("New Title", entry.title)
+        assertEquals("new-pass", entry.password)
+        assertEquals(1, entry.history.size)
+        assertEquals("Old Title", entry.history[0].title)
+        assertEquals("old-pass", entry.history[0].password)
+    }
+
+    // -- Multiple protected fields test --
+
+    @Test
+    fun roundTrip_v4_multipleProtectedFields_preserveOrder() {
+        val entry = KdbxEntry(
+            uuid = "multi-protected",
+            fields = listOf(
+                KdbxEntryField("Title", "Multi Protected"),
+                KdbxEntryField("Password", "pass1", isProtected = true),
+                KdbxEntryField("PIN", "1234", isProtected = true),
+                KdbxEntryField("SecretKey", "abc-def-ghi", isProtected = true),
+                KdbxEntryField("Notes", "visible notes"),
+            ),
+        )
+        val database = KdbxDatabase(
+            header = buildHeader(
+                version = KdbxVersion(4, 0),
+                cipher = CipherId.AES_256,
+                compression = CompressionAlgorithm.GZIP,
+                innerStreamCipher = InnerStreamCipher.CHACHA20,
+                kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { it.toByte() }),
+            ),
+            rootGroup = KdbxGroup(uuid = "root", name = "Root", entries = listOf(entry)),
+        )
+        val key = CompositeKey(password = "multi-protected")
+
+        val bytes = writer.writeDatabase(database, key)
+        val result = reader.readDatabase(bytes, key)
+
+        val restored = result.rootGroup.entries[0]
+        assertEquals("pass1", restored.password)
+        assertEquals("1234", restored.field("PIN"))
+        assertEquals("abc-def-ghi", restored.field("SecretKey"))
+        assertEquals("visible notes", restored.notes)
+    }
+
+    // -- Corrupted file handling tests --
+
+    @Test
+    fun read_truncatedFile_throwsException() {
+        val database = buildDatabase(
+            version = KdbxVersion(4, 0),
+            cipher = CipherId.AES_256,
+            compression = CompressionAlgorithm.GZIP,
+            innerStreamCipher = InnerStreamCipher.CHACHA20,
+            kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { it.toByte() }),
+        )
+        val key = CompositeKey(password = "truncate-test")
+        val bytes = writer.writeDatabase(database, key)
+
+        // Truncate to just the header (first ~200 bytes)
+        val truncated = bytes.copyOfRange(0, minOf(200, bytes.size))
+
+        assertFailsWith<Exception> {
+            reader.readDatabase(truncated, key)
+        }
+    }
+
+    @Test
+    fun read_invalidSignature_throwsException() {
+        val bytes = ByteArray(100) { 0xFF.toByte() }
+        val key = CompositeKey(password = "bad-sig")
+
+        assertFailsWith<KdbxParseException> {
+            reader.readDatabase(bytes, key)
+        }
+    }
+
+    @Test
+    fun read_corruptedPayload_throwsException() {
+        val database = buildDatabase(
+            version = KdbxVersion(4, 0),
+            cipher = CipherId.AES_256,
+            compression = CompressionAlgorithm.GZIP,
+            innerStreamCipher = InnerStreamCipher.CHACHA20,
+            kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { it.toByte() }),
+        )
+        val key = CompositeKey(password = "corrupt-test")
+        val bytes = writer.writeDatabase(database, key)
+
+        // Corrupt bytes near the end (payload area)
+        val corrupted = bytes.copyOf()
+        for (i in (corrupted.size - 50) until corrupted.size) {
+            corrupted[i] = (corrupted[i].toInt() xor 0xFF).toByte()
+        }
+
+        assertFailsWith<Exception> {
+            reader.readDatabase(corrupted, key)
+        }
+    }
+
+    @Test
+    fun read_v3_wrongPassword_throwsException() {
+        val database = buildDatabase(
+            version = KdbxVersion(3, 1),
+            cipher = CipherId.AES_256,
+            compression = CompressionAlgorithm.GZIP,
+            innerStreamCipher = InnerStreamCipher.SALSA20,
+            kdf = KdfParameters.AesKdf(rounds = 1, seed = ByteArray(32) { it.toByte() }),
+            streamStartBytes = ByteArray(32) { 0xBB.toByte() },
+            innerStreamKey = ByteArray(32) { 0xCC.toByte() },
+        )
+        val correctKey = CompositeKey(password = "correct")
+        val wrongKey = CompositeKey(password = "wrong")
+
+        val bytes = writer.writeDatabase(database, correctKey)
+
+        assertFailsWith<Exception> {
+            reader.readDatabase(bytes, wrongKey)
+        }
     }
 
     // -- Output format tests --
