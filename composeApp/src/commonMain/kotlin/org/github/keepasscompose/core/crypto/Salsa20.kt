@@ -13,7 +13,6 @@ package org.github.keepasscompose.core.crypto
  */
 @OptIn(ExperimentalUnsignedTypes::class)
 internal object Salsa20 {
-
     private const val STATE_SIZE = 16 // 16 x 32-bit words
     private const val BLOCK_SIZE = 64 // 64 bytes per block
 
@@ -107,11 +106,10 @@ internal object Salsa20 {
         state[a] = state[a] xor ((state[d] + state[c]).rotateLeft(18))
     }
 
-    private fun littleEndianToUInt(bytes: ByteArray, offset: Int): UInt =
-        (bytes[offset].toUByte().toUInt()) or
-            (bytes[offset + 1].toUByte().toUInt() shl 8) or
-            (bytes[offset + 2].toUByte().toUInt() shl 16) or
-            (bytes[offset + 3].toUByte().toUInt() shl 24)
+    private fun littleEndianToUInt(bytes: ByteArray, offset: Int): UInt = (bytes[offset].toUByte().toUInt()) or
+        (bytes[offset + 1].toUByte().toUInt() shl 8) or
+        (bytes[offset + 2].toUByte().toUInt() shl 16) or
+        (bytes[offset + 3].toUByte().toUInt() shl 24)
 
     private fun uintToLittleEndian(value: UInt, bytes: ByteArray, offset: Int) {
         bytes[offset] = value.toByte()

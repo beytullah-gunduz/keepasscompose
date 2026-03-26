@@ -11,7 +11,6 @@ package org.github.keepasscompose.core.crypto
  */
 @OptIn(ExperimentalUnsignedTypes::class)
 internal object AesKdf {
-
     /**
      * Derive a key by repeatedly AES-ECB encrypting [key] with [seed] for [rounds] iterations.
      *

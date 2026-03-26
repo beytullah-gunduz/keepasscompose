@@ -46,11 +46,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 
-data class EntryEditorField(
-    val key: String,
-    val value: String,
-    val isProtected: Boolean = false,
-)
+data class EntryEditorField(val key: String, val value: String, val isProtected: Boolean = false)
 
 data class EntryEditorResult(
     val title: String,
@@ -123,7 +119,8 @@ fun EntryEditorScreen(
     val isPasswordModified = isEditMode && password != initialPassword
     val isUrlModified = isEditMode && url != initialUrl
     val isNotesModified = isEditMode && notes != initialNotes
-    val hasAnyModification = isTitleModified || isUserNameModified || isPasswordModified || isUrlModified || isNotesModified
+    val hasAnyModification =
+        isTitleModified || isUserNameModified || isPasswordModified || isUrlModified || isNotesModified
 
     Column(
         modifier = Modifier

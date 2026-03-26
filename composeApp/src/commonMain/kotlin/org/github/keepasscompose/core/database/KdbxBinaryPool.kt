@@ -16,9 +16,7 @@ import okio.buffer
  * - GZip compression and decompression
  * - Deduplication (finding existing binaries by content)
  */
-class KdbxBinaryPool(
-    entries: Map<Int, ByteArray> = emptyMap(),
-) {
+class KdbxBinaryPool(entries: Map<Int, ByteArray> = emptyMap()) {
     private val pool = mutableMapOf<Int, ByteArray>()
 
     init {
@@ -69,18 +67,15 @@ class KdbxBinaryPool(
      * Finds an existing binary by content, returning its ID if found.
      * Useful for deduplication when adding attachments.
      */
-    fun findByContent(data: ByteArray): Int? =
-        pool.entries.firstOrNull { it.value.contentEquals(data) }?.key
+    fun findByContent(data: ByteArray): Int? = pool.entries.firstOrNull { it.value.contentEquals(data) }?.key
 
     /**
      * Adds binary [data] to the pool, reusing an existing ID if identical content
      * already exists. Returns the ID (existing or newly assigned).
      */
-    fun addOrReuse(data: ByteArray): Int =
-        findByContent(data) ?: add(data)
+    fun addOrReuse(data: ByteArray): Int = findByContent(data) ?: add(data)
 
-    private fun nextId(): Int =
-        if (pool.isEmpty()) 0 else pool.keys.max() + 1
+    private fun nextId(): Int = if (pool.isEmpty()) 0 else pool.keys.max() + 1
 
     companion object {
         /** Compresses [data] using GZip. */

@@ -16,7 +16,6 @@ import kotlin.test.assertFalse
  * pipeline used by KdbxReader/KdbxWriter.
  */
 class CompositeKeyDerivationTest {
-
     private val crypto = PlatformCryptoProvider()
     private val kd = CompositeKeyDerivation(crypto)
 
@@ -96,14 +95,15 @@ class CompositeKeyDerivationTest {
     fun transformedKey_argon2() {
         val compositeKeyHash = ByteArray(32) { it.toByte() }
         val salt = ByteArray(16) { it.toByte() }
-        val kdfParams = KdfParameters.Argon2(
-            variant = Argon2Variant.ARGON2ID,
-            version = 0x13,
-            salt = salt,
-            parallelism = 1,
-            memory = 32,
-            iterations = 1,
-        )
+        val kdfParams =
+            KdfParameters.Argon2(
+                variant = Argon2Variant.ARGON2ID,
+                version = 0x13,
+                salt = salt,
+                parallelism = 1,
+                memory = 32,
+                iterations = 1,
+            )
         val transformed = kd.deriveTransformedKey(compositeKeyHash, kdfParams)
         assertEquals(32, transformed.size)
         // Argon2 result is used directly (no extra SHA-256)

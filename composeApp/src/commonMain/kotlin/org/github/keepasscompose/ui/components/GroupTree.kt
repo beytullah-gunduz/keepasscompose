@@ -29,12 +29,7 @@ import androidx.compose.ui.unit.dp
 import org.github.keepasscompose.core.model.KdbxGroup
 
 @Composable
-fun GroupTree(
-    rootGroup: KdbxGroup,
-    selectedGroupUuid: String? = null,
-    onGroupSelected: (KdbxGroup) -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
+fun GroupTree(rootGroup: KdbxGroup, selectedGroupUuid: String? = null, onGroupSelected: (KdbxGroup) -> Unit = {}, modifier: Modifier = Modifier) {
     val expandedGroups = remember { mutableStateListOf(rootGroup.uuid) }
     val flattenedItems = remember(rootGroup, expandedGroups.toList()) {
         buildFlatGroupList(rootGroup, expandedGroups.toSet(), depth = 0)
@@ -62,16 +57,9 @@ fun GroupTree(
     }
 }
 
-private data class FlatGroupItem(
-    val group: KdbxGroup,
-    val depth: Int,
-)
+private data class FlatGroupItem(val group: KdbxGroup, val depth: Int)
 
-private fun buildFlatGroupList(
-    group: KdbxGroup,
-    expandedIds: Set<String>,
-    depth: Int,
-): List<FlatGroupItem> = buildList {
+private fun buildFlatGroupList(group: KdbxGroup, expandedIds: Set<String>, depth: Int): List<FlatGroupItem> = buildList {
     add(FlatGroupItem(group, depth))
     if (group.uuid in expandedIds) {
         for (child in group.groups) {

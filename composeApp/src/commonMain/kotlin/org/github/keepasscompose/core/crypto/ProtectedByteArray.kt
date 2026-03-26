@@ -14,7 +14,6 @@ package org.github.keepasscompose.core.crypto
  * ```
  */
 class ProtectedByteArray(private val data: ByteArray) : AutoCloseable {
-
     private var closed = false
 
     /**

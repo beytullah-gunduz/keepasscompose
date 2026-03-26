@@ -24,6 +24,7 @@ okio = "3.10.2"
 compose-material3-adaptive = "1.2.0"
 datastore = "1.1.2"
 bouncycastle = "1.78.1"
+spotless = "8.4.0"
 xmlutil = "0.90.3"
 
 [libraries]
@@ -70,3 +71,4 @@ composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMul
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

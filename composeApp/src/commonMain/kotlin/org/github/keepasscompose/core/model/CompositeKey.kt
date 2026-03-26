@@ -1,10 +1,6 @@
 package org.github.keepasscompose.core.model
 
-data class CompositeKey(
-    val password: String? = null,
-    val keyFileData: ByteArray? = null,
-    val hardwareKeyChallenge: ByteArray? = null,
-) {
+data class CompositeKey(val password: String? = null, val keyFileData: ByteArray? = null, val hardwareKeyChallenge: ByteArray? = null) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is CompositeKey) return false

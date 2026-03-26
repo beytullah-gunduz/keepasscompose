@@ -11,7 +11,6 @@ import org.github.keepasscompose.core.model.KdbxGroup
  * RFC 4180 quoted field handling.
  */
 object CsvImporter {
-
     /**
      * Column-to-field mapping configuration.
      */
@@ -27,11 +26,7 @@ object CsvImporter {
     /**
      * Import configuration.
      */
-    data class Config(
-        val delimiter: Char = ',',
-        val hasHeader: Boolean = true,
-        val mapping: ColumnMapping? = null,
-    )
+    data class Config(val delimiter: Char = ',', val hasHeader: Boolean = true, val mapping: ColumnMapping? = null)
 
     /**
      * Result of parsing CSV, before committing to the database.
@@ -126,21 +121,30 @@ object CsvImporter {
                         field.append(c)
                     }
                 }
-                c == '"' -> inQuotes = true
+
+                c == '"' -> {
+                    inQuotes = true
+                }
+
                 c == delimiter -> {
                     fields.add(field.toString())
                     field.clear()
                 }
+
                 c == '\r' -> {
                     // skip, handle \n
                 }
+
                 c == '\n' -> {
                     fields.add(field.toString())
                     field.clear()
                     rows.add(fields.toList())
                     fields.clear()
                 }
-                else -> field.append(c)
+
+                else -> {
+                    field.append(c)
+                }
             }
             i++
         }
@@ -164,8 +168,7 @@ object CsvImporter {
     private val GROUP_NAMES = setOf("group", "folder", "path", "category", "grouping")
 
     internal fun autoDetectMapping(headers: List<String>): ColumnMapping {
-        fun findColumn(names: Set<String>): Int? =
-            headers.indexOfFirst { it.trim().lowercase() in names }.takeIf { it >= 0 }
+        fun findColumn(names: Set<String>): Int? = headers.indexOfFirst { it.trim().lowercase() in names }.takeIf { it >= 0 }
 
         return ColumnMapping(
             titleColumn = findColumn(TITLE_NAMES),
@@ -195,7 +198,8 @@ object CsvImporter {
 
         return KdbxEntry(
             uuid = generateUuid(),
-            fields = listOf(
+            fields =
+            listOf(
                 KdbxEntryField(KdbxEntry.FIELD_TITLE, title),
                 KdbxEntryField(KdbxEntry.FIELD_USER_NAME, userName),
                 KdbxEntryField(KdbxEntry.FIELD_PASSWORD, password, isProtected = true),
@@ -207,11 +211,7 @@ object CsvImporter {
 
     // --- Group tree ---
 
-    private fun buildGroupTree(
-        entries: List<KdbxEntry>,
-        dataRows: List<List<String>>,
-        mapping: ColumnMapping,
-    ): KdbxGroup {
+    private fun buildGroupTree(entries: List<KdbxEntry>, dataRows: List<List<String>>, mapping: ColumnMapping): KdbxGroup {
         if (mapping.groupColumn == null) {
             return KdbxGroup(uuid = generateUuid(), name = "Imported", entries = entries)
         }
@@ -219,9 +219,12 @@ object CsvImporter {
         val groupMap = mutableMapOf<String, MutableList<KdbxEntry>>()
         for ((index, entry) in entries.withIndex()) {
             val row = dataRows.getOrNull(index)
-            val groupPath = if (row != null && mapping.groupColumn < row.size) {
-                row[mapping.groupColumn].ifBlank { "Imported" }
-            } else "Imported"
+            val groupPath =
+                if (row != null && mapping.groupColumn < row.size) {
+                    row[mapping.groupColumn].ifBlank { "Imported" }
+                } else {
+                    "Imported"
+                }
             groupMap.getOrPut(groupPath) { mutableListOf() }.add(entry)
         }
 
@@ -230,14 +233,16 @@ object CsvImporter {
             return root.copy(entries = entries)
         }
 
-        val subgroups = groupMap.map { (name, groupEntries) ->
-            KdbxGroup(uuid = generateUuid(), name = name, entries = groupEntries)
-        }
+        val subgroups =
+            groupMap.map { (name, groupEntries) ->
+                KdbxGroup(uuid = generateUuid(), name = name, entries = groupEntries)
+            }
         return root.copy(groups = subgroups)
     }
 
     private fun emptyGroup() = KdbxGroup(uuid = generateUuid(), name = "Imported")
 
     private var uuidCounter = 0
+
     private fun generateUuid(): String = "import-${uuidCounter++}"
 }

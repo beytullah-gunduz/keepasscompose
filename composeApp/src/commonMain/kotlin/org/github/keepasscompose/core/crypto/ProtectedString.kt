@@ -18,7 +18,6 @@ package org.github.keepasscompose.core.crypto
  * ```
  */
 class ProtectedString private constructor(private val chars: CharArray) : AutoCloseable {
-
     private var closed = false
 
     /**
@@ -82,14 +81,12 @@ class ProtectedString private constructor(private val chars: CharArray) : AutoCl
          * Create from a regular String. The string's content is copied into an internal
          * char array that will be zeroed on [close].
          */
-        fun fromString(value: String): ProtectedString =
-            ProtectedString(value.toCharArray())
+        fun fromString(value: String): ProtectedString = ProtectedString(value.toCharArray())
 
         /**
          * Create from a char array. The array is used directly (not copied) —
          * the caller should not modify or zero it afterward.
          */
-        fun fromCharArray(chars: CharArray): ProtectedString =
-            ProtectedString(chars)
+        fun fromCharArray(chars: CharArray): ProtectedString = ProtectedString(chars)
     }
 }

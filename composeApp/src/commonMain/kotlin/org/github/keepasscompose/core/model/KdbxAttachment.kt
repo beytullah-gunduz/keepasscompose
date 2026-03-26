@@ -1,10 +1,6 @@
 package org.github.keepasscompose.core.model
 
-data class KdbxAttachment(
-    val id: Int,
-    val name: String,
-    val data: ByteArray,
-) {
+data class KdbxAttachment(val id: Int, val name: String, val data: ByteArray) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is KdbxAttachment) return false

@@ -84,12 +84,14 @@ fun DatabaseSettingsScreen(
                     onDescriptionChange = { description = it },
                     onDefaultUserNameChange = { defaultUserName = it },
                 )
+
                 1 -> SecurityTab(
                     encryption = encryption,
                     kdf = kdf,
                     onEncryptionChange = { encryption = it },
                     onKdfChange = { kdf = it },
                 )
+
                 2 -> MaintenanceTab(
                     historyMaxItems = historyMaxItems,
                     historyMaxSize = historyMaxSize,
@@ -162,12 +164,7 @@ private fun GeneralTab(
 }
 
 @Composable
-private fun SecurityTab(
-    encryption: String,
-    kdf: String,
-    onEncryptionChange: (String) -> Unit,
-    onKdfChange: (String) -> Unit,
-) {
+private fun SecurityTab(encryption: String, kdf: String, onEncryptionChange: (String) -> Unit, onKdfChange: (String) -> Unit) {
     Column {
         Text("Encryption Algorithm", style = MaterialTheme.typography.labelMedium)
         Spacer(modifier = Modifier.height(4.dp))
@@ -198,12 +195,7 @@ private fun SecurityTab(
 }
 
 @Composable
-private fun MaintenanceTab(
-    historyMaxItems: String,
-    historyMaxSize: String,
-    onMaxItemsChange: (String) -> Unit,
-    onMaxSizeChange: (String) -> Unit,
-) {
+private fun MaintenanceTab(historyMaxItems: String, historyMaxSize: String, onMaxItemsChange: (String) -> Unit, onMaxSizeChange: (String) -> Unit) {
     Column {
         OutlinedTextField(
             value = historyMaxItems,

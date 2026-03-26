@@ -1,8 +1,5 @@
 package org.github.keepasscompose.core.database
 
-import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.time.Instant
 import nl.adaptivity.xmlutil.XmlWriter
 import nl.adaptivity.xmlutil.core.KtXmlWriter
 import nl.adaptivity.xmlutil.core.XmlVersion
@@ -15,15 +12,16 @@ import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxEntryField
 import org.github.keepasscompose.core.model.KdbxGroup
 import org.github.keepasscompose.core.model.KdbxMeta
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.time.Instant
 
 /**
  * Result of writing the KDBX XML payload.
  *
  * @param xml The serialized XML string.
  */
-data class KdbxXmlWriteResult(
-    val xml: String,
-)
+data class KdbxXmlWriteResult(val xml: String)
 
 /**
  * Serializes domain models back to the KeePass XML payload format.
@@ -38,11 +36,7 @@ data class KdbxXmlWriteResult(
  */
 @OptIn(ExperimentalEncodingApi::class)
 @Suppress("DEPRECATION")
-class KdbxXmlWriter(
-    private val isV4: Boolean = true,
-    private val innerStreamEncryptor: InnerStreamEncryptor? = null,
-) {
-
+class KdbxXmlWriter(private val isV4: Boolean = true, private val innerStreamEncryptor: InnerStreamEncryptor? = null) {
     fun writeXml(
         meta: KdbxMeta,
         rootGroup: KdbxGroup,
@@ -122,11 +116,7 @@ class KdbxXmlWriter(
 
     // -- Root writing --
 
-    private fun writeRoot(
-        writer: XmlWriter,
-        rootGroup: KdbxGroup,
-        deletedObjects: List<DeletedObject>,
-    ) {
+    private fun writeRoot(writer: XmlWriter, rootGroup: KdbxGroup, deletedObjects: List<DeletedObject>) {
         writer.startTag("Root")
 
         writeGroup(writer, rootGroup)
@@ -199,11 +189,12 @@ class KdbxXmlWriter(
     }
 
     private fun writeTimes(writer: XmlWriter, entry: KdbxEntry) {
-        val hasTimes = entry.creationTime != null ||
-            entry.lastModificationTime != null ||
-            entry.lastAccessTime != null ||
-            entry.expiryTime != null ||
-            entry.expires
+        val hasTimes =
+            entry.creationTime != null ||
+                entry.lastModificationTime != null ||
+                entry.lastAccessTime != null ||
+                entry.expiryTime != null ||
+                entry.expires
 
         if (!hasTimes) return
 
@@ -280,12 +271,10 @@ class KdbxXmlWriter(
 
     // -- Timestamp formatting --
 
-    private fun formatTimestamp(instant: Instant): String {
-        return if (isV4) {
-            formatV4Timestamp(instant)
-        } else {
-            formatV3Timestamp(instant)
-        }
+    private fun formatTimestamp(instant: Instant): String = if (isV4) {
+        formatV4Timestamp(instant)
+    } else {
+        formatV3Timestamp(instant)
     }
 
     private fun formatV3Timestamp(instant: Instant): String = instant.toString()

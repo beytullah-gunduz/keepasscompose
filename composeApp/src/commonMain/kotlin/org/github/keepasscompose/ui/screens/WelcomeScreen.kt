@@ -32,11 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-data class RecentDatabase(
-    val name: String,
-    val path: String,
-    val lastOpened: String,
-)
+data class RecentDatabase(val name: String, val path: String, val lastOpened: String)
 
 @Composable
 fun WelcomeScreen(
@@ -109,11 +105,7 @@ fun WelcomeScreen(
 }
 
 @Composable
-private fun RecentDatabaseItem(
-    database: RecentDatabase,
-    onClick: () -> Unit,
-    onRemove: () -> Unit,
-) {
+private fun RecentDatabaseItem(database: RecentDatabase, onClick: () -> Unit, onRemove: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(

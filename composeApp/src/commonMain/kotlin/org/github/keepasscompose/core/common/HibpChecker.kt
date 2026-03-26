@@ -13,11 +13,7 @@ import org.github.keepasscompose.core.model.KdbxGroup
  * @param httpFetcher Platform-specific HTTP client for API requests.
  * @param sha1 SHA-1 hash function (defaults to [TotpGenerator]'s built-in SHA-1).
  */
-class HibpChecker(
-    private val httpFetcher: HttpFetcher,
-    private val sha1: (ByteArray) -> ByteArray = { sha1Hash(it) },
-) {
-
+class HibpChecker(private val httpFetcher: HttpFetcher, private val sha1: (ByteArray) -> ByteArray = { sha1Hash(it) }) {
     /**
      * Abstraction for HTTP GET requests. Implement per-platform.
      */
@@ -32,19 +28,12 @@ class HibpChecker(
     /**
      * Result of checking a single password.
      */
-    data class BreachResult(
-        val isBreached: Boolean,
-        val breachCount: Int,
-    )
+    data class BreachResult(val isBreached: Boolean, val breachCount: Int)
 
     /**
      * Result of checking a single entry.
      */
-    data class EntryBreachResult(
-        val entry: KdbxEntry,
-        val groupPath: List<String>,
-        val result: BreachResult,
-    )
+    data class EntryBreachResult(val entry: KdbxEntry, val groupPath: List<String>, val result: BreachResult)
 
     /**
      * Check if a single password appears in known breaches.
@@ -71,10 +60,7 @@ class HibpChecker(
      * @param onProgress Called after each unique password is checked, with (checked, total).
      * @return List of breach results for all entries with passwords.
      */
-    fun checkAllEntries(
-        rootGroup: KdbxGroup,
-        onProgress: ((checked: Int, total: Int) -> Unit)? = null,
-    ): List<EntryBreachResult> {
+    fun checkAllEntries(rootGroup: KdbxGroup, onProgress: ((checked: Int, total: Int) -> Unit)? = null): List<EntryBreachResult> {
         val allEntries = collectEntries(rootGroup, emptyList())
 
         // Group by password to avoid redundant API calls
@@ -118,10 +104,7 @@ class HibpChecker(
         return BreachResult(false, 0)
     }
 
-    private fun collectEntries(
-        group: KdbxGroup,
-        path: List<String>,
-    ): List<Pair<KdbxEntry, List<String>>> {
+    private fun collectEntries(group: KdbxGroup, path: List<String>): List<Pair<KdbxEntry, List<String>>> {
         val currentPath = path + group.name
         val results = mutableListOf<Pair<KdbxEntry, List<String>>>()
         for (entry in group.entries) results.add(entry to currentPath)
@@ -129,8 +112,13 @@ class HibpChecker(
         return results
     }
 
-    private fun ByteArray.toHexUpper(): String =
-        joinToString("") { it.toUByte().toString(16).padStart(2, '0').uppercase() }
+    private fun ByteArray.toHexUpper(): String = joinToString("") {
+        it
+            .toUByte()
+            .toString(16)
+            .padStart(2, '0')
+            .uppercase()
+    }
 
     companion object {
         const val API_BASE_URL = "https://api.pwnedpasswords.com/range"
@@ -156,39 +144,59 @@ class HibpChecker(
             for (blockStart in message.indices step 64) {
                 val w = UIntArray(80)
                 for (i in 0 until 16) {
-                    w[i] = ((message[blockStart + i * 4].toUByte().toUInt() shl 24) or
-                        (message[blockStart + i * 4 + 1].toUByte().toUInt() shl 16) or
-                        (message[blockStart + i * 4 + 2].toUByte().toUInt() shl 8) or
-                        message[blockStart + i * 4 + 3].toUByte().toUInt())
+                    w[i] = (
+                        (message[blockStart + i * 4].toUByte().toUInt() shl 24) or
+                            (message[blockStart + i * 4 + 1].toUByte().toUInt() shl 16) or
+                            (message[blockStart + i * 4 + 2].toUByte().toUInt() shl 8) or
+                            message[blockStart + i * 4 + 3].toUByte().toUInt()
+                        )
                 }
                 for (i in 16 until 80) {
                     w[i] = (w[i - 3] xor w[i - 8] xor w[i - 14] xor w[i - 16]).rotateLeft(1)
                 }
 
-                var a = h0; var b = h1; var c = h2; var d = h3; var e = h4
+                var a = h0
+                var b = h1
+                var c = h2
+                var d = h3
+                var e = h4
 
                 for (i in 0 until 80) {
-                    val (f, k) = when (i) {
-                        in 0..19 -> Pair((b and c) or (b.inv() and d), 0x5A827999u)
-                        in 20..39 -> Pair(b xor c xor d, 0x6ED9EBA1u)
-                        in 40..59 -> Pair((b and c) or (b and d) or (c and d), 0x8F1BBCDCu)
-                        else -> Pair(b xor c xor d, 0xCA62C1D6u)
-                    }
+                    val (f, k) =
+                        when (i) {
+                            in 0..19 -> Pair((b and c) or (b.inv() and d), 0x5A827999u)
+                            in 20..39 -> Pair(b xor c xor d, 0x6ED9EBA1u)
+                            in 40..59 -> Pair((b and c) or (b and d) or (c and d), 0x8F1BBCDCu)
+                            else -> Pair(b xor c xor d, 0xCA62C1D6u)
+                        }
                     val temp = a.rotateLeft(5) + f + e + k + w[i]
-                    e = d; d = c; c = b.rotateLeft(30); b = a; a = temp
+                    e = d
+                    d = c
+                    c = b.rotateLeft(30)
+                    b = a
+                    a = temp
                 }
 
-                h0 += a; h1 += b; h2 += c; h3 += d; h4 += e
+                h0 += a
+                h1 += b
+                h2 += c
+                h3 += d
+                h4 += e
             }
 
             val result = ByteArray(20)
+
             fun putUInt(value: UInt, offset: Int) {
                 result[offset] = (value shr 24).toByte()
                 result[offset + 1] = (value shr 16).toByte()
                 result[offset + 2] = (value shr 8).toByte()
                 result[offset + 3] = value.toByte()
             }
-            putUInt(h0, 0); putUInt(h1, 4); putUInt(h2, 8); putUInt(h3, 12); putUInt(h4, 16)
+            putUInt(h0, 0)
+            putUInt(h1, 4)
+            putUInt(h2, 8)
+            putUInt(h3, 12)
+            putUInt(h4, 16)
             return result
         }
     }

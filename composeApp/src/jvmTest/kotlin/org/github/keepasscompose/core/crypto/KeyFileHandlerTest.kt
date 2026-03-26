@@ -16,7 +16,6 @@ import kotlin.test.assertTrue
  */
 @OptIn(ExperimentalEncodingApi::class)
 class KeyFileHandlerTest {
-
     private val crypto = PlatformCryptoProvider()
 
     // --- XML key file v1.0 ---
@@ -24,7 +23,8 @@ class KeyFileHandlerTest {
     @Test
     fun parseKeyFile_xmlV1() {
         val keyData = ByteArray(32) { it.toByte() }
-        val xml = """
+        val xml =
+            """
             <?xml version="1.0" encoding="utf-8"?>
             <KeyFile>
                 <Meta>
@@ -34,7 +34,7 @@ class KeyFileHandlerTest {
                     <Data>${Base64.encode(keyData)}</Data>
                 </Key>
             </KeyFile>
-        """.trimIndent()
+            """.trimIndent()
         val result = KeyFileHandler.parseKeyFile(xml.encodeToByteArray())
         assertContentEquals(keyData, result)
     }
@@ -44,7 +44,8 @@ class KeyFileHandlerTest {
         val keyData = ByteArray(32) { (it * 7).toByte() }
         val hash = crypto.sha256(keyData)
         val hashHex = hash.joinToString("") { it.toUByte().toString(16).padStart(2, '0') }.uppercase()
-        val xml = """
+        val xml =
+            """
             <?xml version="1.0" encoding="utf-8"?>
             <KeyFile>
                 <Meta>
@@ -54,7 +55,7 @@ class KeyFileHandlerTest {
                     <Data Hash="$hashHex">${Base64.encode(keyData)}</Data>
                 </Key>
             </KeyFile>
-        """.trimIndent()
+            """.trimIndent()
         val result = KeyFileHandler.parseKeyFile(xml.encodeToByteArray())
         assertContentEquals(keyData, result)
     }
@@ -65,15 +66,16 @@ class KeyFileHandlerTest {
         val base64 = Base64.encode(keyData)
         // Insert line breaks in base64 content
         val brokenBase64 = base64.chunked(20).joinToString("\n    ")
-        val xml = buildString {
-            appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
-            appendLine("<KeyFile>")
-            appendLine("  <Meta><Version>1.0</Version></Meta>")
-            appendLine("  <Key>")
-            appendLine("    <Data>$brokenBase64</Data>")
-            appendLine("  </Key>")
-            appendLine("</KeyFile>")
-        }
+        val xml =
+            buildString {
+                appendLine("""<?xml version="1.0" encoding="utf-8"?>""")
+                appendLine("<KeyFile>")
+                appendLine("  <Meta><Version>1.0</Version></Meta>")
+                appendLine("  <Key>")
+                appendLine("    <Data>$brokenBase64</Data>")
+                appendLine("  </Key>")
+                appendLine("</KeyFile>")
+            }
         val result = KeyFileHandler.parseKeyFile(xml.encodeToByteArray())
         assertContentEquals(keyData, result)
     }

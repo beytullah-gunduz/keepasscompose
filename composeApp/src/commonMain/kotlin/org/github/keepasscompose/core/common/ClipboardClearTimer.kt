@@ -8,10 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ClipboardClearTimer(
-    private val scope: CoroutineScope,
-    private val clipboardManager: ClipboardManager,
-) {
+class ClipboardClearTimer(private val scope: CoroutineScope, private val clipboardManager: ClipboardManager) {
     private var timerJob: Job? = null
     private var copiedText: String? = null
 
@@ -25,16 +22,17 @@ class ClipboardClearTimer(
 
         if (timeoutSeconds <= 0) return
 
-        timerJob = scope.launch {
-            for (remaining in timeoutSeconds downTo 1) {
-                _secondsRemaining.value = remaining
-                delay(1000L)
+        timerJob =
+            scope.launch {
+                for (remaining in timeoutSeconds downTo 1) {
+                    _secondsRemaining.value = remaining
+                    delay(1000L)
+                }
+                _secondsRemaining.value = 0
+                clipboardManager.clearClipboard()
+                copiedText = null
+                _secondsRemaining.value = null
             }
-            _secondsRemaining.value = 0
-            clipboardManager.clearClipboard()
-            copiedText = null
-            _secondsRemaining.value = null
-        }
     }
 
     fun cancel() {

@@ -31,7 +31,10 @@ object BitwardenImporter {
         val identities: Int,
     )
 
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = Json {
+        ignoreUnknownKeys = true
+        isLenient = true
+    }
 
     fun import(jsonContent: String): ImportResult {
         val export = json.decodeFromString<BitwardenExport>(jsonContent)
@@ -45,9 +48,19 @@ object BitwardenImporter {
 
         for (item in export.items.orEmpty()) {
             when (item.type) {
-                2 -> { secureNotes++; /* process below */ }
-                3 -> { cards++; continue } // Card items — skip for now
-                4 -> { identities++; continue } // Identity items — skip for now
+                2 -> secureNotes++
+
+                // process below
+                3 -> {
+                    cards++
+                    continue
+                }
+
+                // skip card items
+                4 -> {
+                    identities++
+                    continue
+                } // skip identity items
             }
 
             val fields = mutableListOf(
@@ -78,8 +91,12 @@ object BitwardenImporter {
 
         val groupTree = buildGroupTree(groupEntries)
         return ImportResult(
-            entries, groupTree, export.items?.size ?: 0,
-            secureNotes, cards, identities,
+            entries,
+            groupTree,
+            export.items?.size ?: 0,
+            secureNotes,
+            cards,
+            identities,
         )
     }
 
@@ -103,7 +120,9 @@ object BitwardenImporter {
             entries = preview.entries,
             groupTree = preview.groupTree,
             totalItems = preview.totalRows,
-            secureNotes = 0, cards = 0, identities = 0,
+            secureNotes = 0,
+            cards = 0,
+            identities = 0,
         )
     }
 
@@ -122,16 +141,10 @@ object BitwardenImporter {
     // --- Bitwarden JSON model ---
 
     @Serializable
-    internal data class BitwardenExport(
-        val folders: List<BitwardenFolder>? = null,
-        val items: List<BitwardenItem>? = null,
-    )
+    internal data class BitwardenExport(val folders: List<BitwardenFolder>? = null, val items: List<BitwardenItem>? = null)
 
     @Serializable
-    internal data class BitwardenFolder(
-        val id: String,
-        val name: String,
-    )
+    internal data class BitwardenFolder(val id: String, val name: String)
 
     @Serializable
     internal data class BitwardenItem(
@@ -152,9 +165,7 @@ object BitwardenImporter {
     )
 
     @Serializable
-    internal data class BitwardenUri(
-        val uri: String? = null,
-    )
+    internal data class BitwardenUri(val uri: String? = null)
 
     @Serializable
     internal data class BitwardenCustomField(

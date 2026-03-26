@@ -17,7 +17,6 @@ import kotlin.test.assertTrue
  * in KeePass/KeePassXC for manual compatibility verification.
  */
 class KdbxFixtureTest {
-
     private val crypto = PlatformCryptoProvider()
     private val reader = KdbxReader(crypto)
 
@@ -111,19 +110,19 @@ class KdbxFixtureTest {
         fixturesDir.mkdirs()
 
         File(fixturesDir, "v4_aes_argon2d.kdbx").writeBytes(
-            KdbxFixtureGenerator.generateV4AesArgon2d()
+            KdbxFixtureGenerator.generateV4AesArgon2d(),
         )
         File(fixturesDir, "v4_chacha20.kdbx").writeBytes(
-            KdbxFixtureGenerator.generateV4ChaCha20()
+            KdbxFixtureGenerator.generateV4ChaCha20(),
         )
         File(fixturesDir, "v4_twofish.kdbx").writeBytes(
-            KdbxFixtureGenerator.generateV4Twofish()
+            KdbxFixtureGenerator.generateV4Twofish(),
         )
         File(fixturesDir, "v3_aes.kdbx").writeBytes(
-            KdbxFixtureGenerator.generateV3Aes()
+            KdbxFixtureGenerator.generateV3Aes(),
         )
         File(fixturesDir, "v3_twofish.kdbx").writeBytes(
-            KdbxFixtureGenerator.generateV3Twofish()
+            KdbxFixtureGenerator.generateV3Twofish(),
         )
 
         // Verify all files were created
@@ -136,10 +135,7 @@ class KdbxFixtureTest {
 
     // -- Assertion helpers --
 
-    private fun assertFixtureContent(
-        result: org.github.keepasscompose.core.model.KdbxDatabase,
-        expectedName: String,
-    ) {
+    private fun assertFixtureContent(result: org.github.keepasscompose.core.model.KdbxDatabase, expectedName: String) {
         // Meta
         assertEquals(expectedName, result.meta.databaseName)
         assertEquals("Test fixture database", result.meta.description)

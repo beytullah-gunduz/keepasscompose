@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class AppSettings(private val dataStore: DataStore<Preferences>) {
-
     private companion object {
         val LAST_OPENED_DATABASE_PATH = stringPreferencesKey("last_opened_database_path")
         val AUTO_LOCK_TIMEOUT_SECONDS = intPreferencesKey("auto_lock_timeout_seconds")
@@ -18,9 +17,9 @@ class AppSettings(private val dataStore: DataStore<Preferences>) {
     }
 
     object Defaults {
-        const val AUTO_LOCK_TIMEOUT_SECONDS = 300       // 5 minutes
-        const val THEME_PREFERENCE = "system"            // "system", "light", "dark"
-        const val CLIPBOARD_CLEAR_TIMEOUT_SECONDS = 30   // 30 seconds
+        const val AUTO_LOCK_TIMEOUT_SECONDS = 300 // 5 minutes
+        const val THEME_PREFERENCE = "system" // "system", "light", "dark"
+        const val CLIPBOARD_CLEAR_TIMEOUT_SECONDS = 30 // 30 seconds
     }
 
     val lastOpenedDatabasePath: Flow<String?>

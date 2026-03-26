@@ -19,13 +19,13 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -100,6 +100,7 @@ fun CreateDatabaseScreen(
                 onSelectLocation = onSelectLocation,
                 onPathChange = { databasePath = it },
             )
+
             1 -> StepPassword(
                 password = password,
                 confirmPassword = confirmPassword,
@@ -108,12 +109,14 @@ fun CreateDatabaseScreen(
                 onConfirmPasswordChange = { confirmPassword = it },
                 onToggleVisibility = { passwordVisible = !passwordVisible },
             )
+
             2 -> StepKeyFile(
                 keyFilePath = keyFilePath,
                 onSelectKeyFile = onSelectKeyFile,
                 onClearKeyFile = { keyFilePath = "" },
                 onKeyFilePathChange = { keyFilePath = it },
             )
+
             3 -> StepSettings(
                 encryptionAlgorithm = encryptionAlgorithm,
                 kdfAlgorithm = kdfAlgorithm,
@@ -122,6 +125,7 @@ fun CreateDatabaseScreen(
                 onKdfChange = { kdfAlgorithm = it },
                 onIterationsChange = { kdfIterations = it },
             )
+
             4 -> StepConfirmation(
                 databaseName = databaseName,
                 databasePath = databasePath,
@@ -291,11 +295,7 @@ private fun StepPassword(
     }
 }
 
-private data class PasswordStrength(
-    val score: Float,
-    val label: String,
-    val color: androidx.compose.ui.graphics.Color,
-)
+private data class PasswordStrength(val score: Float, val label: String, val color: androidx.compose.ui.graphics.Color)
 
 @Composable
 private fun computePasswordStrength(password: String): PasswordStrength {
@@ -317,12 +317,7 @@ private fun computePasswordStrength(password: String): PasswordStrength {
 
 // Step 3
 @Composable
-private fun StepKeyFile(
-    keyFilePath: String,
-    onSelectKeyFile: () -> Unit,
-    onClearKeyFile: () -> Unit,
-    onKeyFilePathChange: (String) -> Unit,
-) {
+private fun StepKeyFile(keyFilePath: String, onSelectKeyFile: () -> Unit, onClearKeyFile: () -> Unit, onKeyFilePathChange: (String) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text("Key File (Optional)", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
@@ -390,12 +385,7 @@ private fun StepSettings(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingsDropdown(
-    label: String,
-    value: String,
-    options: List<String>,
-    onValueChange: (String) -> Unit,
-) {
+private fun SettingsDropdown(label: String, value: String, options: List<String>, onValueChange: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -413,7 +403,10 @@ private fun SettingsDropdown(
             options.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(option) },
-                    onClick = { onValueChange(option); expanded = false },
+                    onClick = {
+                        onValueChange(option)
+                        expanded = false
+                    },
                 )
             }
         }
@@ -422,13 +415,7 @@ private fun SettingsDropdown(
 
 // Step 5
 @Composable
-private fun StepConfirmation(
-    databaseName: String,
-    databasePath: String,
-    hasKeyFile: Boolean,
-    encryption: String,
-    kdf: String,
-) {
+private fun StepConfirmation(databaseName: String, databasePath: String, hasKeyFile: Boolean, encryption: String, kdf: String) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text("Confirm & Create", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(16.dp))

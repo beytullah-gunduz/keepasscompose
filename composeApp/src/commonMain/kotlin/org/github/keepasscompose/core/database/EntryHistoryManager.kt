@@ -1,9 +1,9 @@
 package org.github.keepasscompose.core.database
 
-import kotlin.time.Instant
 import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxGroup
 import org.github.keepasscompose.core.model.KdbxMeta
+import kotlin.time.Instant
 
 /**
  * Manages entry history: capturing previous versions on modification and
@@ -70,15 +70,17 @@ class EntryHistoryManager(
     /**
      * Prunes history for all entries in a group tree. Used during save to enforce limits.
      */
-    fun pruneGroupHistory(group: KdbxGroup): KdbxGroup {
-        return group.copy(
-            entries = group.entries.map { entry ->
-                if (entry.history.isEmpty()) entry
-                else entry.copy(history = pruneHistory(entry.history))
-            },
-            groups = group.groups.map { pruneGroupHistory(it) },
-        )
-    }
+    fun pruneGroupHistory(group: KdbxGroup): KdbxGroup = group.copy(
+        entries =
+        group.entries.map { entry ->
+            if (entry.history.isEmpty()) {
+                entry
+            } else {
+                entry.copy(history = pruneHistory(entry.history))
+            }
+        },
+        groups = group.groups.map { pruneGroupHistory(it) },
+    )
 
     companion object {
         /**
@@ -108,7 +110,6 @@ class EntryHistoryManager(
         /**
          * Computes the total estimated size of all entries in a history list.
          */
-        fun totalSize(history: List<KdbxEntry>): Long =
-            history.sumOf { estimateEntrySize(it) }
+        fun totalSize(history: List<KdbxEntry>): Long = history.sumOf { estimateEntrySize(it) }
     }
 }

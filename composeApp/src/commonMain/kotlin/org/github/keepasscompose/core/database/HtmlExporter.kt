@@ -10,11 +10,7 @@ import org.github.keepasscompose.core.model.KdbxGroup
  * Passwords can optionally be included or masked.
  */
 object HtmlExporter {
-
-    data class Config(
-        val includePasswords: Boolean = false,
-        val title: String = "KeePass Database Export",
-    )
+    data class Config(val includePasswords: Boolean = false, val title: String = "KeePass Database Export")
 
     fun export(rootGroup: KdbxGroup, config: Config = Config()): String {
         val sb = StringBuilder()
@@ -81,7 +77,8 @@ object HtmlExporter {
         .replace("\"", "&quot;")
         .replace("'", "&#39;")
 
-    private val CSS = """
+    private val CSS =
+        """
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 2em; color: #333; }
         h1 { border-bottom: 2px solid #333; padding-bottom: 0.3em; }
         h2, h3, h4, h5, h6 { margin-top: 1.5em; color: #555; }
@@ -92,5 +89,5 @@ object HtmlExporter {
         a { color: #0366d6; text-decoration: none; }
         a:hover { text-decoration: underline; }
         @media print { body { margin: 0; } }
-    """.trimIndent()
+        """.trimIndent()
 }

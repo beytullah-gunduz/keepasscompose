@@ -25,11 +25,7 @@ data class DatabaseInstance(
     val saveState: SaveState = SaveState.Idle,
 )
 
-class MultiDatabaseViewModel(
-    private val kdbxWriter: KdbxWriter,
-    private val fileSystem: FileSystem,
-) : ViewModel() {
-
+class MultiDatabaseViewModel(private val kdbxWriter: KdbxWriter, private val fileSystem: FileSystem) : ViewModel() {
     private val _instances = MutableStateFlow<List<DatabaseInstance>>(emptyList())
     val instances: StateFlow<List<DatabaseInstance>> = _instances.asStateFlow()
 
@@ -49,26 +45,21 @@ class MultiDatabaseViewModel(
     val activeInstance: DatabaseInstance?
         get() = _instances.value.find { it.id == _activeId.value }
 
-    fun openDatabase(
-        id: String,
-        name: String,
-        filePath: String,
-        database: KdbxDatabase,
-        compositeKey: CompositeKey,
-    ) {
+    fun openDatabase(id: String, name: String, filePath: String, database: KdbxDatabase, compositeKey: CompositeKey) {
         val existing = _instances.value.find { it.filePath == filePath }
         if (existing != null) {
             _activeId.value = existing.id
             return
         }
 
-        val instance = DatabaseInstance(
-            id = id,
-            name = name,
-            filePath = filePath,
-            database = database,
-            compositeKey = compositeKey,
-        )
+        val instance =
+            DatabaseInstance(
+                id = id,
+                name = name,
+                filePath = filePath,
+                database = database,
+                compositeKey = compositeKey,
+            )
         _instances.update { it + instance }
         _activeId.value = id
     }
@@ -132,8 +123,7 @@ class MultiDatabaseViewModel(
         }
     }
 
-    fun needsSaveBeforeClose(id: String): Boolean =
-        _instances.value.find { it.id == id }?.isDirty == true
+    fun needsSaveBeforeClose(id: String): Boolean = _instances.value.find { it.id == id }?.isDirty == true
 
     fun onUserActivity() {
         inactivityTimer.onUserActivity()

@@ -241,10 +241,7 @@ private fun MobileMainScreen(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun GroupTreeSidebar(
-    modifier: Modifier = Modifier,
-    onGroupSelected: (String) -> Unit = {},
-) {
+private fun GroupTreeSidebar(modifier: Modifier = Modifier, onGroupSelected: (String) -> Unit = {}) {
     val placeholderGroups = listOf("Root", "General", "Email", "Internet", "Banking")
     LazyColumn(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)) {
         items(placeholderGroups) { group ->

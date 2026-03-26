@@ -75,13 +75,7 @@ fun EntryHistoryScreen(
 }
 
 @Composable
-private fun HistoryVersionCard(
-    version: KdbxEntry,
-    versionNumber: Int,
-    onView: () -> Unit,
-    onRestore: () -> Unit,
-    onDelete: () -> Unit,
-) {
+private fun HistoryVersionCard(version: KdbxEntry, versionNumber: Int, onView: () -> Unit, onRestore: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onView),
         colors = CardDefaults.cardColors(

@@ -6,7 +6,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class KdbxInnerHeaderTest {
-
     // -- Reader tests --
 
     @Test
@@ -15,13 +14,13 @@ class KdbxInnerHeaderTest {
 
         // Inner stream ID = 3 (ChaCha20)
         buf.writeByte(0x01) // field ID
-        buf.writeIntLe(4)   // length
-        buf.writeIntLe(3)   // ChaCha20
+        buf.writeIntLe(4) // length
+        buf.writeIntLe(3) // ChaCha20
 
         // Inner stream key (32 bytes)
         val key = ByteArray(32) { (it + 1).toByte() }
         buf.writeByte(0x02) // field ID
-        buf.writeIntLe(32)  // length
+        buf.writeIntLe(32) // length
         buf.write(key)
 
         // End of inner header
@@ -209,7 +208,8 @@ class KdbxInnerHeaderTest {
         val pool = KdbxBinaryPool()
         pool.put(0, binaryData)
 
-        val xml = """
+        val xml =
+            """
             <?xml version="1.0" encoding="utf-8"?>
             <KeePassFile>
                 <Meta></Meta>
@@ -227,14 +227,19 @@ class KdbxInnerHeaderTest {
                     </Group>
                 </Root>
             </KeePassFile>
-        """.trimIndent()
+            """.trimIndent()
 
-        val result = KdbxXmlReader(
-            isV4 = true,
-            externalBinaryPool = pool,
-        ).readXml(xml)
+        val result =
+            KdbxXmlReader(
+                isV4 = true,
+                externalBinaryPool = pool,
+            ).readXml(xml)
 
-        val attachment = result.rootGroup.entries.first().attachments.first()
+        val attachment =
+            result.rootGroup.entries
+                .first()
+                .attachments
+                .first()
         assertEquals("document.pdf", attachment.name)
         assertEquals(0, attachment.id)
         assertTrue(binaryData.contentEquals(attachment.data))
@@ -252,7 +257,8 @@ class KdbxInnerHeaderTest {
 
         // XML also has a Binaries section — but since external pool is provided,
         // the XML binaries should be ADDED to the same pool
-        val xml = """
+        val xml =
+            """
             <?xml version="1.0" encoding="utf-8"?>
             <KeePassFile>
                 <Meta>
@@ -274,15 +280,20 @@ class KdbxInnerHeaderTest {
                     </Group>
                 </Root>
             </KeePassFile>
-        """.trimIndent()
+            """.trimIndent()
 
-        val result = KdbxXmlReader(
-            isV4 = true,
-            externalBinaryPool = pool,
-        ).readXml(xml)
+        val result =
+            KdbxXmlReader(
+                isV4 = true,
+                externalBinaryPool = pool,
+            ).readXml(xml)
 
         // Entry references pool ID 0 which has the external data
-        val attachment = result.rootGroup.entries.first().attachments.first()
+        val attachment =
+            result.rootGroup.entries
+                .first()
+                .attachments
+                .first()
         assertTrue(externalData.contentEquals(attachment.data))
 
         // Pool should have both entries (external + XML)

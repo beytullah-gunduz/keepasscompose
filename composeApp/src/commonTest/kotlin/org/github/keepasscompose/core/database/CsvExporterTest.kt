@@ -8,16 +8,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CsvExporterTest {
-
-    private fun entry(
-        title: String = "",
-        userName: String = "",
-        password: String = "",
-        url: String = "",
-        notes: String = "",
-    ) = KdbxEntry(
+    private fun entry(title: String = "", userName: String = "", password: String = "", url: String = "", notes: String = "") = KdbxEntry(
         uuid = title,
-        fields = listOf(
+        fields =
+        listOf(
             KdbxEntryField("Title", title),
             KdbxEntryField("UserName", userName),
             KdbxEntryField("Password", password, isProtected = true),
@@ -28,10 +22,12 @@ class CsvExporterTest {
 
     @Test
     fun export_basicEntries() {
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            entries = listOf(entry("GitHub", "john", "pass123", "https://github.com", "Dev")),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                entries = listOf(entry("GitHub", "john", "pass123", "https://github.com", "Dev")),
+            )
         val csv = CsvExporter.export(root)
         val lines = csv.trim().lines()
         assertEquals("Title,Username,Password,URL,Notes", lines[0])
@@ -40,13 +36,16 @@ class CsvExporterTest {
 
     @Test
     fun export_multipleEntries() {
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            entries = listOf(
-                entry("Site1", "user1", "pass1"),
-                entry("Site2", "user2", "pass2"),
-            ),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                entries =
+                listOf(
+                    entry("Site1", "user1", "pass1"),
+                    entry("Site2", "user2", "pass2"),
+                ),
+            )
         val csv = CsvExporter.export(root)
         assertEquals(3, csv.trim().lines().size) // header + 2 data rows
     }
@@ -60,13 +59,19 @@ class CsvExporterTest {
 
     @Test
     fun export_withGroupColumn() {
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            groups = listOf(
-                KdbxGroup(uuid = "email", name = "Email",
-                    entries = listOf(entry("Gmail", "john"))),
-            ),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                groups =
+                listOf(
+                    KdbxGroup(
+                        uuid = "email",
+                        name = "Email",
+                        entries = listOf(entry("Gmail", "john")),
+                    ),
+                ),
+            )
         val config = CsvExporter.Config(includeGroup = true)
         val csv = CsvExporter.export(root, config)
         val lines = csv.trim().lines()
@@ -76,10 +81,12 @@ class CsvExporterTest {
 
     @Test
     fun export_excludePassword() {
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            entries = listOf(entry("Site", "user", "secret")),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                entries = listOf(entry("Site", "user", "secret")),
+            )
         val config = CsvExporter.Config(includePassword = false)
         val csv = CsvExporter.export(root, config)
         val header = csv.trim().lines()[0]
@@ -88,10 +95,12 @@ class CsvExporterTest {
 
     @Test
     fun export_semicolonDelimiter() {
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            entries = listOf(entry("Site", "user", "pass")),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                entries = listOf(entry("Site", "user", "pass")),
+            )
         val config = CsvExporter.Config(delimiter = ';')
         val csv = CsvExporter.export(root, config)
         assertTrue(csv.contains(";"))
@@ -121,10 +130,12 @@ class CsvExporterTest {
 
     @Test
     fun export_fieldWithComma_isQuoted() {
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            entries = listOf(entry("Site, Inc.", "user")),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                entries = listOf(entry("Site, Inc.", "user")),
+            )
         val csv = CsvExporter.export(root)
         assertTrue(csv.contains("\"Site, Inc.\""))
     }
@@ -133,14 +144,20 @@ class CsvExporterTest {
 
     @Test
     fun export_nestedSubgroups() {
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            entries = listOf(entry("TopEntry")),
-            groups = listOf(
-                KdbxGroup(uuid = "sub", name = "Sub",
-                    entries = listOf(entry("SubEntry"))),
-            ),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                entries = listOf(entry("TopEntry")),
+                groups =
+                listOf(
+                    KdbxGroup(
+                        uuid = "sub",
+                        name = "Sub",
+                        entries = listOf(entry("SubEntry")),
+                    ),
+                ),
+            )
         val csv = CsvExporter.export(root)
         assertEquals(3, csv.trim().lines().size) // header + 2 entries
     }
@@ -149,13 +166,16 @@ class CsvExporterTest {
 
     @Test
     fun export_import_roundTrip() {
-        val root = KdbxGroup(
-            uuid = "root", name = "Root",
-            entries = listOf(
-                entry("GitHub", "john", "pass123", "https://github.com", "Dev account"),
-                entry("Gmail", "john@gmail.com", "secret456", "https://gmail.com", ""),
-            ),
-        )
+        val root =
+            KdbxGroup(
+                uuid = "root",
+                name = "Root",
+                entries =
+                listOf(
+                    entry("GitHub", "john", "pass123", "https://github.com", "Dev account"),
+                    entry("Gmail", "john@gmail.com", "secret456", "https://gmail.com", ""),
+                ),
+            )
         val csv = CsvExporter.export(root)
         val imported = CsvImporter.parse(csv)
         assertEquals(2, imported.entries.size)

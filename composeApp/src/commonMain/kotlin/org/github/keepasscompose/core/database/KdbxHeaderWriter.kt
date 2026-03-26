@@ -15,9 +15,7 @@ import org.github.keepasscompose.core.model.KdfParameters
  * @param rawHeaderBytes The raw bytes that were written (signatures through end-of-header),
  *   needed for SHA-256 and HMAC-SHA-256 computation in KDBX 4.x.
  */
-data class KdbxHeaderWriteResult(
-    val rawHeaderBytes: ByteArray,
-) {
+data class KdbxHeaderWriteResult(val rawHeaderBytes: ByteArray) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is KdbxHeaderWriteResult) return false
@@ -35,7 +33,6 @@ data class KdbxHeaderWriteResult(
  * after the header bytes (using the returned [KdbxHeaderWriteResult.rawHeaderBytes]).
  */
 class KdbxHeaderWriter {
-
     /**
      * Writes the given [header] to [sink] in KDBX binary format.
      *
@@ -54,7 +51,13 @@ class KdbxHeaderWriter {
 
         // 3. Write header fields
         writeField(headerBytes, sink, header.version.isV3, FIELD_CIPHER_ID, cipherIdBytes(header.cipher))
-        writeField(headerBytes, sink, header.version.isV3, FIELD_COMPRESSION_FLAGS, compressionBytes(header.compression))
+        writeField(
+            headerBytes,
+            sink,
+            header.version.isV3,
+            FIELD_COMPRESSION_FLAGS,
+            compressionBytes(header.compression),
+        )
         writeField(headerBytes, sink, header.version.isV3, FIELD_MASTER_SEED, header.masterSeed)
 
         if (header.version.isV3) {
@@ -70,7 +73,13 @@ class KdbxHeaderWriter {
         if (header.version.isV3) {
             writeField(headerBytes, sink, true, FIELD_INNER_RANDOM_STREAM_KEY, header.innerRandomStreamKey)
             writeField(headerBytes, sink, true, FIELD_STREAM_START_BYTES, header.streamStartBytes)
-            writeField(headerBytes, sink, true, FIELD_INNER_RANDOM_STREAM_ID, intToBytes(innerStreamCipherId(header.innerRandomStreamId)))
+            writeField(
+                headerBytes,
+                sink,
+                true,
+                FIELD_INNER_RANDOM_STREAM_ID,
+                intToBytes(innerStreamCipherId(header.innerRandomStreamId)),
+            )
         }
 
         if (header.version.isV4) {
@@ -83,13 +92,7 @@ class KdbxHeaderWriter {
         return KdbxHeaderWriteResult(rawHeaderBytes = headerBytes.readByteArray())
     }
 
-    private fun writeField(
-        headerBytes: Buffer,
-        sink: BufferedSink,
-        isV3: Boolean,
-        fieldId: Int,
-        data: ByteArray,
-    ) {
+    private fun writeField(headerBytes: Buffer, sink: BufferedSink, isV3: Boolean, fieldId: Int, data: ByteArray) {
         writeAndCapture(headerBytes, sink) { it.writeByte(fieldId) }
         if (isV3) {
             writeAndCapture(headerBytes, sink) { it.writeShortLe(data.size) }
@@ -99,11 +102,7 @@ class KdbxHeaderWriter {
         writeAndCapture(headerBytes, sink) { it.write(data) }
     }
 
-    private inline fun writeAndCapture(
-        headerBytes: Buffer,
-        sink: BufferedSink,
-        block: (BufferedSink) -> Unit,
-    ) {
+    private inline fun writeAndCapture(headerBytes: Buffer, sink: BufferedSink, block: (BufferedSink) -> Unit) {
         val capture = Buffer()
         block(capture)
         val bytes = capture.readByteArray()
@@ -118,10 +117,11 @@ class KdbxHeaderWriter {
     }
 
     private fun compressionBytes(compression: CompressionAlgorithm): ByteArray {
-        val flag = when (compression) {
-            CompressionAlgorithm.NONE -> 0
-            CompressionAlgorithm.GZIP -> 1
-        }
+        val flag =
+            when (compression) {
+                CompressionAlgorithm.NONE -> 0
+                CompressionAlgorithm.GZIP -> 1
+            }
         return intToBytes(flag)
     }
 
@@ -144,11 +144,13 @@ class KdbxHeaderWriter {
                 writeVariantEntry(buf, TYPE_UINT64, "R", longToBytes(kdf.rounds))
                 writeVariantEntry(buf, TYPE_BYTE_ARRAY, "S", kdf.seed)
             }
+
             is KdfParameters.Argon2 -> {
-                val uuidBytes = when (kdf.variant) {
-                    Argon2Variant.ARGON2D -> KDF_ARGON2D_UUID
-                    Argon2Variant.ARGON2ID -> KDF_ARGON2ID_UUID
-                }
+                val uuidBytes =
+                    when (kdf.variant) {
+                        Argon2Variant.ARGON2D -> KDF_ARGON2D_UUID
+                        Argon2Variant.ARGON2ID -> KDF_ARGON2ID_UUID
+                    }
                 writeVariantEntry(buf, TYPE_BYTE_ARRAY, "\$UUID", uuidBytes)
                 writeVariantEntry(buf, TYPE_UINT32, "V", intToBytes(kdf.version))
                 writeVariantEntry(buf, TYPE_BYTE_ARRAY, "S", kdf.salt)
@@ -173,11 +175,9 @@ class KdbxHeaderWriter {
         buf.write(value)
     }
 
-    private fun intToBytes(value: Int): ByteArray =
-        Buffer().apply { writeIntLe(value) }.readByteArray()
+    private fun intToBytes(value: Int): ByteArray = Buffer().apply { writeIntLe(value) }.readByteArray()
 
-    private fun longToBytes(value: Long): ByteArray =
-        Buffer().apply { writeLongLe(value) }.readByteArray()
+    private fun longToBytes(value: Long): ByteArray = Buffer().apply { writeLongLe(value) }.readByteArray()
 
     companion object {
         // KDBX file signatures
@@ -216,7 +216,6 @@ class KdbxHeaderWriter {
         private val KDF_ARGON2D_UUID = hexToBytes("ef636ddf8c29444b91f7a9a403e30a0c")
         private val KDF_ARGON2ID_UUID = hexToBytes("9e298b1956db4773b23dfc3ec6f0a1e6")
 
-        private fun hexToBytes(hex: String): ByteArray =
-            hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        private fun hexToBytes(hex: String): ByteArray = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
     }
 }

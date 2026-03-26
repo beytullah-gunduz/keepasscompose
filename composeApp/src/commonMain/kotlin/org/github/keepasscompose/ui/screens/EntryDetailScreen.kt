@@ -37,11 +37,7 @@ import org.github.keepasscompose.core.model.KdbxEntry
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun EntryDetailScreen(
-    entry: KdbxEntry,
-    onCopyField: (String) -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
+fun EntryDetailScreen(entry: KdbxEntry, onCopyField: (String) -> Unit = {}, modifier: Modifier = Modifier) {
     var passwordVisible by remember { mutableStateOf(false) }
 
     Column(
@@ -82,7 +78,11 @@ fun EntryDetailScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("Password", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Password",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 Text(
                     text = if (passwordVisible) entry.password else "••••••••",
                     style = MaterialTheme.typography.bodyLarge,
@@ -109,14 +109,25 @@ fun EntryDetailScreen(
         // Notes
         if (entry.notes.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Notes", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = entry.notes, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+            Text(
+                "Notes",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = entry.notes,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
 
         // Custom fields
         val standardKeys = setOf(
-            KdbxEntry.FIELD_TITLE, KdbxEntry.FIELD_USER_NAME,
-            KdbxEntry.FIELD_PASSWORD, KdbxEntry.FIELD_URL, KdbxEntry.FIELD_NOTES,
+            KdbxEntry.FIELD_TITLE,
+            KdbxEntry.FIELD_USER_NAME,
+            KdbxEntry.FIELD_PASSWORD,
+            KdbxEntry.FIELD_URL,
+            KdbxEntry.FIELD_NOTES,
         )
         val customFields = entry.fields.filter { it.key !in standardKeys }
         if (customFields.isNotEmpty()) {
@@ -177,17 +188,17 @@ fun EntryDetailScreen(
 }
 
 @Composable
-private fun DetailFieldRow(
-    label: String,
-    value: String,
-    onCopy: () -> Unit,
-) {
+private fun DetailFieldRow(label: String, value: String, onCopy: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(text = value.ifEmpty { "—" }, style = MaterialTheme.typography.bodyLarge)
         }
         if (value.isNotEmpty()) {

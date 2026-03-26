@@ -76,13 +76,20 @@ fun SearchBar(
                 trailingIcon = {
                     Row {
                         if (query.isNotEmpty()) {
-                            IconButton(onClick = { onQueryChange(""); onSearch("") }) {
+                            IconButton(onClick = {
+                                onQueryChange("")
+                                onSearch("")
+                            }) {
                                 Icon(Icons.Filled.Clear, contentDescription = "Clear", modifier = Modifier.size(18.dp))
                             }
                         }
                         if (onAdvancedSearch != null) {
                             IconButton(onClick = onAdvancedSearch) {
-                                Icon(Icons.Filled.Tune, contentDescription = "Advanced search", modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Filled.Tune,
+                                    contentDescription = "Advanced search",
+                                    modifier = Modifier.size(18.dp),
+                                )
                             }
                         }
                     }

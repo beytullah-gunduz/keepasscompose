@@ -14,7 +14,6 @@ import okio.BufferedSink
  * @see KdbxInnerHeaderReader
  */
 class KdbxInnerHeaderWriter {
-
     /**
      * Writes the inner header fields to [sink].
      *
@@ -23,12 +22,7 @@ class KdbxInnerHeaderWriter {
      * @param innerRandomStreamKey The inner random stream cipher key.
      * @param binaries The binary attachment pool to serialize.
      */
-    fun writeInnerHeader(
-        sink: BufferedSink,
-        innerRandomStreamId: Int,
-        innerRandomStreamKey: ByteArray,
-        binaries: KdbxBinaryPool,
-    ) {
+    fun writeInnerHeader(sink: BufferedSink, innerRandomStreamId: Int, innerRandomStreamKey: ByteArray, binaries: KdbxBinaryPool) {
         // 1. Write inner random stream ID
         writeField(sink, FIELD_INNER_RANDOM_STREAM_ID, intToLittleEndianBytes(innerRandomStreamId))
 
@@ -63,7 +57,6 @@ class KdbxInnerHeaderWriter {
 
         private const val BINARY_FLAG_MEMORY_PROTECTION: Byte = 0x01
 
-        private fun intToLittleEndianBytes(value: Int): ByteArray =
-            Buffer().apply { writeIntLe(value) }.readByteArray()
+        private fun intToLittleEndianBytes(value: Int): ByteArray = Buffer().apply { writeIntLe(value) }.readByteArray()
     }
 }

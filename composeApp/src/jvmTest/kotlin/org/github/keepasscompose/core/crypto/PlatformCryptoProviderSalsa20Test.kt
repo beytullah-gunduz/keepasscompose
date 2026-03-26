@@ -12,13 +12,20 @@ import kotlin.test.assertFalse
  * Also tests the KeePass inner random stream use case (fixed sigma nonce).
  */
 class PlatformCryptoProviderSalsa20Test {
-
     private val crypto = PlatformCryptoProvider()
 
     // KeePass inner stream nonce (sigma bytes)
-    private val keepassNonce = byteArrayOf(
-        0xE8.toByte(), 0x30, 0x09, 0x4B, 0x97.toByte(), 0x20, 0x5D, 0x2A,
-    )
+    private val keepassNonce =
+        byteArrayOf(
+            0xE8.toByte(),
+            0x30,
+            0x09,
+            0x4B,
+            0x97.toByte(),
+            0x20,
+            0x5D,
+            0x2A,
+        )
 
     // --- Cross-validation: pure Kotlin vs BouncyCastle ---
 
@@ -182,6 +189,5 @@ class PlatformCryptoProviderSalsa20Test {
         assertContentEquals(expectedStart, bcResult.copyOf(16), "First 16 bytes must match known vector")
     }
 
-    private fun hexToBytes(hex: String): ByteArray =
-        hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+    private fun hexToBytes(hex: String): ByteArray = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 }

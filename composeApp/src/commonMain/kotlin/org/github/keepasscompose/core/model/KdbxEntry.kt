@@ -21,8 +21,7 @@ data class KdbxEntry(
     val url: String get() = field(FIELD_URL)
     val notes: String get() = field(FIELD_NOTES)
 
-    fun field(key: String): String =
-        fields.firstOrNull { it.key == key }?.value.orEmpty()
+    fun field(key: String): String = fields.firstOrNull { it.key == key }?.value.orEmpty()
 
     companion object {
         const val FIELD_TITLE = "Title"

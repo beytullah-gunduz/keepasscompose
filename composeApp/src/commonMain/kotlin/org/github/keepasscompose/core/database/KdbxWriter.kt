@@ -24,7 +24,6 @@ import org.github.keepasscompose.core.model.KdbxGroup
  * @param crypto Platform-specific cryptographic provider.
  */
 class KdbxWriter(private val crypto: CryptoProvider) {
-
     private val keyDerivation = CompositeKeyDerivation(crypto)
 
     /**
@@ -66,36 +65,39 @@ class KdbxWriter(private val crypto: CryptoProvider) {
         // 4. Serialize XML payload
         //    V3: binaries go in <Meta><Binaries> inside the XML
         //    V4: binaries go in the inner header; XML only holds references by ID
-        val xmlResult = if (header.version.isV4) {
-            KdbxXmlWriter(isV4 = true, innerStreamEncryptor = encryptor)
-                .writeXml(meta = database.meta, rootGroup = database.rootGroup)
-        } else {
-            KdbxXmlWriter(isV4 = false, innerStreamEncryptor = encryptor)
-                .writeXml(meta = database.meta, rootGroup = database.rootGroup, binaries = binaryPool.entries())
-        }
+        val xmlResult =
+            if (header.version.isV4) {
+                KdbxXmlWriter(isV4 = true, innerStreamEncryptor = encryptor)
+                    .writeXml(meta = database.meta, rootGroup = database.rootGroup)
+            } else {
+                KdbxXmlWriter(isV4 = false, innerStreamEncryptor = encryptor)
+                    .writeXml(meta = database.meta, rootGroup = database.rootGroup, binaries = binaryPool.entries())
+            }
         val xmlBytes = xmlResult.xml.encodeToByteArray()
 
         // 5. Build raw payload
         //    V4: inner header is prepended before the XML (inside the encrypted region)
         //    V3: raw payload is just the XML
-        val rawPayload = if (header.version.isV4) {
-            val innerHeaderBuffer = Buffer()
-            KdbxInnerHeaderWriter().writeInnerHeader(
-                sink = innerHeaderBuffer,
-                innerRandomStreamId = innerStreamCipherId(innerStreamCipher),
-                innerRandomStreamKey = innerStreamKey,
-                binaries = binaryPool,
-            )
-            innerHeaderBuffer.readByteArray() + xmlBytes
-        } else {
-            xmlBytes
-        }
+        val rawPayload =
+            if (header.version.isV4) {
+                val innerHeaderBuffer = Buffer()
+                KdbxInnerHeaderWriter().writeInnerHeader(
+                    sink = innerHeaderBuffer,
+                    innerRandomStreamId = innerStreamCipherId(innerStreamCipher),
+                    innerRandomStreamKey = innerStreamKey,
+                    binaries = binaryPool,
+                )
+                innerHeaderBuffer.readByteArray() + xmlBytes
+            } else {
+                xmlBytes
+            }
 
         // 6. Compress
-        val compressedPayload = when (header.compression) {
-            CompressionAlgorithm.GZIP -> KdbxBinaryPool.compressGzip(rawPayload)
-            CompressionAlgorithm.NONE -> rawPayload
-        }
+        val compressedPayload =
+            when (header.compression) {
+                CompressionAlgorithm.GZIP -> KdbxBinaryPool.compressGzip(rawPayload)
+                CompressionAlgorithm.NONE -> rawPayload
+            }
 
         // 7. Wrap in block structure and encrypt
         //    V3: streamStartBytes + hashed blocks → then encrypt
@@ -131,15 +133,12 @@ class KdbxWriter(private val crypto: CryptoProvider) {
 
     // -- Encryption --
 
-    private fun encrypt(
-        data: ByteArray,
-        masterKey: ByteArray,
-        header: org.github.keepasscompose.core.model.KdbxHeader,
-    ): ByteArray = when (header.cipher) {
-        CipherId.AES_256 -> crypto.aesEncrypt(data, masterKey, header.encryptionIv)
-        CipherId.TWOFISH -> crypto.twofishEncrypt(data, masterKey, header.encryptionIv)
-        CipherId.CHACHA20 -> crypto.chaCha20(data, masterKey, header.encryptionIv)
-    }
+    private fun encrypt(data: ByteArray, masterKey: ByteArray, header: org.github.keepasscompose.core.model.KdbxHeader): ByteArray =
+        when (header.cipher) {
+            CipherId.AES_256 -> crypto.aesEncrypt(data, masterKey, header.encryptionIv)
+            CipherId.TWOFISH -> crypto.twofishEncrypt(data, masterKey, header.encryptionIv)
+            CipherId.CHACHA20 -> crypto.chaCha20(data, masterKey, header.encryptionIv)
+        }
 
     // -- V3 hashed blocks --
 
@@ -174,29 +173,22 @@ class KdbxWriter(private val crypto: CryptoProvider) {
      * Each block: HMAC-SHA-256(32 bytes) + blockSize(4 bytes LE) + blockData.
      * Terminates with a block of size 0.
      */
-    private fun writeHmacBlocks(
-        sink: BufferedSink,
-        data: ByteArray,
-        hmacBaseKey: ByteArray,
-    ) {
+    private fun writeHmacBlocks(sink: BufferedSink, data: ByteArray, hmacBaseKey: ByteArray) {
         // Data block (index 0)
         writeHmacBlock(sink, blockIndex = 0L, data = data, hmacBaseKey = hmacBaseKey)
         // Terminal block (index 1, empty data)
         writeHmacBlock(sink, blockIndex = 1L, data = ByteArray(0), hmacBaseKey = hmacBaseKey)
     }
 
-    private fun writeHmacBlock(
-        sink: BufferedSink,
-        blockIndex: Long,
-        data: ByteArray,
-        hmacBaseKey: ByteArray,
-    ) {
+    private fun writeHmacBlock(sink: BufferedSink, blockIndex: Long, data: ByteArray, hmacBaseKey: ByteArray) {
         val blockKey = computeHmacBlockKey(hmacBaseKey, blockIndex)
-        val hmacData = Buffer().apply {
-            writeLongLe(blockIndex)
-            writeIntLe(data.size)
-            write(data)
-        }.readByteArray()
+        val hmacData =
+            Buffer()
+                .apply {
+                    writeLongLe(blockIndex)
+                    writeIntLe(data.size)
+                    write(data)
+                }.readByteArray()
         sink.write(crypto.hmacSha256(blockKey, hmacData))
         sink.writeIntLe(data.size)
         if (data.isNotEmpty()) {
@@ -238,10 +230,7 @@ class KdbxWriter(private val crypto: CryptoProvider) {
      * For Salsa20 (KDBX 3.1): key = SHA-256(innerStreamKey), nonce = fixed 8 bytes.
      * For ChaCha20 (KDBX 4.x): SHA-512(innerStreamKey) split into 32-byte key + 12-byte nonce.
      */
-    private fun createInnerStreamEncryptor(
-        cipher: InnerStreamCipher,
-        innerStreamKey: ByteArray,
-    ): InnerStreamEncryptor? {
+    private fun createInnerStreamEncryptor(cipher: InnerStreamCipher, innerStreamKey: ByteArray): InnerStreamEncryptor? {
         if (cipher == InnerStreamCipher.NONE) return null
 
         val cipherKey: ByteArray
@@ -252,12 +241,16 @@ class KdbxWriter(private val crypto: CryptoProvider) {
                 cipherKey = crypto.sha256(innerStreamKey)
                 nonce = SALSA20_INNER_NONCE
             }
+
             InnerStreamCipher.CHACHA20 -> {
                 val hash = crypto.sha512(innerStreamKey)
                 cipherKey = hash.copyOfRange(0, 32)
                 nonce = hash.copyOfRange(32, 44)
             }
-            else -> throw KdbxParseException("Unsupported inner stream cipher: $cipher")
+
+            else -> {
+                throw KdbxParseException("Unsupported inner stream cipher: $cipher")
+            }
         }
 
         return StatefulStreamEncryptor(crypto, cipher, cipherKey, nonce)
@@ -282,10 +275,17 @@ class KdbxWriter(private val crypto: CryptoProvider) {
         private const val HEADER_HMAC_BLOCK_INDEX = -1L
 
         /** Fixed nonce for the Salsa20 inner random stream (KDBX 3.1). */
-        private val SALSA20_INNER_NONCE = byteArrayOf(
-            0xE8.toByte(), 0x30, 0x09, 0x4B,
-            0x97.toByte(), 0x20, 0x5D, 0x2A,
-        )
+        private val SALSA20_INNER_NONCE =
+            byteArrayOf(
+                0xE8.toByte(),
+                0x30,
+                0x09,
+                0x4B,
+                0x97.toByte(),
+                0x20,
+                0x5D,
+                0x2A,
+            )
     }
 }
 
@@ -317,10 +317,11 @@ private class StatefulStreamEncryptor(
     private fun ensureKeystream(needed: Int) {
         if (keystream.size >= needed) return
         val zeros = ByteArray(needed)
-        keystream = when (cipher) {
-            InnerStreamCipher.SALSA20 -> crypto.salsa20(zeros, key, nonce)
-            InnerStreamCipher.CHACHA20 -> crypto.chaCha20(zeros, key, nonce)
-            else -> throw KdbxParseException("Unsupported inner stream cipher: $cipher")
-        }
+        keystream =
+            when (cipher) {
+                InnerStreamCipher.SALSA20 -> crypto.salsa20(zeros, key, nonce)
+                InnerStreamCipher.CHACHA20 -> crypto.chaCha20(zeros, key, nonce)
+                else -> throw KdbxParseException("Unsupported inner stream cipher: $cipher")
+            }
     }
 }

@@ -81,11 +81,7 @@ fun SearchResultsScreen(
 }
 
 @Composable
-private fun SearchResultRow(
-    result: SearchEngine.SearchResult,
-    query: String,
-    onClick: () -> Unit,
-) {
+private fun SearchResultRow(result: SearchEngine.SearchResult, query: String, onClick: () -> Unit) {
     val entry = result.entry
     val matchedField = findMatchedField(entry, query)
 

@@ -68,10 +68,7 @@ enum class Argon2Variant {
 }
 
 sealed class KdfParameters {
-    data class AesKdf(
-        val rounds: Long = 60000,
-        val seed: ByteArray = ByteArray(0),
-    ) : KdfParameters() {
+    data class AesKdf(val rounds: Long = 60000, val seed: ByteArray = ByteArray(0)) : KdfParameters() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is AesKdf) return false

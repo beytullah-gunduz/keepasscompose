@@ -42,11 +42,7 @@ data class ToolbarCallbacks(
 )
 
 @Composable
-fun Toolbar(
-    callbacks: ToolbarCallbacks,
-    hasSelectedEntry: Boolean = false,
-    modifier: Modifier = Modifier,
-) {
+fun Toolbar(callbacks: ToolbarCallbacks, hasSelectedEntry: Boolean = false, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier,
@@ -63,12 +59,22 @@ fun Toolbar(
         // Entry actions (enabled when an entry is selected)
         ToolbarButton(Icons.AutoMirrored.Filled.NoteAdd, "New Entry", onClick = callbacks.onNewEntry)
         ToolbarButton(Icons.Filled.Edit, "Edit Entry", onClick = callbacks.onEditEntry, enabled = hasSelectedEntry)
-        ToolbarButton(Icons.Filled.Delete, "Delete Entry", onClick = callbacks.onDeleteEntry, enabled = hasSelectedEntry)
+        ToolbarButton(
+            Icons.Filled.Delete,
+            "Delete Entry",
+            onClick = callbacks.onDeleteEntry,
+            enabled = hasSelectedEntry,
+        )
 
         VerticalDivider(modifier = Modifier.padding(horizontal = 4.dp))
 
         // Quick copy actions
-        ToolbarButton(Icons.Filled.Person, "Copy Username", onClick = callbacks.onCopyUsername, enabled = hasSelectedEntry)
+        ToolbarButton(
+            Icons.Filled.Person,
+            "Copy Username",
+            onClick = callbacks.onCopyUsername,
+            enabled = hasSelectedEntry,
+        )
         ToolbarButton(Icons.Filled.Key, "Copy Password", onClick = callbacks.onCopyPassword, enabled = hasSelectedEntry)
     }
 }
@@ -76,12 +82,7 @@ fun Toolbar(
 @Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ToolbarButton(
-    icon: ImageVector,
-    tooltip: String,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-) {
+private fun ToolbarButton(icon: ImageVector, tooltip: String, onClick: () -> Unit, enabled: Boolean = true) {
     TooltipBox(
         positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
         tooltip = { PlainTooltip { Text(tooltip) } },

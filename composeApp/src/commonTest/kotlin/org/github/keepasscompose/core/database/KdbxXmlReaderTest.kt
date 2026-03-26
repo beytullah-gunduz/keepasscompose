@@ -1,6 +1,5 @@
 package org.github.keepasscompose.core.database
 
-import kotlin.time.Instant
 import org.github.keepasscompose.core.model.KdbxEntry
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -10,21 +9,22 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 @OptIn(ExperimentalEncodingApi::class)
 class KdbxXmlReaderTest {
-
     // -- Meta parsing tests --
 
     @Test
     fun parseMeta_databaseName() {
-        val xml = wrapKeePassFile(
-            meta = """
+        val xml =
+            wrapKeePassFile(
+                meta = """
                 <DatabaseName>Test Database</DatabaseName>
                 <DatabaseDescription>My test DB</DatabaseDescription>
                 <DefaultUserName>admin</DefaultUserName>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertEquals("Test Database", result.meta.databaseName)
@@ -34,12 +34,13 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseMeta_recycleBin() {
-        val xml = wrapKeePassFile(
-            meta = """
+        val xml =
+            wrapKeePassFile(
+                meta = """
                 <RecycleBinEnabled>True</RecycleBinEnabled>
                 <RecycleBinUUID>AAAAAAAAAAAAAAAAAAAAAA==</RecycleBinUUID>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertTrue(result.meta.recycleBinEnabled)
@@ -48,11 +49,12 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseMeta_recycleBinDisabled() {
-        val xml = wrapKeePassFile(
-            meta = """
+        val xml =
+            wrapKeePassFile(
+                meta = """
                 <RecycleBinEnabled>False</RecycleBinEnabled>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertFalse(result.meta.recycleBinEnabled)
@@ -61,8 +63,9 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseMeta_memoryProtection() {
-        val xml = wrapKeePassFile(
-            meta = """
+        val xml =
+            wrapKeePassFile(
+                meta = """
                 <MemoryProtection>
                     <ProtectTitle>True</ProtectTitle>
                     <ProtectUserName>True</ProtectUserName>
@@ -71,7 +74,7 @@ class KdbxXmlReaderTest {
                     <ProtectNotes>False</ProtectNotes>
                 </MemoryProtection>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertTrue(result.meta.protectTitle)
@@ -83,12 +86,13 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseMeta_historyMaxItems() {
-        val xml = wrapKeePassFile(
-            meta = """
+        val xml =
+            wrapKeePassFile(
+                meta = """
                 <HistoryMaxItems>20</HistoryMaxItems>
                 <HistoryMaxSize>10485760</HistoryMaxSize>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertEquals(20, result.meta.historyMaxItems)
@@ -106,12 +110,13 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseMeta_historyMaxItems_negativeUnlimited() {
-        val xml = wrapKeePassFile(
-            meta = """
+        val xml =
+            wrapKeePassFile(
+                meta = """
                 <HistoryMaxItems>-1</HistoryMaxItems>
                 <HistoryMaxSize>-1</HistoryMaxSize>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertEquals(-1, result.meta.historyMaxItems)
@@ -122,8 +127,9 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseGroup_basic() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -131,7 +137,7 @@ class KdbxXmlReaderTest {
                     <IconID>48</IconID>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertEquals("cm9vdA==", result.rootGroup.uuid)
@@ -142,8 +148,9 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseGroup_nestedGroups() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -164,7 +171,7 @@ class KdbxXmlReaderTest {
                     </Group>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertEquals(2, result.rootGroup.groups.size)
@@ -172,16 +179,26 @@ class KdbxXmlReaderTest {
         assertEquals("Email", result.rootGroup.groups[1].name)
 
         // Nested grandchild
-        assertEquals(1, result.rootGroup.groups[0].groups.size)
-        assertEquals("Social", result.rootGroup.groups[0].groups[0].name)
+        assertEquals(
+            1,
+            result.rootGroup.groups[0]
+                .groups.size,
+        )
+        assertEquals(
+            "Social",
+            result.rootGroup.groups[0]
+                .groups[0]
+                .name,
+        )
     }
 
     // -- Entry parsing tests --
 
     @Test
     fun parseEntry_standardFields() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -211,7 +228,7 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
         val entry = result.rootGroup.entries.first()
 
@@ -230,8 +247,9 @@ class KdbxXmlReaderTest {
         val plaintext = "secret123".encodeToByteArray()
         val ciphertext = Base64.encode(plaintext)
 
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -244,7 +262,7 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
 
         // Identity decryptor: returns ciphertext as-is (since we used plaintext bytes as fake ciphertext)
         val decryptor = InnerStreamDecryptor { it }
@@ -260,8 +278,9 @@ class KdbxXmlReaderTest {
     fun parseEntry_protectedField_withoutDecryptor() {
         val ciphertext = Base64.encode("encrypted".encodeToByteArray())
 
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -274,11 +293,15 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
 
         // No decryptor: value should remain as raw base64
         val result = readerV3().readXml(xml)
-        val field = result.rootGroup.entries.first().fields.first()
+        val field =
+            result.rootGroup.entries
+                .first()
+                .fields
+                .first()
 
         assertTrue(field.isProtected)
         assertEquals(ciphertext, field.value)
@@ -286,8 +309,9 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseEntry_tags() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -297,7 +321,7 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
         val entry = result.rootGroup.entries.first()
 
@@ -306,8 +330,9 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseEntry_emptyTags() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -317,16 +342,22 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
-        assertTrue(result.rootGroup.entries.first().tags.isEmpty())
+        assertTrue(
+            result.rootGroup.entries
+                .first()
+                .tags
+                .isEmpty(),
+        )
     }
 
     @Test
     fun parseEntry_times_v3() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -342,7 +373,7 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
         val entry = result.rootGroup.entries.first()
 
@@ -360,8 +391,9 @@ class KdbxXmlReaderTest {
         val seconds = 1704067200L + 62135596800L
         val encoded = encodeV4Timestamp(seconds)
 
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -374,7 +406,7 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
         val result = readerV4().readXml(xml)
         val entry = result.rootGroup.entries.first()
 
@@ -384,8 +416,9 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseEntry_history() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -407,7 +440,7 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
         val entry = result.rootGroup.entries.first()
 
@@ -418,8 +451,9 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseEntry_customIcon() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -430,7 +464,7 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
         val entry = result.rootGroup.entries.first()
 
@@ -445,13 +479,14 @@ class KdbxXmlReaderTest {
         val binaryData = "Hello, World!".encodeToByteArray()
         val base64Binary = Base64.encode(binaryData)
 
-        val xml = wrapKeePassFile(
-            meta = """
+        val xml =
+            wrapKeePassFile(
+                meta = """
                 <Binaries>
                     <Binary ID="0">$base64Binary</Binary>
                 </Binaries>
             """,
-            root = """
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -464,7 +499,7 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         // Check binaries pool
@@ -472,7 +507,11 @@ class KdbxXmlReaderTest {
         assertTrue(binaryData.contentEquals(result.binaryPool[0]!!))
 
         // Check entry attachment
-        val attachment = result.rootGroup.entries.first().attachments.first()
+        val attachment =
+            result.rootGroup.entries
+                .first()
+                .attachments
+                .first()
         assertEquals("readme.txt", attachment.name)
         assertEquals(0, attachment.id)
         assertTrue(binaryData.contentEquals(attachment.data))
@@ -482,8 +521,9 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseDeletedObjects() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -499,7 +539,7 @@ class KdbxXmlReaderTest {
                     </DeletedObject>
                 </DeletedObjects>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertEquals(2, result.deletedObjects.size)
@@ -511,8 +551,9 @@ class KdbxXmlReaderTest {
 
     @Test
     fun parseDeletedObjects_empty() {
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -520,7 +561,7 @@ class KdbxXmlReaderTest {
                 <DeletedObjects>
                 </DeletedObjects>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertTrue(result.deletedObjects.isEmpty())
@@ -530,15 +571,16 @@ class KdbxXmlReaderTest {
 
     @Test
     fun unknownElements_skipped() {
-        val xml = wrapKeePassFile(
-            meta = """
+        val xml =
+            wrapKeePassFile(
+                meta = """
                 <Generator>KeePass</Generator>
                 <DatabaseName>Test</DatabaseName>
                 <UnknownElement>
                     <Deeply><Nested>Content</Nested></Deeply>
                 </UnknownElement>
             """,
-            root = """
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -549,7 +591,7 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
         val result = readerV3().readXml(xml)
 
         assertEquals("Test", result.meta.databaseName)
@@ -561,7 +603,8 @@ class KdbxXmlReaderTest {
 
     @Test
     fun fullXml_integration() {
-        val xml = """
+        val xml =
+            """
             <?xml version="1.0" encoding="utf-8"?>
             <KeePassFile>
                 <Meta>
@@ -629,7 +672,7 @@ class KdbxXmlReaderTest {
                     </DeletedObjects>
                 </Root>
             </KeePassFile>
-        """.trimIndent()
+            """.trimIndent()
 
         val result = readerV3().readXml(xml)
 
@@ -678,8 +721,9 @@ class KdbxXmlReaderTest {
         val passwords = listOf("pass1", "pass2", "pass3")
         val encoded = passwords.map { Base64.encode(it.encodeToByteArray()) }
 
-        val xml = wrapKeePassFile(
-            root = """
+        val xml =
+            wrapKeePassFile(
+                root = """
                 <Group>
                     <UUID>cm9vdA==</UUID>
                     <Name>Root</Name>
@@ -697,15 +741,16 @@ class KdbxXmlReaderTest {
                     </Entry>
                 </Group>
             """,
-        )
+            )
 
         // Track decryption order
         val decryptionOrder = mutableListOf<String>()
-        val decryptor = InnerStreamDecryptor { ciphertext ->
-            val text = ciphertext.decodeToString()
-            decryptionOrder.add(text)
-            ciphertext // identity decryptor
-        }
+        val decryptor =
+            InnerStreamDecryptor { ciphertext ->
+                val text = ciphertext.decodeToString()
+                decryptionOrder.add(text)
+                ciphertext // identity decryptor
+            }
 
         val result = KdbxXmlReader(isV4 = false, innerStreamDecryptor = decryptor).readXml(xml)
         val entries = result.rootGroup.entries
@@ -722,6 +767,7 @@ class KdbxXmlReaderTest {
     // -- Helpers --
 
     private fun readerV3() = KdbxXmlReader(isV4 = false)
+
     private fun readerV4() = KdbxXmlReader(isV4 = true)
 
     private fun wrapKeePassFile(
@@ -732,13 +778,14 @@ class KdbxXmlReaderTest {
                 <Name>Root</Name>
             </Group>
         """,
-    ): String = """
+    ): String =
+        """
         <?xml version="1.0" encoding="utf-8"?>
         <KeePassFile>
             <Meta>$meta</Meta>
             <Root>$root</Root>
         </KeePassFile>
-    """.trimIndent()
+        """.trimIndent()
 
     private fun encodeV4Timestamp(secondsSinceDotNetEpoch: Long): String {
         val bytes = ByteArray(8)

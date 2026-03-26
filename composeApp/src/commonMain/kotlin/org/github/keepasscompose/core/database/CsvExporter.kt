@@ -11,7 +11,6 @@ import org.github.keepasscompose.core.model.KdbxGroup
  * with proper quoting of fields containing delimiters or newlines.
  */
 object CsvExporter {
-
     /**
      * Which fields to include in the export.
      */
@@ -58,11 +57,7 @@ object CsvExporter {
         if (config.includeNotes) add("Notes")
     }
 
-    private fun buildRow(
-        entry: KdbxEntry,
-        groupPath: List<String>,
-        config: Config,
-    ): List<String> = buildList {
+    private fun buildRow(entry: KdbxEntry, groupPath: List<String>, config: Config): List<String> = buildList {
         if (config.includeGroup) add(groupPath.joinToString("/"))
         if (config.includeTitle) add(entry.title)
         if (config.includeUserName) add(entry.userName)
@@ -72,8 +67,9 @@ object CsvExporter {
     }
 
     internal fun escapeField(field: String, delimiter: Char): String {
-        val needsQuoting = field.contains(delimiter) || field.contains('"') ||
-            field.contains('\n') || field.contains('\r')
+        val needsQuoting =
+            field.contains(delimiter) || field.contains('"') ||
+                field.contains('\n') || field.contains('\r')
         return if (needsQuoting) {
             "\"${field.replace("\"", "\"\"")}\""
         } else {
@@ -81,10 +77,7 @@ object CsvExporter {
         }
     }
 
-    private fun collectEntries(
-        group: KdbxGroup,
-        path: List<String>,
-    ): List<Pair<KdbxEntry, List<String>>> {
+    private fun collectEntries(group: KdbxGroup, path: List<String>): List<Pair<KdbxEntry, List<String>>> {
         val currentPath = path + group.name
         val results = mutableListOf<Pair<KdbxEntry, List<String>>>()
         for (entry in group.entries) results.add(entry to currentPath)

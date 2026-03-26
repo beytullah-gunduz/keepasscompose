@@ -9,7 +9,6 @@ import kotlin.test.assertTrue
  * Tests for HMAC-SHA-256 using RFC 4231 test vectors.
  */
 class PlatformCryptoProviderHmacTest {
-
     private val crypto = PlatformCryptoProvider()
 
     @Test
@@ -73,9 +72,12 @@ class PlatformCryptoProviderHmacTest {
         // Key = 0xaa repeated 131 times
         // Data = "This is a test using a larger than block-size key and a larger than block-size data..."
         val key = ByteArray(131) { 0xaa.toByte() }
-        val data = ("This is a test using a larger than block-size key and a " +
-            "larger than block-size data. The key needs to be hashed " +
-            "before being used by the HMAC algorithm.").encodeToByteArray()
+        val data =
+            (
+                "This is a test using a larger than block-size key and a " +
+                    "larger than block-size data. The key needs to be hashed " +
+                    "before being used by the HMAC algorithm."
+                ).encodeToByteArray()
         val expected = "9b09ffa71b942fcb27635fbcd5b0e944bfdc63644f0713938a7f51535c3a35e2"
 
         val result = crypto.hmacSha256(key, data)
@@ -84,10 +86,11 @@ class PlatformCryptoProviderHmacTest {
 
     @Test
     fun hmacSha256_outputLength() {
-        val result = crypto.hmacSha256(
-            "key".encodeToByteArray(),
-            "data".encodeToByteArray(),
-        )
+        val result =
+            crypto.hmacSha256(
+                "key".encodeToByteArray(),
+                "data".encodeToByteArray(),
+            )
         assertEquals(32, result.size)
     }
 
@@ -118,6 +121,5 @@ class PlatformCryptoProviderHmacTest {
 
     // -- Helper --
 
-    private fun ByteArray.toHex(): String =
-        joinToString("") { "%02x".format(it) }
+    private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 }

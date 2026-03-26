@@ -5,7 +5,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class CsvImporterTest {
-
     // --- Basic CSV parsing ---
 
     @Test
@@ -126,9 +125,10 @@ class CsvImporterTest {
     @Test
     fun parse_customMapping() {
         val csv = "Col1,Col2,Col3\nMyTitle,MyUser,MyPass"
-        val config = CsvImporter.Config(
-            mapping = CsvImporter.ColumnMapping(titleColumn = 0, userNameColumn = 1, passwordColumn = 2)
-        )
+        val config =
+            CsvImporter.Config(
+                mapping = CsvImporter.ColumnMapping(titleColumn = 0, userNameColumn = 1, passwordColumn = 2),
+            )
         val result = CsvImporter.parse(csv, config)
         assertEquals("MyTitle", result.entries[0].title)
         assertEquals("MyUser", result.entries[0].userName)
@@ -150,10 +150,11 @@ class CsvImporterTest {
     @Test
     fun parse_noHeader() {
         val csv = "Site1,user1,pass1\nSite2,user2,pass2"
-        val config = CsvImporter.Config(
-            hasHeader = false,
-            mapping = CsvImporter.ColumnMapping(titleColumn = 0, userNameColumn = 1, passwordColumn = 2),
-        )
+        val config =
+            CsvImporter.Config(
+                hasHeader = false,
+                mapping = CsvImporter.ColumnMapping(titleColumn = 0, userNameColumn = 1, passwordColumn = 2),
+            )
         val result = CsvImporter.parse(csv, config)
         assertEquals(2, result.entries.size)
         assertEquals("Site1", result.entries[0].title)
@@ -164,9 +165,10 @@ class CsvImporterTest {
     @Test
     fun parse_withGroupColumn() {
         val csv = "Group,Title,Password\nEmail,Gmail,pass1\nEmail,Yahoo,pass2\nSocial,Twitter,pass3"
-        val config = CsvImporter.Config(
-            mapping = CsvImporter.ColumnMapping(groupColumn = 0, titleColumn = 1, passwordColumn = 2)
-        )
+        val config =
+            CsvImporter.Config(
+                mapping = CsvImporter.ColumnMapping(groupColumn = 0, titleColumn = 1, passwordColumn = 2),
+            )
         val result = CsvImporter.parse(csv, config)
         assertEquals(3, result.entries.size)
         assertEquals(2, result.groupTree.groups.size) // Email, Social

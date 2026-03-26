@@ -26,11 +26,7 @@ import org.github.keepasscompose.core.model.KdbxGroup
  * ```
  */
 object XmlExporter {
-
-    data class Config(
-        val includePasswords: Boolean = true,
-        val indent: Boolean = true,
-    )
+    data class Config(val includePasswords: Boolean = true, val indent: Boolean = true)
 
     fun export(rootGroup: KdbxGroup, config: Config = Config()): String {
         val sb = StringBuilder()

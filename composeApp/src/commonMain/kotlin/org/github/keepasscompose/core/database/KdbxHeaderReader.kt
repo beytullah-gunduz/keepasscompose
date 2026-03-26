@@ -48,7 +48,6 @@ data class KdbxHeaderReadResult(
  * Reads and parses KDBX file headers, supporting both KDBX 3.1 and KDBX 4.x formats.
  */
 class KdbxHeaderReader {
-
     fun readHeader(source: BufferedSource): KdbxHeaderReadResult {
         val headerBytes = Buffer()
 
@@ -103,30 +102,56 @@ class KdbxHeaderReader {
             if (fieldId == FIELD_END_OF_HEADER) break
 
             when (fieldId) {
-                FIELD_CIPHER_ID -> cipher = parseCipherId(fieldData)
-                FIELD_COMPRESSION_FLAGS -> compression = parseCompression(fieldData)
-                FIELD_MASTER_SEED -> masterSeed = fieldData
-                FIELD_TRANSFORM_SEED -> transformSeed = fieldData
+                FIELD_CIPHER_ID -> {
+                    cipher = parseCipherId(fieldData)
+                }
+
+                FIELD_COMPRESSION_FLAGS -> {
+                    compression = parseCompression(fieldData)
+                }
+
+                FIELD_MASTER_SEED -> {
+                    masterSeed = fieldData
+                }
+
+                FIELD_TRANSFORM_SEED -> {
+                    transformSeed = fieldData
+                }
+
                 FIELD_TRANSFORM_ROUNDS -> {
                     transformRounds = Buffer().apply { write(fieldData) }.readLongLe()
                 }
-                FIELD_ENCRYPTION_IV -> encryptionIv = fieldData
-                FIELD_INNER_RANDOM_STREAM_KEY -> innerRandomStreamKey = fieldData
-                FIELD_STREAM_START_BYTES -> streamStartBytes = fieldData
+
+                FIELD_ENCRYPTION_IV -> {
+                    encryptionIv = fieldData
+                }
+
+                FIELD_INNER_RANDOM_STREAM_KEY -> {
+                    innerRandomStreamKey = fieldData
+                }
+
+                FIELD_STREAM_START_BYTES -> {
+                    streamStartBytes = fieldData
+                }
+
                 FIELD_INNER_RANDOM_STREAM_ID -> {
                     val id = Buffer().apply { write(fieldData) }.readIntLe()
                     innerRandomStreamId = parseInnerStreamCipher(id)
                 }
-                FIELD_KDF_PARAMETERS -> kdfParameters = parseKdfParameters(fieldData)
+
+                FIELD_KDF_PARAMETERS -> {
+                    kdfParameters = parseKdfParameters(fieldData)
+                }
             }
         }
 
         // For KDBX 3.1, convert transform seed/rounds to KdfParameters
         if (version.isV3) {
-            kdfParameters = KdfParameters.AesKdf(
-                rounds = transformRounds,
-                seed = transformSeed,
-            )
+            kdfParameters =
+                KdfParameters.AesKdf(
+                    rounds = transformRounds,
+                    seed = transformSeed,
+                )
         }
 
         val rawHeaderBytes = headerBytes.readByteArray()
@@ -140,7 +165,8 @@ class KdbxHeaderReader {
         }
 
         return KdbxHeaderReadResult(
-            header = KdbxHeader(
+            header =
+            KdbxHeader(
                 version = version,
                 cipher = cipher,
                 compression = compression,
@@ -160,12 +186,12 @@ class KdbxHeaderReader {
     private fun validateSignatures(sig1: Int, sig2: Int) {
         if (sig1 != SIGNATURE_1) {
             throw KdbxParseException(
-                "Invalid KDBX signature 1: expected 0x${SIGNATURE_1.toHex()}, got 0x${sig1.toHex()}"
+                "Invalid KDBX signature 1: expected 0x${SIGNATURE_1.toHex()}, got 0x${sig1.toHex()}",
             )
         }
         if (sig2 != SIGNATURE_2) {
             throw KdbxParseException(
-                "Invalid KDBX signature 2: expected 0x${SIGNATURE_2.toHex()}, got 0x${sig2.toHex()}"
+                "Invalid KDBX signature 2: expected 0x${SIGNATURE_2.toHex()}, got 0x${sig2.toHex()}",
             )
         }
     }
@@ -173,7 +199,7 @@ class KdbxHeaderReader {
     private fun validateVersion(version: KdbxVersion) {
         if (version.major != 3 && version.major != 4) {
             throw KdbxParseException(
-                "Unsupported KDBX version: ${version.major}.${version.minor}"
+                "Unsupported KDBX version: ${version.major}.${version.minor}",
             )
         }
     }
@@ -206,17 +232,29 @@ class KdbxHeaderReader {
         val buf = Buffer().apply { write(data) }
         val variantMap = parseVariantDictionary(buf)
 
-        val uuidBytes = variantMap["\$UUID"] as? ByteArray
-            ?: throw KdbxParseException("KDF parameters missing \$UUID")
+        val uuidBytes =
+            variantMap["\$UUID"] as? ByteArray
+                ?: throw KdbxParseException("KDF parameters missing \$UUID")
 
         return when {
-            uuidBytes.contentEquals(KDF_AES_UUID) -> KdfParameters.AesKdf(
-                rounds = (variantMap["R"] as? Long) ?: 6000L,
-                seed = (variantMap["S"] as? ByteArray) ?: ByteArray(0),
-            )
-            uuidBytes.contentEquals(KDF_ARGON2D_UUID) -> parseArgon2(Argon2Variant.ARGON2D, variantMap)
-            uuidBytes.contentEquals(KDF_ARGON2ID_UUID) -> parseArgon2(Argon2Variant.ARGON2ID, variantMap)
-            else -> throw KdbxParseException("Unknown KDF UUID")
+            uuidBytes.contentEquals(KDF_AES_UUID) -> {
+                KdfParameters.AesKdf(
+                    rounds = (variantMap["R"] as? Long) ?: 6000L,
+                    seed = (variantMap["S"] as? ByteArray) ?: ByteArray(0),
+                )
+            }
+
+            uuidBytes.contentEquals(KDF_ARGON2D_UUID) -> {
+                parseArgon2(Argon2Variant.ARGON2D, variantMap)
+            }
+
+            uuidBytes.contentEquals(KDF_ARGON2ID_UUID) -> {
+                parseArgon2(Argon2Variant.ARGON2ID, variantMap)
+            }
+
+            else -> {
+                throw KdbxParseException("Unknown KDF UUID")
+            }
         }
     }
 
@@ -245,19 +283,41 @@ class KdbxHeaderReader {
             val key = buf.readUtf8(keyLength.toLong())
             val valueLength = buf.readIntLe()
 
-            val value: Any? = when (type) {
-                TYPE_UINT32 -> buf.readIntLe()
-                TYPE_UINT64 -> buf.readLongLe()
-                TYPE_BOOL -> buf.readByte().toInt() != 0
-                TYPE_INT32 -> buf.readIntLe()
-                TYPE_INT64 -> buf.readLongLe()
-                TYPE_STRING -> buf.readUtf8(valueLength.toLong())
-                TYPE_BYTE_ARRAY -> buf.readByteArray(valueLength.toLong())
-                else -> {
-                    buf.skip(valueLength.toLong())
-                    null
+            val value: Any? =
+                when (type) {
+                    TYPE_UINT32 -> {
+                        buf.readIntLe()
+                    }
+
+                    TYPE_UINT64 -> {
+                        buf.readLongLe()
+                    }
+
+                    TYPE_BOOL -> {
+                        buf.readByte().toInt() != 0
+                    }
+
+                    TYPE_INT32 -> {
+                        buf.readIntLe()
+                    }
+
+                    TYPE_INT64 -> {
+                        buf.readLongLe()
+                    }
+
+                    TYPE_STRING -> {
+                        buf.readUtf8(valueLength.toLong())
+                    }
+
+                    TYPE_BYTE_ARRAY -> {
+                        buf.readByteArray(valueLength.toLong())
+                    }
+
+                    else -> {
+                        buf.skip(valueLength.toLong())
+                        null
+                    }
                 }
-            }
 
             if (value != null) {
                 map[key] = value
@@ -304,8 +364,7 @@ class KdbxHeaderReader {
         private val KDF_ARGON2D_UUID = hexToBytes("ef636ddf8c29444b91f7a9a403e30a0c")
         private val KDF_ARGON2ID_UUID = hexToBytes("9e298b1956db4773b23dfc3ec6f0a1e6")
 
-        private fun hexToBytes(hex: String): ByteArray =
-            hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        private fun hexToBytes(hex: String): ByteArray = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
 
         private fun Int.toHex(): String = toUInt().toString(16)
     }

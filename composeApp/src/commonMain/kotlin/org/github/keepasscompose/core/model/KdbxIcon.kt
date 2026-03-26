@@ -1,10 +1,6 @@
 package org.github.keepasscompose.core.model
 
-data class KdbxIcon(
-    val standardIndex: Int = 0,
-    val customUuid: String? = null,
-    val customData: ByteArray? = null,
-) {
+data class KdbxIcon(val standardIndex: Int = 0, val customUuid: String? = null, val customData: ByteArray? = null) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is KdbxIcon) return false

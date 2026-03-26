@@ -8,7 +8,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SearchEngineTest {
-
     private fun entry(
         title: String = "",
         userName: String = "",
@@ -17,36 +16,59 @@ class SearchEngineTest {
         tags: List<String> = emptyList(),
         extraFields: List<KdbxEntryField> = emptyList(),
     ): KdbxEntry {
-        val fields = mutableListOf(
-            KdbxEntryField("Title", title),
-            KdbxEntryField("UserName", userName),
-            KdbxEntryField("Password", "secret", isProtected = true),
-            KdbxEntryField("URL", url),
-            KdbxEntryField("Notes", notes),
-        ) + extraFields
+        val fields =
+            mutableListOf(
+                KdbxEntryField("Title", title),
+                KdbxEntryField("UserName", userName),
+                KdbxEntryField("Password", "secret", isProtected = true),
+                KdbxEntryField("URL", url),
+                KdbxEntryField("Notes", notes),
+            ) + extraFields
         return KdbxEntry(uuid = title.hashCode().toString(), fields = fields, tags = tags)
     }
 
-    private val rootGroup = KdbxGroup(
-        uuid = "root", name = "Root",
-        entries = listOf(
-            entry(title = "GitHub", userName = "john@github.com", url = "https://github.com", tags = listOf("dev", "code")),
-            entry(title = "Gmail", userName = "john@gmail.com", url = "https://mail.google.com", notes = "Personal email"),
-            entry(title = "Bank of America", userName = "john_doe", url = "https://bankofamerica.com", tags = listOf("finance")),
-        ),
-        groups = listOf(
-            KdbxGroup(
-                uuid = "work", name = "Work",
-                entries = listOf(
-                    entry(title = "Slack", userName = "john@work.com", url = "https://slack.com"),
-                    entry(
-                        title = "AWS Console", userName = "admin",
-                        extraFields = listOf(KdbxEntryField("AccountId", "123456789")),
+    private val rootGroup =
+        KdbxGroup(
+            uuid = "root",
+            name = "Root",
+            entries =
+            listOf(
+                entry(
+                    title = "GitHub",
+                    userName = "john@github.com",
+                    url = "https://github.com",
+                    tags = listOf("dev", "code"),
+                ),
+                entry(
+                    title = "Gmail",
+                    userName = "john@gmail.com",
+                    url = "https://mail.google.com",
+                    notes = "Personal email",
+                ),
+                entry(
+                    title = "Bank of America",
+                    userName = "john_doe",
+                    url = "https://bankofamerica.com",
+                    tags = listOf("finance"),
+                ),
+            ),
+            groups =
+            listOf(
+                KdbxGroup(
+                    uuid = "work",
+                    name = "Work",
+                    entries =
+                    listOf(
+                        entry(title = "Slack", userName = "john@work.com", url = "https://slack.com"),
+                        entry(
+                            title = "AWS Console",
+                            userName = "admin",
+                            extraFields = listOf(KdbxEntryField("AccountId", "123456789")),
+                        ),
                     ),
                 ),
             ),
-        ),
-    )
+        )
 
     // --- Basic text search ---
 

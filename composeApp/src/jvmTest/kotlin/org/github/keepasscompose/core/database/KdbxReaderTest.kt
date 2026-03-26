@@ -2,6 +2,7 @@ package org.github.keepasscompose.core.database
 
 import okio.Buffer
 import org.github.keepasscompose.core.crypto.PlatformCryptoProvider
+import org.github.keepasscompose.core.model.Argon2Variant
 import org.github.keepasscompose.core.model.CipherId
 import org.github.keepasscompose.core.model.CompositeKey
 import org.github.keepasscompose.core.model.CompressionAlgorithm
@@ -13,14 +14,12 @@ import org.github.keepasscompose.core.model.KdbxHeader
 import org.github.keepasscompose.core.model.KdbxMeta
 import org.github.keepasscompose.core.model.KdbxVersion
 import org.github.keepasscompose.core.model.KdfParameters
-import org.github.keepasscompose.core.model.Argon2Variant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class KdbxReaderTest {
-
     private val crypto = PlatformCryptoProvider()
     private val reader = KdbxReader(crypto)
 
@@ -30,27 +29,31 @@ class KdbxReaderTest {
     fun readDatabase_v4_aes_roundTrip() {
         val compositeKey = CompositeKey(password = "testPassword")
         val meta = KdbxMeta(databaseName = "TestDB", description = "A test database")
-        val rootGroup = KdbxGroup(
-            uuid = "cm9vdA==",
-            name = "Root",
-            entries = listOf(
-                KdbxEntry(
-                    uuid = "ZW50cnk=",
-                    fields = listOf(
-                        KdbxEntryField("Title", "My Entry"),
-                        KdbxEntryField("UserName", "user@example.com"),
+        val rootGroup =
+            KdbxGroup(
+                uuid = "cm9vdA==",
+                name = "Root",
+                entries =
+                listOf(
+                    KdbxEntry(
+                        uuid = "ZW50cnk=",
+                        fields =
+                        listOf(
+                            KdbxEntryField("Title", "My Entry"),
+                            KdbxEntryField("UserName", "user@example.com"),
+                        ),
                     ),
                 ),
-            ),
-        )
+            )
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.AES_256,
-            ivSize = 16,
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.AES_256,
+                ivSize = 16,
+            )
 
         val result = reader.readDatabase(fileBytes, compositeKey)
 
@@ -68,13 +71,14 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "ChaCha20 DB")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.CHACHA20,
-            ivSize = 12,
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.CHACHA20,
+                ivSize = 12,
+            )
 
         val result = reader.readDatabase(fileBytes, compositeKey)
 
@@ -88,13 +92,14 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "Twofish DB")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.TWOFISH,
-            ivSize = 16,
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.TWOFISH,
+                ivSize = 16,
+            )
 
         val result = reader.readDatabase(fileBytes, compositeKey)
 
@@ -108,14 +113,15 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "Uncompressed DB")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.AES_256,
-            ivSize = 16,
-            compression = CompressionAlgorithm.NONE,
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.AES_256,
+                ivSize = 16,
+                compression = CompressionAlgorithm.NONE,
+            )
 
         val result = reader.readDatabase(fileBytes, compositeKey)
 
@@ -128,24 +134,28 @@ class KdbxReaderTest {
     fun readDatabase_v3_aes_roundTrip() {
         val compositeKey = CompositeKey(password = "v3password")
         val meta = KdbxMeta(databaseName = "V3 Database")
-        val rootGroup = KdbxGroup(
-            uuid = "cm9vdA==",
-            name = "Root",
-            entries = listOf(
-                KdbxEntry(
-                    uuid = "ZW50cnk=",
-                    fields = listOf(
-                        KdbxEntryField("Title", "V3 Entry"),
+        val rootGroup =
+            KdbxGroup(
+                uuid = "cm9vdA==",
+                name = "Root",
+                entries =
+                listOf(
+                    KdbxEntry(
+                        uuid = "ZW50cnk=",
+                        fields =
+                        listOf(
+                            KdbxEntryField("Title", "V3 Entry"),
+                        ),
                     ),
                 ),
-            ),
-        )
+            )
 
-        val fileBytes = buildKdbx3File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-        )
+        val fileBytes =
+            buildKdbx3File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+            )
 
         val result = reader.readDatabase(fileBytes, compositeKey)
 
@@ -161,20 +171,22 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "Argon2d DB")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.AES_256,
-            ivSize = 16,
-            kdfParams = KdfParameters.Argon2(
-                variant = Argon2Variant.ARGON2D,
-                salt = ByteArray(32) { (it + 5).toByte() },
-                parallelism = 2,
-                memory = 1024,
-                iterations = 1,
-            ),
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.AES_256,
+                ivSize = 16,
+                kdfParams =
+                KdfParameters.Argon2(
+                    variant = Argon2Variant.ARGON2D,
+                    salt = ByteArray(32) { (it + 5).toByte() },
+                    parallelism = 2,
+                    memory = 1024,
+                    iterations = 1,
+                ),
+            )
 
         val result = reader.readDatabase(fileBytes, compositeKey)
 
@@ -187,20 +199,22 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "Argon2id DB")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.CHACHA20,
-            ivSize = 12,
-            kdfParams = KdfParameters.Argon2(
-                variant = Argon2Variant.ARGON2ID,
-                salt = ByteArray(32) { (it + 15).toByte() },
-                parallelism = 2,
-                memory = 1024,
-                iterations = 1,
-            ),
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.CHACHA20,
+                ivSize = 12,
+                kdfParams =
+                KdfParameters.Argon2(
+                    variant = Argon2Variant.ARGON2ID,
+                    salt = ByteArray(32) { (it + 15).toByte() },
+                    parallelism = 2,
+                    memory = 1024,
+                    iterations = 1,
+                ),
+            )
 
         val result = reader.readDatabase(fileBytes, compositeKey)
 
@@ -214,20 +228,29 @@ class KdbxReaderTest {
         val garbageBytes = ByteArray(200) { 0x42.toByte() }
         val key = CompositeKey(password = "test")
 
-        val exception = assertFailsWith<KdbxParseException> {
-            reader.readDatabase(garbageBytes, key)
-        }
+        val exception =
+            assertFailsWith<KdbxParseException> {
+                reader.readDatabase(garbageBytes, key)
+            }
         assertTrue(exception.message!!.contains("signature", ignoreCase = true))
     }
 
     @Test
     fun readDatabase_truncatedHeader_throwsException() {
         // Valid KDBX signature but truncated after 8 bytes
-        val truncated = byteArrayOf(
-            0x03.toByte(), 0xD9.toByte(), 0xA2.toByte(), 0x9A.toByte(), // sig1
-            0x67.toByte(), 0xFB.toByte(), 0x4B.toByte(), 0xB5.toByte(), // sig2
-            0x00, 0x04, // partial version
-        )
+        val truncated =
+            byteArrayOf(
+                0x03.toByte(),
+                0xD9.toByte(),
+                0xA2.toByte(),
+                0x9A.toByte(), // sig1
+                0x67.toByte(),
+                0xFB.toByte(),
+                0x4B.toByte(),
+                0xB5.toByte(), // sig2
+                0x00,
+                0x04, // partial version
+            )
         val key = CompositeKey(password = "test")
 
         assertFailsWith<Exception> {
@@ -241,13 +264,14 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "HMAC Test")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.AES_256,
-            ivSize = 16,
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.AES_256,
+                ivSize = 16,
+            )
 
         // Corrupt the HMAC area (after header hash - find and corrupt)
         val corrupted = fileBytes.copyOf()
@@ -271,18 +295,20 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "Test")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.AES_256,
-            ivSize = 16,
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.AES_256,
+                ivSize = 16,
+            )
 
         val wrongKey = CompositeKey(password = "wrongPassword")
-        val exception = assertFailsWith<KdbxParseException> {
-            reader.readDatabase(fileBytes, wrongKey)
-        }
+        val exception =
+            assertFailsWith<KdbxParseException> {
+                reader.readDatabase(fileBytes, wrongKey)
+            }
         assertTrue(exception.message!!.contains("Invalid credentials"))
     }
 
@@ -292,16 +318,18 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "Test")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx3File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-        )
+        val fileBytes =
+            buildKdbx3File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+            )
 
         val wrongKey = CompositeKey(password = "wrongPassword")
-        val exception = assertFailsWith<Exception> {
-            reader.readDatabase(fileBytes, wrongKey)
-        }
+        val exception =
+            assertFailsWith<Exception> {
+                reader.readDatabase(fileBytes, wrongKey)
+            }
         // Either "Invalid credentials" from stream start bytes check,
         // or a decryption error from padding
         assertTrue(exception.message != null)
@@ -321,30 +349,34 @@ class KdbxReaderTest {
     fun readDatabase_v4_protectedValues_decrypted() {
         val compositeKey = CompositeKey(password = "protectedTest")
         val meta = KdbxMeta(databaseName = "Protected DB")
-        val rootGroup = KdbxGroup(
-            uuid = "cm9vdA==",
-            name = "Root",
-            entries = listOf(
-                KdbxEntry(
-                    uuid = "ZW50cnk=",
-                    fields = listOf(
-                        KdbxEntryField("Title", "Secret Entry"),
-                        KdbxEntryField("Password", "s3cretP@ss!", isProtected = true),
+        val rootGroup =
+            KdbxGroup(
+                uuid = "cm9vdA==",
+                name = "Root",
+                entries =
+                listOf(
+                    KdbxEntry(
+                        uuid = "ZW50cnk=",
+                        fields =
+                        listOf(
+                            KdbxEntryField("Title", "Secret Entry"),
+                            KdbxEntryField("Password", "s3cretP@ss!", isProtected = true),
+                        ),
                     ),
                 ),
-            ),
-        )
+            )
 
         val innerStreamKey = ByteArray(32) { (it + 0x40).toByte() }
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.AES_256,
-            ivSize = 16,
-            innerStreamKey = innerStreamKey,
-            useInnerStreamEncryption = true,
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.AES_256,
+                ivSize = 16,
+                innerStreamKey = innerStreamKey,
+                useInnerStreamEncryption = true,
+            )
 
         val result = reader.readDatabase(fileBytes, compositeKey)
 
@@ -360,13 +392,14 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "KeyFile DB")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.AES_256,
-            ivSize = 16,
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.AES_256,
+                ivSize = 16,
+            )
 
         val result = reader.readDatabase(fileBytes, compositeKey)
 
@@ -379,13 +412,14 @@ class KdbxReaderTest {
         val meta = KdbxMeta(databaseName = "Source DB")
         val rootGroup = KdbxGroup(uuid = "cm9vdA==", name = "Root")
 
-        val fileBytes = buildKdbx4File(
-            compositeKey = compositeKey,
-            meta = meta,
-            rootGroup = rootGroup,
-            cipher = CipherId.AES_256,
-            ivSize = 16,
-        )
+        val fileBytes =
+            buildKdbx4File(
+                compositeKey = compositeKey,
+                meta = meta,
+                rootGroup = rootGroup,
+                cipher = CipherId.AES_256,
+                ivSize = 16,
+            )
 
         val source = Buffer().apply { write(fileBytes) }
         val result = reader.readDatabase(source, compositeKey)
@@ -404,22 +438,24 @@ class KdbxReaderTest {
         compression: CompressionAlgorithm = CompressionAlgorithm.GZIP,
         innerStreamKey: ByteArray = ByteArray(32) { (it + 0x20).toByte() },
         useInnerStreamEncryption: Boolean = false,
-        kdfParams: KdfParameters = KdfParameters.AesKdf(
-            rounds = 2,
-            seed = ByteArray(32) { (it + 0x30).toByte() },
-        ),
+        kdfParams: KdfParameters =
+            KdfParameters.AesKdf(
+                rounds = 2,
+                seed = ByteArray(32) { (it + 0x30).toByte() },
+            ),
     ): ByteArray {
         val masterSeed = ByteArray(32) { (it + 1).toByte() }
         val encryptionIv = ByteArray(ivSize) { (it + 0x10).toByte() }
 
-        val header = KdbxHeader(
-            version = KdbxVersion(4, 0),
-            cipher = cipher,
-            compression = compression,
-            masterSeed = masterSeed,
-            encryptionIv = encryptionIv,
-            kdfParameters = kdfParams,
-        )
+        val header =
+            KdbxHeader(
+                version = KdbxVersion(4, 0),
+                cipher = cipher,
+                compression = compression,
+                masterSeed = masterSeed,
+                encryptionIv = encryptionIv,
+                kdfParameters = kdfParams,
+            )
 
         // Derive keys
         val compositeKeyHash = deriveCompositeKeyHash(compositeKey)
@@ -448,22 +484,25 @@ class KdbxReaderTest {
         )
 
         // Write XML (with optional inner stream encryption)
-        val encryptor = if (useInnerStreamEncryption) {
-            createInnerStreamEncryptor(innerStreamKey)
-        } else {
-            null
-        }
-        val xmlResult = KdbxXmlWriter(isV4 = true, innerStreamEncryptor = encryptor)
-            .writeXml(meta, rootGroup)
+        val encryptor =
+            if (useInnerStreamEncryption) {
+                createInnerStreamEncryptor(innerStreamKey)
+            } else {
+                null
+            }
+        val xmlResult =
+            KdbxXmlWriter(isV4 = true, innerStreamEncryptor = encryptor)
+                .writeXml(meta, rootGroup)
         innerPayloadBuf.writeUtf8(xmlResult.xml)
 
         val innerPayload = innerPayloadBuf.readByteArray()
 
         // 4. Compress
-        val payload = when (compression) {
-            CompressionAlgorithm.GZIP -> KdbxBinaryPool.compressGzip(innerPayload)
-            CompressionAlgorithm.NONE -> innerPayload
-        }
+        val payload =
+            when (compression) {
+                CompressionAlgorithm.GZIP -> KdbxBinaryPool.compressGzip(innerPayload)
+                CompressionAlgorithm.NONE -> innerPayload
+            }
 
         // 5. Encrypt
         val encrypted = encrypt(payload, masterKey, header)
@@ -477,31 +516,29 @@ class KdbxReaderTest {
         return fileBuf.readByteArray()
     }
 
-    private fun buildKdbx3File(
-        compositeKey: CompositeKey,
-        meta: KdbxMeta,
-        rootGroup: KdbxGroup,
-    ): ByteArray {
+    private fun buildKdbx3File(compositeKey: CompositeKey, meta: KdbxMeta, rootGroup: KdbxGroup): ByteArray {
         val masterSeed = ByteArray(32) { (it + 1).toByte() }
         val encryptionIv = ByteArray(16) { (it + 0x10).toByte() }
         val innerStreamKey = ByteArray(32) { (it + 0x20).toByte() }
         val streamStartBytes = ByteArray(32) { (it + 0x50).toByte() }
-        val kdfParams = KdfParameters.AesKdf(
-            rounds = 2,
-            seed = ByteArray(32) { (it + 0x30).toByte() },
-        )
+        val kdfParams =
+            KdfParameters.AesKdf(
+                rounds = 2,
+                seed = ByteArray(32) { (it + 0x30).toByte() },
+            )
 
-        val header = KdbxHeader(
-            version = KdbxVersion(3, 1),
-            cipher = CipherId.AES_256,
-            compression = CompressionAlgorithm.GZIP,
-            masterSeed = masterSeed,
-            encryptionIv = encryptionIv,
-            kdfParameters = kdfParams,
-            innerRandomStreamKey = innerStreamKey,
-            innerRandomStreamId = org.github.keepasscompose.core.model.InnerStreamCipher.SALSA20,
-            streamStartBytes = streamStartBytes,
-        )
+        val header =
+            KdbxHeader(
+                version = KdbxVersion(3, 1),
+                cipher = CipherId.AES_256,
+                compression = CompressionAlgorithm.GZIP,
+                masterSeed = masterSeed,
+                encryptionIv = encryptionIv,
+                kdfParameters = kdfParams,
+                innerRandomStreamKey = innerStreamKey,
+                innerRandomStreamId = org.github.keepasscompose.core.model.InnerStreamCipher.SALSA20,
+                streamStartBytes = streamStartBytes,
+            )
 
         // Derive keys
         val compositeKeyHash = deriveCompositeKeyHash(compositeKey)
@@ -534,10 +571,12 @@ class KdbxReaderTest {
         hashedBlocksBuf.writeIntLe(0) // zero size
 
         // 5. Prepend stream start bytes
-        val decryptedPayload = Buffer().apply {
-            write(streamStartBytes)
-            write(hashedBlocksBuf.readByteArray())
-        }.readByteArray()
+        val decryptedPayload =
+            Buffer()
+                .apply {
+                    write(streamStartBytes)
+                    write(hashedBlocksBuf.readByteArray())
+                }.readByteArray()
 
         // 6. Encrypt
         val encrypted = crypto.aesEncrypt(decryptedPayload, masterKey, encryptionIv)
@@ -558,23 +597,23 @@ class KdbxReaderTest {
         return crypto.sha256(concatenated)
     }
 
-    private fun deriveTransformedKey(
-        compositeKeyHash: ByteArray,
-        kdfParams: KdfParameters,
-    ): ByteArray = when (kdfParams) {
+    private fun deriveTransformedKey(compositeKeyHash: ByteArray, kdfParams: KdfParameters): ByteArray = when (kdfParams) {
         is KdfParameters.AesKdf -> {
             val transformed = crypto.aesKdf(compositeKeyHash, kdfParams.seed, kdfParams.rounds)
             crypto.sha256(transformed)
         }
-        is KdfParameters.Argon2 -> crypto.argon2(
-            password = compositeKeyHash,
-            salt = kdfParams.salt,
-            variant = kdfParams.variant,
-            version = kdfParams.version,
-            memory = kdfParams.memory,
-            iterations = kdfParams.iterations,
-            parallelism = kdfParams.parallelism,
-        )
+
+        is KdfParameters.Argon2 -> {
+            crypto.argon2(
+                password = compositeKeyHash,
+                salt = kdfParams.salt,
+                variant = kdfParams.variant,
+                version = kdfParams.version,
+                memory = kdfParams.memory,
+                iterations = kdfParams.iterations,
+                parallelism = kdfParams.parallelism,
+            )
+        }
     }
 
     private fun computeHmacBlockKey(hmacBaseKey: ByteArray, blockIndex: Long): ByteArray {
@@ -582,28 +621,21 @@ class KdbxReaderTest {
         return crypto.sha512(indexBytes + hmacBaseKey)
     }
 
-    private fun encrypt(
-        data: ByteArray,
-        masterKey: ByteArray,
-        header: KdbxHeader,
-    ): ByteArray = when (header.cipher) {
+    private fun encrypt(data: ByteArray, masterKey: ByteArray, header: KdbxHeader): ByteArray = when (header.cipher) {
         CipherId.AES_256 -> crypto.aesEncrypt(data, masterKey, header.encryptionIv)
         CipherId.TWOFISH -> crypto.twofishEncrypt(data, masterKey, header.encryptionIv)
         CipherId.CHACHA20 -> crypto.chaCha20(data, masterKey, header.encryptionIv)
     }
 
-    private fun writeHmacBlock(
-        sink: Buffer,
-        hmacBaseKey: ByteArray,
-        blockIndex: Long,
-        blockData: ByteArray,
-    ) {
+    private fun writeHmacBlock(sink: Buffer, hmacBaseKey: ByteArray, blockIndex: Long, blockData: ByteArray) {
         val blockKey = computeHmacBlockKey(hmacBaseKey, blockIndex)
-        val hmacData = Buffer().apply {
-            writeLongLe(blockIndex)
-            writeIntLe(blockData.size)
-            write(blockData)
-        }.readByteArray()
+        val hmacData =
+            Buffer()
+                .apply {
+                    writeLongLe(blockIndex)
+                    writeIntLe(blockData.size)
+                    write(blockData)
+                }.readByteArray()
         sink.write(crypto.hmacSha256(blockKey, hmacData))
         sink.writeIntLe(blockData.size)
         sink.write(blockData)

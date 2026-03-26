@@ -8,7 +8,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ProtectedByteArrayTest {
-
     @Test
     fun bytes_returnsData() {
         val data = byteArrayOf(1, 2, 3)
