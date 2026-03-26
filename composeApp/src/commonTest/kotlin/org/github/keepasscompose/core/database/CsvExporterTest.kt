@@ -28,7 +28,8 @@ class CsvExporterTest {
                 name = "Root",
                 entries = listOf(entry("GitHub", "john", "pass123", "https://github.com", "Dev")),
             )
-        val csv = CsvExporter.export(root)
+        val config = CsvExporter.Config(includePassword = true)
+        val csv = CsvExporter.export(root, config)
         val lines = csv.trim().lines()
         assertEquals("Title,Username,Password,URL,Notes", lines[0])
         assertEquals("GitHub,john,pass123,https://github.com,Dev", lines[1])
@@ -176,7 +177,8 @@ class CsvExporterTest {
                     entry("Gmail", "john@gmail.com", "secret456", "https://gmail.com", ""),
                 ),
             )
-        val csv = CsvExporter.export(root)
+        val config = CsvExporter.Config(includePassword = true)
+        val csv = CsvExporter.export(root, config)
         val imported = CsvImporter.parse(csv)
         assertEquals(2, imported.entries.size)
         assertEquals("GitHub", imported.entries[0].title)
