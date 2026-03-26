@@ -33,7 +33,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.github.keepasscompose.core.common.TotpGenerator
 import org.github.keepasscompose.core.model.KdbxEntry
+import org.github.keepasscompose.ui.components.TotpDisplay
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -97,6 +99,20 @@ fun EntryDetailScreen(entry: KdbxEntry, onCopyField: (String) -> Unit = {}, modi
             IconButton(onClick = { onCopyField(entry.password) }) {
                 Icon(Icons.Filled.ContentCopy, contentDescription = "Copy")
             }
+        }
+
+        // TOTP
+        val totpParams = remember(entry) {
+            val fieldMap = entry.fields.associate { it.key to it.value }
+            TotpGenerator.parseKeePassAttributes(fieldMap)
+        }
+        if (totpParams != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            TotpDisplay(
+                params = totpParams,
+                onCopy = { code -> onCopyField(code) },
+            )
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         // URL

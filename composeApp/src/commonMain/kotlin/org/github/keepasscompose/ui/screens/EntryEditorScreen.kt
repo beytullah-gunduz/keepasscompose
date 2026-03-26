@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.BasicAlertDialog
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import org.github.keepasscompose.core.common.TotpGenerator
 
 data class EntryEditorField(val key: String, val value: String, val isProtected: Boolean = false)
 
@@ -271,6 +273,34 @@ fun EntryEditorScreen(
             }
         }
 
+        // TOTP setup
+        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(8.dp))
+        var showTotpSetup by remember { mutableStateOf(false) }
+        val hasTotpField = customFields.any { it.key == "otp" || it.key.startsWith("TimeOtp-") }
+        OutlinedButton(
+            onClick = { showTotpSetup = true },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Filled.Timer, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(if (hasTotpField) "Edit TOTP" else "Set up TOTP")
+        }
+        if (showTotpSetup) {
+            TotpSetupDialog(
+                onConfirm = { params ->
+                    // Remove old TOTP fields
+                    customFields.removeAll { it.key == "otp" || it.key.startsWith("TimeOtp-") }
+                    // Add otpauth:// URI as the "otp" custom field
+                    val uri = buildOtpauthUri(params)
+                    customFields.add(EntryEditorField(key = "otp", value = uri))
+                    showTotpSetup = false
+                },
+                onDismiss = { showTotpSetup = false },
+            )
+        }
+
         // Action buttons
         Spacer(modifier = Modifier.height(24.dp))
         Row(
@@ -317,6 +347,39 @@ fun EntryEditorScreen(
             ) {
                 Text(if (isEditMode) "Save" else "Create")
             }
+        }
+    }
+}
+
+private const val BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+
+private fun buildOtpauthUri(params: TotpGenerator.TotpParams): String {
+    val secret = buildString {
+        var buffer = 0
+        var bitsLeft = 0
+        for (byte in params.secret) {
+            buffer = (buffer shl 8) or (byte.toInt() and 0xFF)
+            bitsLeft += 8
+            while (bitsLeft >= 5) {
+                bitsLeft -= 5
+                append(BASE32_ALPHABET[(buffer shr bitsLeft) and 0x1F])
+            }
+        }
+        if (bitsLeft > 0) {
+            append(BASE32_ALPHABET[(buffer shl (5 - bitsLeft)) and 0x1F])
+        }
+    }
+    return buildString {
+        append("otpauth://totp/Entry?secret=")
+        append(secret)
+        if (params.algorithm != TotpGenerator.Algorithm.SHA1) {
+            append("&algorithm=${params.algorithm.name}")
+        }
+        if (params.digits != 6) {
+            append("&digits=${params.digits}")
+        }
+        if (params.period != 30) {
+            append("&period=${params.period}")
         }
     }
 }
