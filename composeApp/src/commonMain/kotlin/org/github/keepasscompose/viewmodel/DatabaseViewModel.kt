@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.github.keepasscompose.core.common.FileSystem
+import org.github.keepasscompose.core.common.InactivityTimer
 import org.github.keepasscompose.core.database.KdbxWriter
 import org.github.keepasscompose.core.model.CompositeKey
 import org.github.keepasscompose.core.model.KdbxDatabase
@@ -38,11 +39,25 @@ class DatabaseViewModel(
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState: StateFlow<SaveState> = _saveState.asStateFlow()
 
+    private val _isLocked = MutableStateFlow(false)
+    val isLocked: StateFlow<Boolean> = _isLocked.asStateFlow()
+
+    val inactivityTimer = InactivityTimer(viewModelScope)
+
+    init {
+        viewModelScope.launch {
+            inactivityTimer.isExpired.collect { expired ->
+                if (expired) lock()
+            }
+        }
+    }
+
     fun setDatabase(database: KdbxDatabase, filePath: String, compositeKey: CompositeKey) {
         _database.value = database
         _filePath.value = filePath
         _compositeKey.value = compositeKey
         _isDirty.value = false
+        _isLocked.value = false
     }
 
     fun markDirty() {
@@ -93,11 +108,26 @@ class DatabaseViewModel(
 
     fun needsSaveBeforeClose(): Boolean = _isDirty.value
 
+    fun lock() {
+        // Clear sensitive data but preserve file path for re-unlock
+        _database.value = null
+        _compositeKey.value = null
+        _isLocked.value = true
+        _isDirty.value = false
+        inactivityTimer.stop()
+    }
+
     fun close() {
         _database.value = null
         _filePath.value = null
         _compositeKey.value = null
         _isDirty.value = false
+        _isLocked.value = false
         _saveState.value = SaveState.Idle
+        inactivityTimer.stop()
+    }
+
+    fun onUserActivity() {
+        inactivityTimer.onUserActivity()
     }
 }
