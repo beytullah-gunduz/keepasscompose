@@ -12,8 +12,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -60,7 +60,7 @@ fun DatabaseSettingsScreen(
         Text("Database Settings", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
 
-        TabRow(selectedTabIndex = selectedTab) {
+        PrimaryTabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTab == index,
