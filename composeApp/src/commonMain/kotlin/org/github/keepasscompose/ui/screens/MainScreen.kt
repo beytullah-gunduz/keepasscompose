@@ -14,13 +14,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +48,8 @@ import androidx.window.core.layout.WindowSizeClass
 import kotlinx.coroutines.launch
 import org.github.keepasscompose.ui.components.DatabaseTab
 import org.github.keepasscompose.ui.components.DatabaseTabBar
+import org.github.keepasscompose.ui.components.Toolbar
+import org.github.keepasscompose.ui.components.ToolbarCallbacks
 
 @Composable
 fun MainScreen(
@@ -59,13 +57,10 @@ fun MainScreen(
     entryCount: Int = 0,
     tabs: List<DatabaseTab> = emptyList(),
     selectedTabId: String = "",
+    hasSelectedEntry: Boolean = false,
+    toolbarCallbacks: ToolbarCallbacks = ToolbarCallbacks(),
     onTabSelected: (String) -> Unit = {},
     onTabClosed: (String) -> Unit = {},
-    onNewEntry: () -> Unit = {},
-    onOpenDatabase: () -> Unit = {},
-    onSaveDatabase: () -> Unit = {},
-    onLockDatabase: () -> Unit = {},
-    onSearch: () -> Unit = {},
 ) {
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val isCompact = !windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
@@ -73,10 +68,10 @@ fun MainScreen(
     if (isCompact) {
         MobileMainScreen(
             databaseName = databaseName,
-            onNewEntry = onNewEntry,
-            onOpenDatabase = onOpenDatabase,
-            onLockDatabase = onLockDatabase,
-            onSearch = onSearch,
+            onNewEntry = toolbarCallbacks.onNewEntry,
+            onOpenDatabase = toolbarCallbacks.onOpenDatabase,
+            onLockDatabase = toolbarCallbacks.onLockDatabase,
+            onSearch = toolbarCallbacks.onSearch,
         )
     } else {
         DesktopMainScreen(
@@ -84,13 +79,10 @@ fun MainScreen(
             entryCount = entryCount,
             tabs = tabs,
             selectedTabId = selectedTabId,
+            hasSelectedEntry = hasSelectedEntry,
+            toolbarCallbacks = toolbarCallbacks,
             onTabSelected = onTabSelected,
             onTabClosed = onTabClosed,
-            onNewEntry = onNewEntry,
-            onOpenDatabase = onOpenDatabase,
-            onSaveDatabase = onSaveDatabase,
-            onLockDatabase = onLockDatabase,
-            onSearch = onSearch,
         )
     }
 }
@@ -106,48 +98,34 @@ private fun DesktopMainScreen(
     entryCount: Int,
     tabs: List<DatabaseTab>,
     selectedTabId: String,
+    hasSelectedEntry: Boolean,
+    toolbarCallbacks: ToolbarCallbacks,
     onTabSelected: (String) -> Unit,
     onTabClosed: (String) -> Unit,
-    onNewEntry: () -> Unit,
-    onOpenDatabase: () -> Unit,
-    onSaveDatabase: () -> Unit,
-    onLockDatabase: () -> Unit,
-    onSearch: () -> Unit,
 ) {
     Scaffold(
         topBar = {
             Column {
                 TopAppBar(
                     title = { Text(databaseName.ifEmpty { "KeePass Compose" }) },
-                actions = {
-                    IconButton(onClick = onNewEntry) {
-                        Icon(Icons.AutoMirrored.Filled.NoteAdd, contentDescription = "New Entry")
-                    }
-                    IconButton(onClick = onOpenDatabase) {
-                        Icon(Icons.Filled.FolderOpen, contentDescription = "Open Database")
-                    }
-                    IconButton(onClick = onSaveDatabase) {
-                        Icon(Icons.Filled.Save, contentDescription = "Save Database")
-                    }
-                    IconButton(onClick = onLockDatabase) {
-                        Icon(Icons.Filled.Lock, contentDescription = "Lock Database")
-                    }
-                    IconButton(onClick = onSearch) {
-                        Icon(Icons.Filled.Search, contentDescription = "Search")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            )
+                    actions = {
+                        Toolbar(
+                            callbacks = toolbarCallbacks,
+                            hasSelectedEntry = hasSelectedEntry,
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    ),
+                )
                 if (tabs.isNotEmpty()) {
                     DatabaseTabBar(
                         tabs = tabs,
                         selectedTabId = selectedTabId,
                         onTabSelected = onTabSelected,
                         onTabClosed = onTabClosed,
-                        onNewTab = onOpenDatabase,
+                        onNewTab = toolbarCallbacks.onOpenDatabase,
                     )
                 }
             }
