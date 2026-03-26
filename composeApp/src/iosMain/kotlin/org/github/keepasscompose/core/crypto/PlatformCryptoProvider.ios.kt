@@ -142,11 +142,9 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         TODO("iOS: Implement via libsodium crypto_stream_salsa20_xor")
     }
 
-    override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
-        TODO("iOS: Implement via CInterop with a C Twofish library")
-    }
+    override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray =
+        Twofish.encryptCbc(data, key, iv)
 
-    override fun twofishDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
-        TODO("iOS: Implement via CInterop with a C Twofish library")
-    }
+    override fun twofishDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray =
+        Twofish.decryptCbc(data, key, iv)
 }
