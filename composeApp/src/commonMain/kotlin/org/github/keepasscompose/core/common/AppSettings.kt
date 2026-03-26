@@ -21,7 +21,7 @@ class AppSettings(private val dataStore: DataStore<Preferences>) {
     object Defaults {
         const val AUTO_LOCK_TIMEOUT_SECONDS = 300 // 5 minutes
         const val THEME_PREFERENCE = "system" // "system", "light", "dark"
-        const val CLIPBOARD_CLEAR_TIMEOUT_SECONDS = 30 // 30 seconds
+        const val CLIPBOARD_CLEAR_TIMEOUT_SECONDS = 12 // 12 seconds
     }
 
     @OptIn(ExperimentalEncodingApi::class)
