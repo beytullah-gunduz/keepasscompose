@@ -81,6 +81,43 @@ class KdbxXmlReaderTest {
         assertFalse(result.meta.protectNotes)
     }
 
+    @Test
+    fun parseMeta_historyMaxItems() {
+        val xml = wrapKeePassFile(
+            meta = """
+                <HistoryMaxItems>20</HistoryMaxItems>
+                <HistoryMaxSize>10485760</HistoryMaxSize>
+            """,
+        )
+        val result = readerV3().readXml(xml)
+
+        assertEquals(20, result.meta.historyMaxItems)
+        assertEquals(10485760L, result.meta.historyMaxSize)
+    }
+
+    @Test
+    fun parseMeta_historyMaxItems_defaults() {
+        val xml = wrapKeePassFile(meta = "")
+        val result = readerV3().readXml(xml)
+
+        assertEquals(12, result.meta.historyMaxItems)
+        assertEquals(6291456L, result.meta.historyMaxSize)
+    }
+
+    @Test
+    fun parseMeta_historyMaxItems_negativeUnlimited() {
+        val xml = wrapKeePassFile(
+            meta = """
+                <HistoryMaxItems>-1</HistoryMaxItems>
+                <HistoryMaxSize>-1</HistoryMaxSize>
+            """,
+        )
+        val result = readerV3().readXml(xml)
+
+        assertEquals(-1, result.meta.historyMaxItems)
+        assertEquals(-1L, result.meta.historyMaxSize)
+    }
+
     // -- Group parsing tests --
 
     @Test

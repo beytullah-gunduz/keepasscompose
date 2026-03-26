@@ -94,6 +94,8 @@ class KdbxXmlReader(
         var databaseName = ""
         var description = ""
         var defaultUserName = ""
+        var historyMaxItems = KdbxMeta.DEFAULT_HISTORY_MAX_ITEMS
+        var historyMaxSize = KdbxMeta.DEFAULT_HISTORY_MAX_SIZE
         var recycleBinEnabled = true
         var recycleBinUuid: String? = null
         var protectTitle = false
@@ -107,6 +109,10 @@ class KdbxXmlReader(
                 "DatabaseName" -> databaseName = reader.readElementText()
                 "DatabaseDescription" -> description = reader.readElementText()
                 "DefaultUserName" -> defaultUserName = reader.readElementText()
+                "HistoryMaxItems" -> historyMaxItems = reader.readElementText().toIntOrNull()
+                    ?: KdbxMeta.DEFAULT_HISTORY_MAX_ITEMS
+                "HistoryMaxSize" -> historyMaxSize = reader.readElementText().toLongOrNull()
+                    ?: KdbxMeta.DEFAULT_HISTORY_MAX_SIZE
                 "RecycleBinEnabled" -> recycleBinEnabled = reader.readElementText().toBooleanKdbx()
                 "RecycleBinUUID" -> recycleBinUuid = reader.readElementText().ifBlank { null }
                 "MemoryProtection" -> {
@@ -126,6 +132,8 @@ class KdbxXmlReader(
             databaseName = databaseName,
             description = description,
             defaultUserName = defaultUserName,
+            historyMaxItems = historyMaxItems,
+            historyMaxSize = historyMaxSize,
             recycleBinEnabled = recycleBinEnabled,
             recycleBinUuid = recycleBinUuid,
             protectTitle = protectTitle,

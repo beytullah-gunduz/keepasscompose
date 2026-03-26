@@ -73,6 +73,8 @@ class KdbxXmlWriter(
         writer.writeElement("DatabaseName", meta.databaseName)
         writer.writeElement("DatabaseDescription", meta.description)
         writer.writeElement("DefaultUserName", meta.defaultUserName)
+        writer.writeElement("HistoryMaxItems", meta.historyMaxItems.toString())
+        writer.writeElement("HistoryMaxSize", meta.historyMaxSize.toString())
         writer.writeElement("RecycleBinEnabled", meta.recycleBinEnabled.toKdbxString())
         if (meta.recycleBinUuid != null) {
             writer.writeElement("RecycleBinUUID", meta.recycleBinUuid)

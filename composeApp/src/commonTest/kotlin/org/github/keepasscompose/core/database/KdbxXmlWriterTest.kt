@@ -74,6 +74,33 @@ class KdbxXmlWriterTest {
     }
 
     @Test
+    fun writeMeta_historyMaxItems() {
+        val meta = KdbxMeta(historyMaxItems = 25, historyMaxSize = 10485760)
+        val result = writeAndReadBack(meta = meta)
+
+        assertEquals(25, result.meta.historyMaxItems)
+        assertEquals(10485760L, result.meta.historyMaxSize)
+    }
+
+    @Test
+    fun writeMeta_historyMaxItems_defaults() {
+        val meta = KdbxMeta()
+        val result = writeAndReadBack(meta = meta)
+
+        assertEquals(12, result.meta.historyMaxItems)
+        assertEquals(6291456L, result.meta.historyMaxSize)
+    }
+
+    @Test
+    fun writeMeta_historyMaxItems_negativeUnlimited() {
+        val meta = KdbxMeta(historyMaxItems = -1, historyMaxSize = -1)
+        val result = writeAndReadBack(meta = meta)
+
+        assertEquals(-1, result.meta.historyMaxItems)
+        assertEquals(-1L, result.meta.historyMaxSize)
+    }
+
+    @Test
     fun writeMeta_memoryProtection_allFalse() {
         val meta = KdbxMeta(
             protectTitle = false,
