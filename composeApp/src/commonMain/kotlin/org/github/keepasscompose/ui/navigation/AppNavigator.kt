@@ -52,7 +52,7 @@ fun AppNavigator() {
     val filePicker = remember { FilePicker() }
     val scope = rememberCoroutineScope()
 
-    var currentScreen: AppScreen by rememberSaveable(saver = AppScreenSaver) { mutableStateOf(AppScreen.Welcome) }
+    var currentScreen: AppScreen by rememberSaveable(stateSaver = AppScreenSaver) { mutableStateOf(AppScreen.Welcome) }
     val unlockState by unlockViewModel.state.collectAsState()
 
     // React to successful unlock
