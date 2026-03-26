@@ -65,10 +65,11 @@ fun MainScreen(
     onNewEntry: () -> Unit = {},
     onSearch: () -> Unit = {},
 ) {
-    val navigator = rememberListDetailPaneScaffoldNavigator<KdbxEntry>()
+    val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     var selectedGroup by remember { mutableStateOf("Root") }
+    val selectedEntry = entries.find { it.uuid == navigator.currentDestination?.contentKey }
 
     val isListHidden = navigator.scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Hidden
     val isDetailHidden = navigator.scaffoldValue[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Hidden
@@ -148,10 +149,10 @@ fun MainScreen(
                     ) { padding ->
                         EntryListPane(
                             entries = entries,
-                            selectedEntryUuid = navigator.currentDestination?.contentKey?.uuid,
+                            selectedEntryUuid = navigator.currentDestination?.contentKey,
                             onEntrySelected = { entry ->
                                 scope.launch {
-                                    navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, entry)
+                                    navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, entry.uuid)
                                 }
                             },
                             modifier = Modifier.fillMaxSize().padding(padding),
@@ -162,7 +163,7 @@ fun MainScreen(
             detailPane = {
                 AnimatedPane {
                     Surface(modifier = Modifier.fillMaxSize()) {
-                        val entry = navigator.currentDestination?.contentKey
+                        val entry = selectedEntry
                         if (entry != null) {
                             Scaffold(
                                 topBar = {
