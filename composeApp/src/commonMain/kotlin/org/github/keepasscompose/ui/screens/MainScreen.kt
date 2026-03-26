@@ -50,6 +50,7 @@ import org.github.keepasscompose.ui.components.DatabaseTab
 import org.github.keepasscompose.ui.components.DatabaseTabBar
 import org.github.keepasscompose.ui.components.Toolbar
 import org.github.keepasscompose.ui.components.ToolbarCallbacks
+import org.github.keepasscompose.ui.shortcuts.keyboardShortcuts
 
 @Composable
 fun MainScreen(
@@ -104,6 +105,10 @@ private fun DesktopMainScreen(
     onTabClosed: (String) -> Unit,
 ) {
     Scaffold(
+        modifier = Modifier.keyboardShortcuts(
+            callbacks = toolbarCallbacks,
+            hasSelectedEntry = hasSelectedEntry,
+        ),
         topBar = {
             Column {
                 TopAppBar(
