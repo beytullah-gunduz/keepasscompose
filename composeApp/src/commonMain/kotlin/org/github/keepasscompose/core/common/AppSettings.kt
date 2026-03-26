@@ -7,6 +7,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 class AppSettings(private val dataStore: DataStore<Preferences>) {
     private companion object {
@@ -22,8 +24,17 @@ class AppSettings(private val dataStore: DataStore<Preferences>) {
         const val CLIPBOARD_CLEAR_TIMEOUT_SECONDS = 30 // 30 seconds
     }
 
+    @OptIn(ExperimentalEncodingApi::class)
     val lastOpenedDatabasePath: Flow<String?>
-        get() = dataStore.data.map { it[LAST_OPENED_DATABASE_PATH] }
+        get() = dataStore.data.map { prefs ->
+            prefs[LAST_OPENED_DATABASE_PATH]?.let { encoded ->
+                try {
+                    Base64.decode(encoded).decodeToString()
+                } catch (_: IllegalArgumentException) {
+                    encoded // Fallback: read plaintext from pre-migration data
+                }
+            }
+        }
 
     val autoLockTimeoutSeconds: Flow<Int>
         get() = dataStore.data.map { it[AUTO_LOCK_TIMEOUT_SECONDS] ?: Defaults.AUTO_LOCK_TIMEOUT_SECONDS }
@@ -34,10 +45,11 @@ class AppSettings(private val dataStore: DataStore<Preferences>) {
     val clipboardClearTimeoutSeconds: Flow<Int>
         get() = dataStore.data.map { it[CLIPBOARD_CLEAR_TIMEOUT_SECONDS] ?: Defaults.CLIPBOARD_CLEAR_TIMEOUT_SECONDS }
 
+    @OptIn(ExperimentalEncodingApi::class)
     suspend fun setLastOpenedDatabasePath(path: String?) {
         dataStore.edit { prefs ->
             if (path != null) {
-                prefs[LAST_OPENED_DATABASE_PATH] = path
+                prefs[LAST_OPENED_DATABASE_PATH] = Base64.encode(path.encodeToByteArray())
             } else {
                 prefs.remove(LAST_OPENED_DATABASE_PATH)
             }
