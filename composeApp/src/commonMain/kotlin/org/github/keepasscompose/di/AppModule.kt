@@ -9,7 +9,9 @@ import org.github.keepasscompose.core.crypto.PlatformCryptoProvider
 import org.github.keepasscompose.core.database.KdbxReader
 import org.github.keepasscompose.core.database.KdbxWriter
 import org.github.keepasscompose.viewmodel.DatabaseViewModel
+import org.github.keepasscompose.viewmodel.EntryEditorViewModel
 import org.github.keepasscompose.viewmodel.GroupNavigationViewModel
+import org.github.keepasscompose.viewmodel.MultiDatabaseViewModel
 import org.github.keepasscompose.viewmodel.UnlockViewModel
 import org.koin.dsl.module
 
@@ -28,4 +30,6 @@ val appModule =
         single { UnlockViewModel(get(), get()) }
         single { DatabaseViewModel(get(), get()) }
         single { GroupNavigationViewModel() }
+        single { EntryEditorViewModel() }
+        single { MultiDatabaseViewModel(get(), get()) }
     }
