@@ -8,17 +8,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Switch
@@ -35,6 +43,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
+data class BrowserInstallStatus(val browserName: String, val installed: Boolean)
+
 data class AppSettingsData(
     val startAtLogin: Boolean = false,
     val minimizeToTray: Boolean = false,
@@ -44,6 +54,11 @@ data class AppSettingsData(
     val theme: String = "system",
     val fontSize: String = "medium",
     val browserIntegrationEnabled: Boolean = false,
+    val browserMatchStrategy: String = "domain",
+    val browserShowNotifications: Boolean = true,
+    val browserSortByTitle: Boolean = true,
+    val browserMinimizeOnAutofill: Boolean = false,
+    val browserInstalledBrowsers: List<BrowserInstallStatus> = emptyList(),
 )
 
 @Composable
@@ -64,6 +79,10 @@ fun AppSettingsScreen(
     var theme by remember { mutableStateOf(settings.theme) }
     var fontSize by remember { mutableStateOf(settings.fontSize) }
     var browserEnabled by remember { mutableStateOf(settings.browserIntegrationEnabled) }
+    var browserMatchStrategy by remember { mutableStateOf(settings.browserMatchStrategy) }
+    var browserShowNotifications by remember { mutableStateOf(settings.browserShowNotifications) }
+    var browserSortByTitle by remember { mutableStateOf(settings.browserSortByTitle) }
+    var browserMinimizeOnAutofill by remember { mutableStateOf(settings.browserMinimizeOnAutofill) }
 
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
         Text("App Settings", style = MaterialTheme.typography.headlineSmall)
@@ -105,6 +124,16 @@ fun AppSettingsScreen(
                 3 -> BrowserSettingsTab(
                     enabled = browserEnabled,
                     onEnabledChange = { browserEnabled = it },
+                    matchStrategy = browserMatchStrategy,
+                    onMatchStrategyChange = { browserMatchStrategy = it },
+                    showNotifications = browserShowNotifications,
+                    onShowNotificationsChange = { browserShowNotifications = it },
+                    sortByTitle = browserSortByTitle,
+                    onSortByTitleChange = { browserSortByTitle = it },
+                    minimizeOnAutofill = browserMinimizeOnAutofill,
+                    onMinimizeOnAutofillChange = { browserMinimizeOnAutofill = it },
+                    installedBrowsers = settings.browserInstalledBrowsers,
+                    onInstallBrowserSupport = {},
                 )
             }
         }
@@ -125,6 +154,10 @@ fun AppSettingsScreen(
                         theme = theme,
                         fontSize = fontSize,
                         browserIntegrationEnabled = browserEnabled,
+                        browserMatchStrategy = browserMatchStrategy,
+                        browserShowNotifications = browserShowNotifications,
+                        browserSortByTitle = browserSortByTitle,
+                        browserMinimizeOnAutofill = browserMinimizeOnAutofill,
                     ),
                 )
             }) { Text("Save") }
@@ -185,17 +218,116 @@ private fun AppearanceSettingsTab(theme: String, fontSize: String, onThemeChange
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BrowserSettingsTab(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
+private fun BrowserSettingsTab(
+    enabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit,
+    matchStrategy: String,
+    onMatchStrategyChange: (String) -> Unit,
+    showNotifications: Boolean,
+    onShowNotificationsChange: (Boolean) -> Unit,
+    sortByTitle: Boolean,
+    onSortByTitleChange: (Boolean) -> Unit,
+    minimizeOnAutofill: Boolean,
+    onMinimizeOnAutofillChange: (Boolean) -> Unit,
+    installedBrowsers: List<BrowserInstallStatus>,
+    onInstallBrowserSupport: () -> Unit,
+) {
     Column {
         SettingSwitchRow("Enable browser integration", enabled, onEnabledChange)
+
         if (enabled) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Credential Matching", style = MaterialTheme.typography.titleSmall)
             Spacer(modifier = Modifier.height(8.dp))
+
+            SettingDropdown(
+                label = "URL match strategy",
+                value = matchStrategy,
+                options = listOf("exact", "domain", "host", "starts_with"),
+                onValueChange = onMatchStrategyChange,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Browser extension will connect via native messaging.",
+                text = when (matchStrategy) {
+                    "exact" -> "Only match entries with the exact same URL."
+                    "domain" -> "Match entries sharing the same domain (e.g. login.site.com matches site.com)."
+                    "host" -> "Match entries with the exact same hostname."
+                    "starts_with" -> "Match entries whose URL is a prefix of the page URL."
+                    else -> ""
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Behavior", style = MaterialTheme.typography.titleSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            SettingSwitchRow("Show notifications on autofill", showNotifications, onShowNotificationsChange)
+            SettingSwitchRow("Sort results by title", sortByTitle, onSortByTitleChange)
+            SettingSwitchRow("Minimize after autofill", minimizeOnAutofill, onMinimizeOnAutofillChange)
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Browser Support", style = MaterialTheme.typography.titleSmall)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (installedBrowsers.isEmpty()) {
+                Text(
+                    text = "Click below to install native messaging support for detected browsers.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        installedBrowsers.forEach { browser ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = if (browser.installed) Icons.Default.CheckCircle else Icons.Default.Warning,
+                                    contentDescription = if (browser.installed) "Installed" else "Not installed",
+                                    tint = if (browser.installed) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.error
+                                    },
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = browser.browserName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                                Text(
+                                    text = if (browser.installed) "Installed" else "Not installed",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (browser.installed) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.error
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = onInstallBrowserSupport,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Install / Update Browser Support")
+            }
         }
     }
 }
