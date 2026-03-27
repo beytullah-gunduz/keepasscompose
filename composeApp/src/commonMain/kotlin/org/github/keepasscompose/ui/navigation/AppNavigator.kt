@@ -204,7 +204,22 @@ fun AppNavigator() {
                     databaseViewModel.deleteEntry(uuid)
                     database?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
                 },
+                onCreateGroup = { parentUuid, result ->
+                    val newGroup = org.github.keepasscompose.core.model.KdbxGroup(
+                        uuid = java.util.UUID.randomUUID().toString(),
+                        name = result.name,
+                        icon = org.github.keepasscompose.core.model.KdbxIcon(standardIndex = result.iconIndex),
+                        notes = result.notes,
+                    )
+                    databaseViewModel.addGroup(parentUuid, newGroup)
+                    databaseViewModel.database.value?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
+                },
+                onDeleteGroup = { uuid ->
+                    databaseViewModel.deleteGroup(uuid)
+                    databaseViewModel.database.value?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
+                },
                 hasRecycleBin = database?.meta?.recycleBinEnabled == true,
+                recycleBinUuid = database?.meta?.recycleBinUuid,
             )
         }
 

@@ -1,7 +1,10 @@
 package org.github.keepasscompose.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,8 +25,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -35,6 +41,13 @@ fun GroupTree(
     rootGroup: KdbxGroup,
     selectedEntryUuid: String? = null,
     onEntrySelected: (KdbxEntry) -> Unit = {},
+    onEditEntry: (KdbxEntry) -> Unit = {},
+    onDeleteEntry: (KdbxEntry) -> Unit = {},
+    onCopyField: (String) -> Unit = {},
+    onNewEntryInGroup: (KdbxGroup) -> Unit = {},
+    onNewSubGroup: (KdbxGroup) -> Unit = {},
+    onDeleteGroup: (KdbxGroup) -> Unit = {},
+    recycleBinUuid: String? = null,
     modifier: Modifier = Modifier,
 ) {
     val expandedGroups = remember { mutableStateListOf(rootGroup.uuid) }
@@ -58,6 +71,10 @@ fun GroupTree(
                             expandedGroups.add(item.group.uuid)
                         }
                     },
+                    onNewEntry = { onNewEntryInGroup(item.group) },
+                    onNewSubGroup = { onNewSubGroup(item.group) },
+                    onDeleteGroup = { onDeleteGroup(item.group) },
+                    isRecycleBin = item.group.uuid == recycleBinUuid,
                 )
 
                 is TreeItem.Entry -> EntryTreeItem(
@@ -65,6 +82,10 @@ fun GroupTree(
                     depth = item.depth,
                     isSelected = item.entry.uuid == selectedEntryUuid,
                     onSelect = { onEntrySelected(item.entry) },
+                    onEdit = { onEditEntry(item.entry) },
+                    onDelete = { onDeleteEntry(item.entry) },
+                    onCopyUsername = { onCopyField(item.entry.userName) },
+                    onCopyPassword = { onCopyField(item.entry.password) },
                 )
             }
         }
@@ -96,6 +117,7 @@ private fun buildFlatTreeList(group: KdbxGroup, expandedIds: Set<String>, depth:
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GroupTreeItem(
     group: KdbxGroup,
@@ -104,63 +126,92 @@ private fun GroupTreeItem(
     hasChildren: Boolean,
     entryCount: Int,
     onToggleExpand: () -> Unit,
+    onNewEntry: () -> Unit = {},
+    onNewSubGroup: () -> Unit = {},
+    onDeleteGroup: () -> Unit = {},
+    isRecycleBin: Boolean = false,
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggleExpand)
-            .padding(start = (16 + depth * 20).dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-    ) {
-        if (hasChildren) {
-            IconButton(onClick = onToggleExpand, modifier = Modifier.size(24.dp)) {
-                Icon(
-                    @Suppress("DEPRECATION")
-                    if (isExpanded) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowRight,
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(18.dp),
+    var showContextMenu by remember { mutableStateOf(false) }
+
+    Box {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onToggleExpand,
+                    onLongClick = { showContextMenu = true },
+                )
+                .padding(start = (16 + depth * 20).dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+        ) {
+            if (hasChildren) {
+                IconButton(onClick = onToggleExpand, modifier = Modifier.size(24.dp)) {
+                    Icon(
+                        @Suppress("DEPRECATION")
+                        if (isExpanded) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowRight,
+                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.size(24.dp))
+            }
+
+            Spacer(modifier = Modifier.width(4.dp))
+
+            Icon(
+                if (isExpanded && hasChildren) Icons.Filled.FolderOpen else Icons.Filled.Folder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Text(
+                text = group.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+
+            if (entryCount > 0) {
+                Text(
+                    text = "$entryCount",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        } else {
-            Spacer(modifier = Modifier.size(24.dp))
         }
 
-        Spacer(modifier = Modifier.width(4.dp))
-
-        Icon(
-            if (isExpanded && hasChildren) Icons.Filled.FolderOpen else Icons.Filled.Folder,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
+        GroupContextMenu(
+            expanded = showContextMenu,
+            onDismissRequest = { showContextMenu = false },
+            callbacks = GroupContextMenuCallbacks(
+                onNewEntry = onNewEntry,
+                onNewSubGroup = onNewSubGroup,
+                onDelete = onDeleteGroup,
+            ),
+            isRecycleBin = isRecycleBin,
         )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Text(
-            text = group.name,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-
-        if (entryCount > 0) {
-            Text(
-                text = "$entryCount",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun EntryTreeItem(
     entry: KdbxEntry,
     depth: Int,
     isSelected: Boolean,
     onSelect: () -> Unit,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {},
+    onCopyUsername: () -> Unit = {},
+    onCopyPassword: () -> Unit = {},
 ) {
+    var showContextMenu by remember { mutableStateOf(false) }
+
     val backgroundColor = if (isSelected) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
@@ -172,36 +223,52 @@ private fun EntryTreeItem(
         MaterialTheme.colorScheme.onSurface
     }
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(backgroundColor)
-            .clickable(onClick = onSelect)
-            .padding(start = (16 + depth * 20 + 28).dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-    ) {
-        Icon(
-            Icons.Filled.Key,
-            contentDescription = null,
-            tint = if (isSelected) contentColor else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Column {
-            Text(
-                text = entry.title.ifEmpty { "Untitled" },
-                style = MaterialTheme.typography.bodySmall,
-                color = contentColor,
-            )
-            if (entry.userName.isNotEmpty()) {
-                Text(
-                    text = entry.userName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isSelected) contentColor.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
+    Box {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(backgroundColor)
+                .combinedClickable(
+                    onClick = onSelect,
+                    onLongClick = { showContextMenu = true },
                 )
+                .padding(start = (16 + depth * 20 + 28).dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+        ) {
+            Icon(
+                Icons.Filled.Key,
+                contentDescription = null,
+                tint = if (isSelected) contentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Column {
+                Text(
+                    text = entry.title.ifEmpty { "Untitled" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = contentColor,
+                )
+                if (entry.userName.isNotEmpty()) {
+                    Text(
+                        text = entry.userName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isSelected) contentColor.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
+
+        EntryContextMenu(
+            expanded = showContextMenu,
+            onDismissRequest = { showContextMenu = false },
+            callbacks = EntryContextMenuCallbacks(
+                onCopyUsername = onCopyUsername,
+                onCopyPassword = onCopyPassword,
+                onEdit = onEdit,
+                onDelete = onDelete,
+            ),
+        )
     }
 }
