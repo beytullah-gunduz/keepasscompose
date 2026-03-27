@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Visibility
@@ -45,6 +46,7 @@ fun EntryDetailScreen(
     onCopyField: (String) -> Unit = {},
     onBack: () -> Unit = {},
     onEditEntry: (String) -> Unit = {},
+    onDeleteEntry: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
@@ -74,6 +76,9 @@ fun EntryDetailScreen(
             )
             IconButton(onClick = { onEditEntry(entry.uuid) }) {
                 Icon(Icons.Filled.Edit, contentDescription = "Edit entry")
+            }
+            IconButton(onClick = { onDeleteEntry(entry.uuid) }) {
+                Icon(Icons.Filled.Delete, contentDescription = "Delete entry", tint = MaterialTheme.colorScheme.error)
             }
         }
 

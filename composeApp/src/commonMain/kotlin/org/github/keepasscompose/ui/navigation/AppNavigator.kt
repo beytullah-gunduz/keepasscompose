@@ -200,6 +200,11 @@ fun AppNavigator() {
                         currentScreen = AppScreen.EntryEditor(isEditMode = true, entryUuid = uuid)
                     }
                 },
+                onDeleteEntry = { uuid ->
+                    databaseViewModel.deleteEntry(uuid)
+                    database?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
+                },
+                hasRecycleBin = database?.meta?.recycleBinEnabled == true,
             )
         }
 
