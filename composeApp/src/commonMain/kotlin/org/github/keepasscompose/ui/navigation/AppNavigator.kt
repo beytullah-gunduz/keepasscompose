@@ -19,11 +19,14 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.github.keepasscompose.core.common.AppSettings
 import org.github.keepasscompose.core.common.FilePicker
+import org.github.keepasscompose.core.database.RecycleBinManager
+import org.github.keepasscompose.ui.screens.EntryEditorScreen
 import org.github.keepasscompose.ui.screens.MainScreen
 import org.github.keepasscompose.ui.screens.RecentDatabase
 import org.github.keepasscompose.ui.screens.UnlockScreen
 import org.github.keepasscompose.ui.screens.WelcomeScreen
 import org.github.keepasscompose.viewmodel.DatabaseViewModel
+import org.github.keepasscompose.viewmodel.EntryEditorViewModel
 import org.github.keepasscompose.viewmodel.GroupNavigationViewModel
 import org.github.keepasscompose.viewmodel.UnlockState
 import org.github.keepasscompose.viewmodel.UnlockViewModel
@@ -93,6 +96,7 @@ fun AppNavigator() {
     val unlockViewModel: UnlockViewModel = koinInject()
     val databaseViewModel: DatabaseViewModel = koinInject()
     val groupNavViewModel: GroupNavigationViewModel = koinInject()
+    val entryEditorViewModel: EntryEditorViewModel = koinInject()
     val appSettings: AppSettings = koinInject()
     val filePicker = remember { FilePicker() }
     val scope = rememberCoroutineScope()
@@ -185,11 +189,54 @@ fun AppNavigator() {
                         }
                     }
                 },
+                onNewEntry = {
+                    entryEditorViewModel.startCreating()
+                    currentScreen = AppScreen.EntryEditor(isEditMode = false, entryUuid = null)
+                },
             )
         }
 
         is AppScreen.EntryEditor -> {
-            PlaceholderScreen("Entry Editor") { currentScreen = AppScreen.Main }
+            val screen = currentScreen as AppScreen.EntryEditor
+            val database by databaseViewModel.database.collectAsState()
+            val existingEntry = if (screen.isEditMode && screen.entryUuid != null) {
+                database?.rootGroup?.let { RecycleBinManager.findEntry(it, screen.entryUuid) }
+            } else {
+                null
+            }
+
+            EntryEditorScreen(
+                initialTitle = existingEntry?.title ?: "",
+                initialUserName = existingEntry?.userName ?: "",
+                initialPassword = existingEntry?.password ?: "",
+                initialUrl = existingEntry?.url ?: "",
+                initialNotes = existingEntry?.notes ?: "",
+                initialIconIndex = existingEntry?.icon?.standardIndex ?: 0,
+                initialTags = existingEntry?.tags ?: emptyList(),
+                isEditMode = screen.isEditMode,
+                onSave = { result ->
+                    val saved = entryEditorViewModel.save(result)
+                    if (saved != null) {
+                        val selectedGroup = groupNavViewModel.selectedGroup.value
+                        val parentUuid = selectedGroup?.uuid ?: database?.rootGroup?.uuid ?: return@EntryEditorScreen
+                        if (screen.isEditMode) {
+                            databaseViewModel.updateEntry(saved)
+                        } else {
+                            databaseViewModel.addEntry(parentUuid, saved)
+                        }
+                        // Refresh group navigation with updated root
+                        databaseViewModel.database.value?.rootGroup?.let {
+                            groupNavViewModel.setRootGroup(it)
+                        }
+                        entryEditorViewModel.resetState()
+                        currentScreen = AppScreen.Main
+                    }
+                },
+                onCancel = {
+                    entryEditorViewModel.resetState()
+                    currentScreen = AppScreen.Main
+                },
+            )
         }
 
         is AppScreen.CreateDatabase -> {
