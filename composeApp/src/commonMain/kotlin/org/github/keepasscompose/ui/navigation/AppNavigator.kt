@@ -126,15 +126,10 @@ fun AppNavigator() {
 
         is AppScreen.Main -> {
             val database by databaseViewModel.database.collectAsState()
-            val selectedGroup by groupNavViewModel.selectedGroup.collectAsState()
-            val breadcrumb by groupNavViewModel.breadcrumb.collectAsState()
 
             MainScreen(
                 databaseName = database?.meta?.databaseName ?: "Database",
-                selectedGroup = selectedGroup,
-                hasParentGroup = breadcrumb.size > 1,
-                onGroupSelected = { group -> groupNavViewModel.navigateTo(group) },
-                onNavigateUp = { groupNavViewModel.navigateToParent() },
+                rootGroup = database?.rootGroup,
                 onLockDatabase = {
                     databaseViewModel.lock()
                     unlockViewModel.resetState()
