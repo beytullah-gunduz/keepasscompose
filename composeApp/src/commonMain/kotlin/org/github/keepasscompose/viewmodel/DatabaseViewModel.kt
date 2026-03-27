@@ -10,8 +10,12 @@ import kotlinx.coroutines.launch
 import org.github.keepasscompose.core.common.FileSystem
 import org.github.keepasscompose.core.common.InactivityTimer
 import org.github.keepasscompose.core.database.KdbxWriter
+import org.github.keepasscompose.core.database.RecycleBinManager
 import org.github.keepasscompose.core.model.CompositeKey
 import org.github.keepasscompose.core.model.KdbxDatabase
+import org.github.keepasscompose.core.model.KdbxEntry
+import org.github.keepasscompose.core.model.KdbxGroup
+import kotlin.time.Clock
 
 sealed interface SaveState {
     data object Idle : SaveState
@@ -112,6 +116,65 @@ class DatabaseViewModel(private val kdbxWriter: KdbxWriter, private val fileSyst
     }
 
     fun needsSaveBeforeClose(): Boolean = _isDirty.value
+
+    // -- Entry & group mutations --
+
+    fun addEntry(parentGroupUuid: String, entry: KdbxEntry) {
+        val db = _database.value ?: return
+        val updatedRoot = RecycleBinManager.addEntryToGroup(db.rootGroup, parentGroupUuid, entry)
+        _database.value = db.copy(rootGroup = updatedRoot)
+        markDirty()
+    }
+
+    fun updateEntry(entry: KdbxEntry) {
+        val db = _database.value ?: return
+        val updatedRoot = replaceEntry(db.rootGroup, entry) ?: return
+        _database.value = db.copy(rootGroup = updatedRoot)
+        markDirty()
+    }
+
+    fun deleteEntry(entryUuid: String) {
+        val db = _database.value ?: return
+        val manager = RecycleBinManager(db.meta)
+        val result = manager.deleteEntry(db.rootGroup, entryUuid, Clock.System.now())
+        _database.value = db.copy(rootGroup = result.rootGroup, meta = result.meta)
+        markDirty()
+    }
+
+    fun addGroup(parentGroupUuid: String, group: KdbxGroup) {
+        val db = _database.value ?: return
+        val updatedRoot = RecycleBinManager.addGroupToGroup(db.rootGroup, parentGroupUuid, group)
+        _database.value = db.copy(rootGroup = updatedRoot)
+        markDirty()
+    }
+
+    fun deleteGroup(groupUuid: String) {
+        val db = _database.value ?: return
+        val manager = RecycleBinManager(db.meta)
+        val result = manager.deleteGroup(db.rootGroup, groupUuid, Clock.System.now())
+        _database.value = db.copy(rootGroup = result.rootGroup, meta = result.meta)
+        markDirty()
+    }
+
+    private fun replaceEntry(group: KdbxGroup, entry: KdbxEntry): KdbxGroup? {
+        val idx = group.entries.indexOfFirst { it.uuid == entry.uuid }
+        if (idx >= 0) {
+            val updated = group.entries.toMutableList()
+            updated[idx] = entry
+            return group.copy(entries = updated)
+        }
+        var found = false
+        val updatedGroups = group.groups.map { sub ->
+            val result = replaceEntry(sub, entry)
+            if (result != null) {
+                found = true
+                result
+            } else {
+                sub
+            }
+        }
+        return if (found) group.copy(groups = updatedGroups) else null
+    }
 
     fun lock() {
         // Zero sensitive byte arrays in CompositeKey before releasing references
