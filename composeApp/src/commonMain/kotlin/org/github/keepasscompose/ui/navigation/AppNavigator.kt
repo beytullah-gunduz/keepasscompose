@@ -193,6 +193,13 @@ fun AppNavigator() {
                     entryEditorViewModel.startCreating()
                     currentScreen = AppScreen.EntryEditor(isEditMode = false, entryUuid = null)
                 },
+                onEditEntry = { uuid ->
+                    val entry = database?.rootGroup?.let { RecycleBinManager.findEntry(it, uuid) }
+                    if (entry != null) {
+                        entryEditorViewModel.startEditing(entry)
+                        currentScreen = AppScreen.EntryEditor(isEditMode = true, entryUuid = uuid)
+                    }
+                },
             )
         }
 

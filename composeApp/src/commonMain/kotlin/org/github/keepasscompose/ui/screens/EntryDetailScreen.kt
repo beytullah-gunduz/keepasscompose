@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -39,7 +40,13 @@ import org.github.keepasscompose.ui.components.TotpDisplay
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun EntryDetailScreen(entry: KdbxEntry, onCopyField: (String) -> Unit = {}, onBack: () -> Unit = {}, modifier: Modifier = Modifier) {
+fun EntryDetailScreen(
+    entry: KdbxEntry,
+    onCopyField: (String) -> Unit = {},
+    onBack: () -> Unit = {},
+    onEditEntry: (String) -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     var passwordVisible by remember { mutableStateOf(false) }
 
     Column(
@@ -49,7 +56,10 @@ fun EntryDetailScreen(entry: KdbxEntry, onCopyField: (String) -> Unit = {}, onBa
             .padding(16.dp),
     ) {
         // Header
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Icon(
                 Icons.Filled.Key,
                 contentDescription = null,
@@ -60,7 +70,11 @@ fun EntryDetailScreen(entry: KdbxEntry, onCopyField: (String) -> Unit = {}, onBa
             Text(
                 text = entry.title.ifEmpty { "Untitled" },
                 style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.weight(1f),
             )
+            IconButton(onClick = { onEditEntry(entry.uuid) }) {
+                Icon(Icons.Filled.Edit, contentDescription = "Edit entry")
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))

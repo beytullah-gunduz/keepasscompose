@@ -56,6 +56,7 @@ fun MainScreen(
     onLockDatabase: () -> Unit = {},
     onOpenDatabase: () -> Unit = {},
     onNewEntry: () -> Unit = {},
+    onEditEntry: (String) -> Unit = {},
     onSearch: () -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onOpenDatabaseSettings: () -> Unit = {},
@@ -170,6 +171,7 @@ fun MainScreen(
                             EntryDetailScreen(
                                 entry = entry,
                                 onCopyField = onCopyField,
+                                onEditEntry = onEditEntry,
                                 modifier = Modifier.padding(padding),
                             )
                         }
