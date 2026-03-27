@@ -45,6 +45,7 @@ import kotlinx.coroutines.launch
 import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxGroup
 import org.github.keepasscompose.ui.common.BackHandler
+import org.github.keepasscompose.ui.components.DeleteEntryDialog
 import org.github.keepasscompose.ui.components.GroupTree
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3Api::class)
@@ -64,10 +65,26 @@ fun MainScreen(
     onOpenReports: () -> Unit = {},
     onChangePassword: () -> Unit = {},
     onChangeKeyFile: () -> Unit = {},
+    onDeleteEntry: (String) -> Unit = {},
+    hasRecycleBin: Boolean = false,
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
     val selectedEntry = rootGroup?.let { findEntry(it, navigator.currentDestination?.contentKey) }
+    var entryPendingDelete by remember { mutableStateOf<KdbxEntry?>(null) }
+
+    entryPendingDelete?.let { entry ->
+        DeleteEntryDialog(
+            entries = listOf(entry),
+            hasRecycleBin = hasRecycleBin,
+            onDismiss = { entryPendingDelete = null },
+            onConfirm = {
+                onDeleteEntry(entry.uuid)
+                entryPendingDelete = null
+                scope.launch { navigator.navigateBack() }
+            },
+        )
+    }
 
     val isListHidden = navigator.scaffoldValue[ListDetailPaneScaffoldRole.List] == PaneAdaptedValue.Hidden
     val isDetailHidden = navigator.scaffoldValue[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Hidden
@@ -172,6 +189,7 @@ fun MainScreen(
                                 entry = entry,
                                 onCopyField = onCopyField,
                                 onEditEntry = onEditEntry,
+                                onDeleteEntry = { _ -> entryPendingDelete = entry },
                                 modifier = Modifier.padding(padding),
                             )
                         }
