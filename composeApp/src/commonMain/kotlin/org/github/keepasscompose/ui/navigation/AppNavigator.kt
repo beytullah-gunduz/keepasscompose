@@ -14,7 +14,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.github.keepasscompose.core.common.AppSettings
 import org.github.keepasscompose.core.common.FilePicker
-import org.github.keepasscompose.core.model.KdbxGroup
 import org.github.keepasscompose.ui.screens.MainScreen
 import org.github.keepasscompose.ui.screens.RecentDatabase
 import org.github.keepasscompose.ui.screens.UnlockScreen
@@ -128,16 +127,14 @@ fun AppNavigator() {
         is AppScreen.Main -> {
             val database by databaseViewModel.database.collectAsState()
             val selectedGroup by groupNavViewModel.selectedGroup.collectAsState()
+            val breadcrumb by groupNavViewModel.breadcrumb.collectAsState()
 
             MainScreen(
                 databaseName = database?.meta?.databaseName ?: "Database",
-                entryCount = selectedGroup?.entries?.size ?: 0,
-                groups = buildGroupNames(database?.rootGroup),
-                entries = selectedGroup?.entries ?: emptyList(),
-                onGroupSelected = { groupName ->
-                    val root = database?.rootGroup ?: return@MainScreen
-                    findGroup(root, groupName)?.let { groupNavViewModel.navigateTo(it) }
-                },
+                selectedGroup = selectedGroup,
+                hasParentGroup = breadcrumb.size > 1,
+                onGroupSelected = { group -> groupNavViewModel.navigateTo(group) },
+                onNavigateUp = { groupNavViewModel.navigateToParent() },
                 onLockDatabase = {
                     databaseViewModel.lock()
                     unlockViewModel.resetState()
@@ -157,24 +154,3 @@ fun AppNavigator() {
     }
 }
 
-private fun buildGroupNames(root: KdbxGroup?): List<String> {
-    if (root == null) return emptyList()
-    val names = mutableListOf<String>()
-    collectGroupNames(root, names)
-    return names
-}
-
-private fun collectGroupNames(group: KdbxGroup, names: MutableList<String>) {
-    names.add(group.name)
-    for (child in group.groups) {
-        collectGroupNames(child, names)
-    }
-}
-
-private fun findGroup(group: KdbxGroup, name: String): KdbxGroup? {
-    if (group.name == name) return group
-    for (child in group.groups) {
-        findGroup(child, name)?.let { return it }
-    }
-    return null
-}
