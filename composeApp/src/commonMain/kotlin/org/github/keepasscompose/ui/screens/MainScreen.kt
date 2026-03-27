@@ -11,7 +11,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -30,7 +33,11 @@ import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.layout.PaneAdaptedValue
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -50,6 +57,12 @@ fun MainScreen(
     onOpenDatabase: () -> Unit = {},
     onNewEntry: () -> Unit = {},
     onSearch: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
+    onOpenDatabaseSettings: () -> Unit = {},
+    onOpenImportExport: () -> Unit = {},
+    onOpenReports: () -> Unit = {},
+    onChangePassword: () -> Unit = {},
+    onChangeKeyFile: () -> Unit = {},
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
@@ -79,6 +92,14 @@ fun MainScreen(
                                     IconButton(onClick = onLockDatabase) {
                                         Icon(Icons.Filled.Lock, contentDescription = "Lock Database")
                                     }
+                                    OverflowMenu(
+                                        onOpenSettings = onOpenSettings,
+                                        onOpenDatabaseSettings = onOpenDatabaseSettings,
+                                        onOpenImportExport = onOpenImportExport,
+                                        onOpenReports = onOpenReports,
+                                        onChangePassword = onChangePassword,
+                                        onChangeKeyFile = onChangeKeyFile,
+                                    )
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(
                                     containerColor = MaterialTheme.colorScheme.surface,
@@ -160,6 +181,72 @@ fun MainScreen(
 }
 
 // ---------------------------------------------------------------------------
+// Overflow menu
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun OverflowMenu(
+    onOpenSettings: () -> Unit,
+    onOpenDatabaseSettings: () -> Unit,
+    onOpenImportExport: () -> Unit,
+    onOpenReports: () -> Unit,
+    onChangePassword: () -> Unit,
+    onChangeKeyFile: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    IconButton(onClick = { expanded = true }) {
+        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+    }
+    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenuItem(
+            text = { Text("Import / Export") },
+            onClick = {
+                expanded = false
+                onOpenImportExport()
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("Reports") },
+            onClick = {
+                expanded = false
+                onOpenReports()
+            },
+        )
+        HorizontalDivider()
+        DropdownMenuItem(
+            text = { Text("Database Settings") },
+            onClick = {
+                expanded = false
+                onOpenDatabaseSettings()
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("Change Password") },
+            onClick = {
+                expanded = false
+                onChangePassword()
+            },
+        )
+        DropdownMenuItem(
+            text = { Text("Change Key File") },
+            onClick = {
+                expanded = false
+                onChangeKeyFile()
+            },
+        )
+        HorizontalDivider()
+        DropdownMenuItem(
+            text = { Text("Settings") },
+            onClick = {
+                expanded = false
+                onOpenSettings()
+            },
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -172,8 +259,7 @@ private fun findEntry(group: KdbxGroup, uuid: String?): KdbxEntry? {
     return null
 }
 
-private fun countEntries(group: KdbxGroup): Int =
-    group.entries.size + group.groups.sumOf { countEntries(it) }
+private fun countEntries(group: KdbxGroup): Int = group.entries.size + group.groups.sumOf { countEntries(it) }
 
 // ---------------------------------------------------------------------------
 // Shared components
