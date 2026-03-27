@@ -1,5 +1,8 @@
 package org.github.keepasscompose.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -9,6 +12,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -28,6 +33,18 @@ private sealed interface AppScreen {
     data object Welcome : AppScreen
     data class Unlock(val databasePath: String) : AppScreen
     data object Main : AppScreen
+    data class EntryEditor(val isEditMode: Boolean, val entryUuid: String?) : AppScreen
+    data object CreateDatabase : AppScreen
+    data object Search : AppScreen
+    data object AppSettings : AppScreen
+    data object DatabaseSettings : AppScreen
+    data object ImportExport : AppScreen
+    data object Reports : AppScreen
+    data object ChangePassword : AppScreen
+    data object ChangeKeyFile : AppScreen
+    data class EntryHistory(val entryUuid: String) : AppScreen
+    data object KdfConfig : AppScreen
+    data object TotpSetup : AppScreen
 }
 
 private val AppScreenSaver = Saver<AppScreen, List<String>>(
@@ -36,12 +53,36 @@ private val AppScreenSaver = Saver<AppScreen, List<String>>(
             is AppScreen.Welcome -> listOf("welcome")
             is AppScreen.Unlock -> listOf("unlock", screen.databasePath)
             is AppScreen.Main -> listOf("main")
+            is AppScreen.EntryEditor -> listOf("entry_editor", screen.isEditMode.toString(), screen.entryUuid ?: "")
+            is AppScreen.CreateDatabase -> listOf("create_database")
+            is AppScreen.Search -> listOf("search")
+            is AppScreen.AppSettings -> listOf("app_settings")
+            is AppScreen.DatabaseSettings -> listOf("database_settings")
+            is AppScreen.ImportExport -> listOf("import_export")
+            is AppScreen.Reports -> listOf("reports")
+            is AppScreen.ChangePassword -> listOf("change_password")
+            is AppScreen.ChangeKeyFile -> listOf("change_key_file")
+            is AppScreen.EntryHistory -> listOf("entry_history", screen.entryUuid)
+            is AppScreen.KdfConfig -> listOf("kdf_config")
+            is AppScreen.TotpSetup -> listOf("totp_setup")
         }
     },
     restore = { list ->
         when (list[0]) {
             "unlock" -> AppScreen.Unlock(list[1])
             "main" -> AppScreen.Main
+            "entry_editor" -> AppScreen.EntryEditor(list[1].toBoolean(), list[2].ifEmpty { null })
+            "create_database" -> AppScreen.CreateDatabase
+            "search" -> AppScreen.Search
+            "app_settings" -> AppScreen.AppSettings
+            "database_settings" -> AppScreen.DatabaseSettings
+            "import_export" -> AppScreen.ImportExport
+            "reports" -> AppScreen.Reports
+            "change_password" -> AppScreen.ChangePassword
+            "change_key_file" -> AppScreen.ChangeKeyFile
+            "entry_history" -> AppScreen.EntryHistory(list[1])
+            "kdf_config" -> AppScreen.KdfConfig
+            "totp_setup" -> AppScreen.TotpSetup
             else -> AppScreen.Welcome
         }
     },
@@ -146,6 +187,60 @@ fun AppNavigator() {
                 },
             )
         }
+
+        is AppScreen.EntryEditor -> {
+            PlaceholderScreen("Entry Editor") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.CreateDatabase -> {
+            PlaceholderScreen("Create Database") { currentScreen = AppScreen.Welcome }
+        }
+
+        is AppScreen.Search -> {
+            PlaceholderScreen("Search") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.AppSettings -> {
+            PlaceholderScreen("App Settings") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.DatabaseSettings -> {
+            PlaceholderScreen("Database Settings") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.ImportExport -> {
+            PlaceholderScreen("Import / Export") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.Reports -> {
+            PlaceholderScreen("Reports") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.ChangePassword -> {
+            PlaceholderScreen("Change Password") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.ChangeKeyFile -> {
+            PlaceholderScreen("Change Key File") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.EntryHistory -> {
+            PlaceholderScreen("Entry History") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.KdfConfig -> {
+            PlaceholderScreen("KDF Configuration") { currentScreen = AppScreen.Main }
+        }
+
+        is AppScreen.TotpSetup -> {
+            PlaceholderScreen("TOTP Setup") { currentScreen = AppScreen.Main }
+        }
     }
 }
 
+@Composable
+private fun PlaceholderScreen(title: String, onBack: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text("$title — Coming soon")
+    }
+}
