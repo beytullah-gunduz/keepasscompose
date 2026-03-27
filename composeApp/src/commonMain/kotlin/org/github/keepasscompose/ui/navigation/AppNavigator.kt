@@ -19,8 +19,19 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.github.keepasscompose.core.common.AppSettings
 import org.github.keepasscompose.core.common.FilePicker
+import org.github.keepasscompose.core.common.FileSystem
+import org.github.keepasscompose.core.database.BitwardenImporter
+import org.github.keepasscompose.core.database.CsvExporter
+import org.github.keepasscompose.core.database.CsvImporter
+import org.github.keepasscompose.core.database.HtmlExporter
+import org.github.keepasscompose.core.database.LastPassImporter
+import org.github.keepasscompose.core.database.OnePasswordImporter
 import org.github.keepasscompose.core.database.RecycleBinManager
+import org.github.keepasscompose.core.database.XmlExporter
 import org.github.keepasscompose.ui.screens.EntryEditorScreen
+import org.github.keepasscompose.ui.screens.ImportExportFormat
+import org.github.keepasscompose.ui.screens.ImportExportScreen
+import org.github.keepasscompose.ui.screens.ImportExportState
 import org.github.keepasscompose.ui.screens.MainScreen
 import org.github.keepasscompose.ui.screens.RecentDatabase
 import org.github.keepasscompose.ui.screens.UnlockScreen
@@ -98,6 +109,7 @@ fun AppNavigator() {
     val groupNavViewModel: GroupNavigationViewModel = koinInject()
     val entryEditorViewModel: EntryEditorViewModel = koinInject()
     val appSettings: AppSettings = koinInject()
+    val fileSystem: FileSystem = koinInject()
     val filePicker = remember { FilePicker() }
     val scope = rememberCoroutineScope()
 
@@ -218,6 +230,7 @@ fun AppNavigator() {
                     databaseViewModel.deleteGroup(uuid)
                     databaseViewModel.database.value?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
                 },
+                onOpenImportExport = { currentScreen = AppScreen.ImportExport },
                 hasRecycleBin = database?.meta?.recycleBinEnabled == true,
                 recycleBinUuid = database?.meta?.recycleBinUuid,
             )
@@ -283,7 +296,97 @@ fun AppNavigator() {
         }
 
         is AppScreen.ImportExport -> {
-            PlaceholderScreen("Import / Export") { currentScreen = AppScreen.Main }
+            val database by databaseViewModel.database.collectAsState()
+            var ieState by remember { mutableStateOf<ImportExportState>(ImportExportState.FormatSelection) }
+            var selectedFilePath by remember { mutableStateOf<String?>(null) }
+
+            ImportExportScreen(
+                state = ieState,
+                onBack = {
+                    ieState = ImportExportState.FormatSelection
+                    currentScreen = AppScreen.Main
+                },
+                onFormatSelected = { format ->
+                    ieState = ImportExportState.FileSelection(format)
+                },
+                onPickFile = { format ->
+                    scope.launch {
+                        if (format.isImport) {
+                            val extensions = when (format.id) {
+                                "csv" -> listOf("csv")
+                                "lastpass" -> listOf("csv")
+                                "bitwarden" -> listOf("json", "csv")
+                                "1password" -> listOf("csv", "1pif")
+                                else -> listOf("csv")
+                            }
+                            val path = filePicker.pickFile(extensions)
+                            if (path != null) {
+                                selectedFilePath = path
+                                try {
+                                    val content = fileSystem.readFile(path).decodeToString()
+                                    val (entryCount, groupCount) = countImportItems(format.id, content)
+                                    ieState = ImportExportState.Preview(format, entryCount, groupCount)
+                                } catch (e: Exception) {
+                                    ieState = ImportExportState.Failed(format, e.message ?: "Failed to read file")
+                                }
+                            }
+                        } else {
+                            val ext = when (format.id) {
+                                "csv-export" -> "csv"
+                                "html-export" -> "html"
+                                "xml-export" -> "xml"
+                                else -> "txt"
+                            }
+                            val rootGroup = database?.rootGroup ?: return@launch
+                            val entryCount = countAllEntries(rootGroup)
+                            val groupCount = countAllGroups(rootGroup)
+                            ieState = ImportExportState.Preview(format, entryCount, groupCount)
+                        }
+                    }
+                },
+                onConfirmImport = {
+                    val format = (ieState as? ImportExportState.Preview)?.format ?: return@ImportExportScreen
+                    val path = selectedFilePath ?: return@ImportExportScreen
+                    scope.launch {
+                        ieState = ImportExportState.InProgress(format, 0.5f)
+                        try {
+                            val content = fileSystem.readFile(path).decodeToString()
+                            val (entries, groupTree) = executeImport(format.id, content)
+                            val rootGroup = database?.rootGroup ?: return@launch
+                            val mergedRoot = mergeImportedGroup(rootGroup, groupTree, entries)
+                            val db = database ?: return@launch
+                            databaseViewModel.setDatabase(db.copy(rootGroup = mergedRoot), databaseViewModel.filePath.value ?: "")
+                            databaseViewModel.markDirty()
+                            groupNavViewModel.setRootGroup(mergedRoot)
+                            ieState = ImportExportState.Complete(format, entries.size, countAllGroups(groupTree))
+                        } catch (e: Exception) {
+                            ieState = ImportExportState.Failed(format, e.message ?: "Import failed")
+                        }
+                    }
+                },
+                onConfirmExport = {
+                    val format = (ieState as? ImportExportState.Preview)?.format ?: return@ImportExportScreen
+                    scope.launch {
+                        ieState = ImportExportState.InProgress(format, 0.5f)
+                        try {
+                            val rootGroup = database?.rootGroup ?: return@launch
+                            val output = executeExport(format.id, rootGroup)
+                            val savePath = filePicker.pickSaveLocation(
+                                "export.${format.id.removeSuffix("-export")}",
+                                listOf(format.id.removeSuffix("-export")),
+                            )
+                            if (savePath != null) {
+                                fileSystem.writeFile(savePath, output.encodeToByteArray())
+                                ieState = ImportExportState.Complete(format, countAllEntries(rootGroup), countAllGroups(rootGroup))
+                            } else {
+                                ieState = ImportExportState.FormatSelection
+                            }
+                        } catch (e: Exception) {
+                            ieState = ImportExportState.Failed(format, e.message ?: "Export failed")
+                        }
+                    }
+                },
+            )
         }
 
         is AppScreen.Reports -> {
@@ -318,3 +421,84 @@ private fun PlaceholderScreen(title: String, onBack: () -> Unit) {
         Text("$title — Coming soon")
     }
 }
+
+// -- Import/Export helpers --
+
+private fun countImportItems(formatId: String, content: String): Pair<Int, Int> = when (formatId) {
+    "csv" -> {
+        val result = CsvImporter.parse(content)
+        result.entries.size to countAllGroups(result.groupTree)
+    }
+
+    "lastpass" -> {
+        val result = LastPassImporter.import(content)
+        result.entries.size to countAllGroups(result.groupTree)
+    }
+
+    "bitwarden" -> {
+        val result = if (content.trimStart().startsWith("{")) {
+            BitwardenImporter.import(content)
+        } else {
+            BitwardenImporter.importCsv(content)
+        }
+        result.entries.size to countAllGroups(result.groupTree)
+    }
+
+    "1password" -> {
+        val result = if (content.trimStart().startsWith("***")) {
+            OnePasswordImporter.importOnePif(content)
+        } else {
+            OnePasswordImporter.importCsv(content)
+        }
+        result.entries.size to countAllGroups(result.groupTree)
+    }
+
+    else -> 0 to 0
+}
+
+private fun executeImport(
+    formatId: String,
+    content: String,
+): Pair<List<org.github.keepasscompose.core.model.KdbxEntry>, org.github.keepasscompose.core.model.KdbxGroup> = when (formatId) {
+    "csv" -> CsvImporter.parse(content).let { it.entries to it.groupTree }
+
+    "lastpass" -> LastPassImporter.import(content).let { it.entries to it.groupTree }
+
+    "bitwarden" -> {
+        val r = if (content.trimStart().startsWith("{")) BitwardenImporter.import(content) else BitwardenImporter.importCsv(content)
+        r.entries to r.groupTree
+    }
+
+    "1password" -> {
+        val r = if (content.trimStart().startsWith("***")) OnePasswordImporter.importOnePif(content) else OnePasswordImporter.importCsv(content)
+        r.entries to r.groupTree
+    }
+
+    else -> emptyList<org.github.keepasscompose.core.model.KdbxEntry>() to
+        org.github.keepasscompose.core.model.KdbxGroup(uuid = "", name = "Imported")
+}
+
+private fun executeExport(formatId: String, rootGroup: org.github.keepasscompose.core.model.KdbxGroup): String = when (formatId) {
+    "csv-export" -> CsvExporter.export(rootGroup)
+    "html-export" -> HtmlExporter.export(rootGroup)
+    "xml-export" -> XmlExporter.export(rootGroup)
+    else -> ""
+}
+
+private fun mergeImportedGroup(
+    rootGroup: org.github.keepasscompose.core.model.KdbxGroup,
+    importedTree: org.github.keepasscompose.core.model.KdbxGroup,
+    entries: List<org.github.keepasscompose.core.model.KdbxEntry>,
+): org.github.keepasscompose.core.model.KdbxGroup {
+    val importedGroups = if (importedTree.groups.isNotEmpty()) importedTree.groups else emptyList()
+    val importedEntries = if (importedTree.entries.isNotEmpty()) importedTree.entries else entries
+    return rootGroup.copy(
+        groups = rootGroup.groups + importedGroups,
+        entries = rootGroup.entries + importedEntries,
+    )
+}
+
+private fun countAllEntries(group: org.github.keepasscompose.core.model.KdbxGroup): Int =
+    group.entries.size + group.groups.sumOf { countAllEntries(it) }
+
+private fun countAllGroups(group: org.github.keepasscompose.core.model.KdbxGroup): Int = group.groups.size + group.groups.sumOf { countAllGroups(it) }
