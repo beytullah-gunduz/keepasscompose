@@ -45,7 +45,10 @@ import kotlinx.coroutines.launch
 import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxGroup
 import org.github.keepasscompose.ui.common.BackHandler
+import org.github.keepasscompose.ui.components.CreateGroupDialog
+import org.github.keepasscompose.ui.components.CreateGroupResult
 import org.github.keepasscompose.ui.components.DeleteEntryDialog
+import org.github.keepasscompose.ui.components.DeleteGroupDialog
 import org.github.keepasscompose.ui.components.GroupTree
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class, ExperimentalMaterial3Api::class)
@@ -66,12 +69,17 @@ fun MainScreen(
     onChangePassword: () -> Unit = {},
     onChangeKeyFile: () -> Unit = {},
     onDeleteEntry: (String) -> Unit = {},
+    onCreateGroup: (parentGroupUuid: String, CreateGroupResult) -> Unit = { _, _ -> },
+    onDeleteGroup: (String) -> Unit = {},
     hasRecycleBin: Boolean = false,
+    recycleBinUuid: String? = null,
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
     val selectedEntry = rootGroup?.let { findEntry(it, navigator.currentDestination?.contentKey) }
     var entryPendingDelete by remember { mutableStateOf<KdbxEntry?>(null) }
+    var groupPendingDelete by remember { mutableStateOf<KdbxGroup?>(null) }
+    var groupForNewSubGroup by remember { mutableStateOf<KdbxGroup?>(null) }
 
     entryPendingDelete?.let { entry ->
         DeleteEntryDialog(
@@ -82,6 +90,29 @@ fun MainScreen(
                 onDeleteEntry(entry.uuid)
                 entryPendingDelete = null
                 scope.launch { navigator.navigateBack() }
+            },
+        )
+    }
+
+    groupPendingDelete?.let { group ->
+        DeleteGroupDialog(
+            group = group,
+            hasRecycleBin = hasRecycleBin,
+            onDismiss = { groupPendingDelete = null },
+            onConfirm = {
+                onDeleteGroup(group.uuid)
+                groupPendingDelete = null
+            },
+        )
+    }
+
+    groupForNewSubGroup?.let { parentGroup ->
+        CreateGroupDialog(
+            parentGroupName = parentGroup.name,
+            onDismiss = { groupForNewSubGroup = null },
+            onCreate = { result ->
+                onCreateGroup(parentGroup.uuid, result)
+                groupForNewSubGroup = null
             },
         )
     }
@@ -151,6 +182,13 @@ fun MainScreen(
                                     navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, entry.uuid)
                                 }
                             },
+                            onEditEntry = { entry -> onEditEntry(entry.uuid) },
+                            onDeleteEntry = { entry -> entryPendingDelete = entry },
+                            onCopyField = onCopyField,
+                            onNewEntryInGroup = { onNewEntry() },
+                            onNewSubGroup = { group -> groupForNewSubGroup = group },
+                            onDeleteGroup = { group -> groupPendingDelete = group },
+                            recycleBinUuid = recycleBinUuid,
                             modifier = Modifier.fillMaxSize().padding(padding),
                         )
                     }
