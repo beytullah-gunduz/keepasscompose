@@ -20,6 +20,8 @@ import kotlinx.datetime.toLocalDateTime
 import org.github.keepasscompose.core.common.AppSettings
 import org.github.keepasscompose.core.common.FilePicker
 import org.github.keepasscompose.core.common.FileSystem
+import org.github.keepasscompose.core.common.PasswordHealthAnalyzer
+import org.github.keepasscompose.core.common.SearchEngine
 import org.github.keepasscompose.core.database.BitwardenImporter
 import org.github.keepasscompose.core.database.CsvExporter
 import org.github.keepasscompose.core.database.CsvImporter
@@ -28,13 +30,24 @@ import org.github.keepasscompose.core.database.LastPassImporter
 import org.github.keepasscompose.core.database.OnePasswordImporter
 import org.github.keepasscompose.core.database.RecycleBinManager
 import org.github.keepasscompose.core.database.XmlExporter
+import org.github.keepasscompose.ui.screens.AppSettingsScreen
+import org.github.keepasscompose.ui.screens.ChangeKeyFileScreen
+import org.github.keepasscompose.ui.screens.ChangePasswordScreen
+import org.github.keepasscompose.ui.screens.CreateDatabaseScreen
+import org.github.keepasscompose.ui.screens.DatabaseSettingsScreen
 import org.github.keepasscompose.ui.screens.EntryEditorScreen
+import org.github.keepasscompose.ui.screens.EntryHistoryScreen
+import org.github.keepasscompose.ui.screens.ExpiredEntriesScreen
 import org.github.keepasscompose.ui.screens.ImportExportFormat
 import org.github.keepasscompose.ui.screens.ImportExportScreen
 import org.github.keepasscompose.ui.screens.ImportExportState
 import org.github.keepasscompose.ui.screens.MainScreen
 import org.github.keepasscompose.ui.screens.RecentDatabase
+import org.github.keepasscompose.ui.screens.ReportsScreen
+import org.github.keepasscompose.ui.screens.ReusedPasswordsScreen
+import org.github.keepasscompose.ui.screens.SearchResultsScreen
 import org.github.keepasscompose.ui.screens.UnlockScreen
+import org.github.keepasscompose.ui.screens.WeakPasswordsScreen
 import org.github.keepasscompose.ui.screens.WelcomeScreen
 import org.github.keepasscompose.viewmodel.DatabaseViewModel
 import org.github.keepasscompose.viewmodel.EntryEditorViewModel
@@ -151,7 +164,7 @@ fun AppNavigator() {
                         }
                     }
                 },
-                onNewDatabase = {},
+                onNewDatabase = { currentScreen = AppScreen.CreateDatabase },
                 onRecentDatabaseSelected = { db ->
                     currentScreen = AppScreen.Unlock(db.path)
                 },
@@ -230,7 +243,13 @@ fun AppNavigator() {
                     databaseViewModel.deleteGroup(uuid)
                     databaseViewModel.database.value?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
                 },
+                onSearch = { currentScreen = AppScreen.Search },
+                onOpenSettings = { currentScreen = AppScreen.AppSettings },
+                onOpenDatabaseSettings = { currentScreen = AppScreen.DatabaseSettings },
                 onOpenImportExport = { currentScreen = AppScreen.ImportExport },
+                onOpenReports = { currentScreen = AppScreen.Reports },
+                onChangePassword = { currentScreen = AppScreen.ChangePassword },
+                onChangeKeyFile = { currentScreen = AppScreen.ChangeKeyFile },
                 hasRecycleBin = database?.meta?.recycleBinEnabled == true,
                 recycleBinUuid = database?.meta?.recycleBinUuid,
             )
@@ -280,19 +299,53 @@ fun AppNavigator() {
         }
 
         is AppScreen.CreateDatabase -> {
-            PlaceholderScreen("Create Database") { currentScreen = AppScreen.Welcome }
+            CreateDatabaseScreen(
+                onSelectLocation = {
+                    scope.launch {
+                        filePicker.pickSaveLocation("NewDatabase.kdbx", listOf("kdbx"))
+                    }
+                },
+                onCancel = { currentScreen = AppScreen.Welcome },
+                onCreate = { currentScreen = AppScreen.Welcome },
+            )
         }
 
         is AppScreen.Search -> {
-            PlaceholderScreen("Search") { currentScreen = AppScreen.Main }
+            val database by databaseViewModel.database.collectAsState()
+            var searchQuery by remember { mutableStateOf("") }
+            val results = remember(searchQuery, database) {
+                if (searchQuery.length >= 2 && database?.rootGroup != null) {
+                    SearchEngine.search(database!!.rootGroup, searchQuery)
+                } else {
+                    emptyList()
+                }
+            }
+
+            SearchResultsScreen(
+                results = results,
+                query = searchQuery,
+                onResultClick = { result ->
+                    currentScreen = AppScreen.Main
+                },
+            )
         }
 
         is AppScreen.AppSettings -> {
-            PlaceholderScreen("App Settings") { currentScreen = AppScreen.Main }
+            AppSettingsScreen(
+                onCancel = { currentScreen = AppScreen.Main },
+                onSave = { currentScreen = AppScreen.Main },
+            )
         }
 
         is AppScreen.DatabaseSettings -> {
-            PlaceholderScreen("Database Settings") { currentScreen = AppScreen.Main }
+            val database by databaseViewModel.database.collectAsState()
+            val meta = database?.meta ?: org.github.keepasscompose.core.model.KdbxMeta()
+
+            DatabaseSettingsScreen(
+                meta = meta,
+                onCancel = { currentScreen = AppScreen.Main },
+                onSave = { currentScreen = AppScreen.Main },
+            )
         }
 
         is AppScreen.ImportExport -> {
@@ -390,19 +443,61 @@ fun AppNavigator() {
         }
 
         is AppScreen.Reports -> {
-            PlaceholderScreen("Reports") { currentScreen = AppScreen.Main }
+            val database by databaseViewModel.database.collectAsState()
+            val rootGroup = database?.rootGroup
+            val report = remember(rootGroup) {
+                if (rootGroup != null) PasswordHealthAnalyzer.analyze(rootGroup) else null
+            }
+
+            if (report != null && rootGroup != null) {
+                ReportsScreen(
+                    report = report,
+                    totalGroups = countAllGroups(rootGroup),
+                    totalAttachments = 0,
+                    onWeakPasswords = { /* navigate to weak passwords sub-screen */ },
+                    onReusedPasswords = { /* navigate to reused passwords sub-screen */ },
+                    onExpiredEntries = { /* navigate to expired entries sub-screen */ },
+                    onHibpReport = { /* navigate to HIBP sub-screen */ },
+                )
+            } else {
+                PlaceholderScreen("Reports") { currentScreen = AppScreen.Main }
+            }
         }
 
         is AppScreen.ChangePassword -> {
-            PlaceholderScreen("Change Password") { currentScreen = AppScreen.Main }
+            ChangePasswordScreen(
+                onChangePassword = { _, _ -> currentScreen = AppScreen.Main },
+                onCancel = { currentScreen = AppScreen.Main },
+            )
         }
 
         is AppScreen.ChangeKeyFile -> {
-            PlaceholderScreen("Change Key File") { currentScreen = AppScreen.Main }
+            ChangeKeyFileScreen(
+                onSelectKeyFile = {
+                    scope.launch { filePicker.pickFile(listOf("keyx", "key")) }
+                },
+                onApply = { currentScreen = AppScreen.Main },
+                onCancel = { currentScreen = AppScreen.Main },
+            )
         }
 
         is AppScreen.EntryHistory -> {
-            PlaceholderScreen("Entry History") { currentScreen = AppScreen.Main }
+            val screen = currentScreen as AppScreen.EntryHistory
+            val database by databaseViewModel.database.collectAsState()
+            val entry = database?.rootGroup?.let { RecycleBinManager.findEntry(it, screen.entryUuid) }
+
+            if (entry != null) {
+                EntryHistoryScreen(
+                    entry = entry,
+                    onRestoreVersion = { historicalEntry ->
+                        databaseViewModel.updateEntry(historicalEntry)
+                        database?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
+                        currentScreen = AppScreen.Main
+                    },
+                )
+            } else {
+                PlaceholderScreen("Entry History") { currentScreen = AppScreen.Main }
+            }
         }
 
         is AppScreen.KdfConfig -> {
