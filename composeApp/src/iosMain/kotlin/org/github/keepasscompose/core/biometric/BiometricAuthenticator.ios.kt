@@ -1,12 +1,12 @@
 package org.github.keepasscompose.core.biometric
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.ObjCObjectVar
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.value
 import platform.Foundation.NSError
-import platform.Foundation.NSErrorPointer
 import platform.LocalAuthentication.LABiometryTypeFaceID
 import platform.LocalAuthentication.LABiometryTypeTouchID
 import platform.LocalAuthentication.LAContext
@@ -24,10 +24,10 @@ actual class BiometricAuthenticator actual constructor() {
     actual fun isAvailable(): Boolean {
         val ctx = LAContext()
         return memScoped {
-            val error = alloc<NSError?>()
+            val error = alloc<ObjCObjectVar<NSError?>>()
             ctx.canEvaluatePolicy(
                 LAPolicyDeviceOwnerAuthenticationWithBiometrics,
-                error = error.ptr as NSErrorPointer,
+                error = error.ptr,
             )
         }
     }
