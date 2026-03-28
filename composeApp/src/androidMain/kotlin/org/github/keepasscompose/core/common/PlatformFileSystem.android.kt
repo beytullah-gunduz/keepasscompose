@@ -4,8 +4,8 @@ import android.net.Uri
 import okio.FileSystem as OkioFileSystem
 
 actual class PlatformFileSystem actual constructor() : BaseFileSystem() {
-    override val okioFs: OkioFileSystem = OkioFileSystem.SYSTEM
-    override fun getDefaultDatabaseDirectory(): String = AndroidContextHolder.applicationContext.filesDir
+    actual override val okioFs: OkioFileSystem = OkioFileSystem.SYSTEM
+    actual override fun getDefaultDatabaseDirectory(): String = AndroidContextHolder.applicationContext.filesDir
         .resolve("databases")
         .absolutePath
 
