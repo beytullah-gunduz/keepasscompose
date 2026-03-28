@@ -79,7 +79,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build iOS framework
-        run: ./gradlew linkReleaseFrameworkIosArm64
+        run: |
+          ./gradlew linkReleaseFrameworkIosArm64 2>&1 || true
+          echo "=== Platform libraries ==="
+          ls ~/.konan/kotlin-native-prebuilt-macos-aarch64-2.3.20/klib/platform/ios_arm64/ | grep -i common || echo "No CommonCrypto platform lib found"
+          echo "=== Konan dir ==="
+          ls ~/.konan/ || echo "No .konan dir"
+          false
 
   test:
     name: Unit Tests
