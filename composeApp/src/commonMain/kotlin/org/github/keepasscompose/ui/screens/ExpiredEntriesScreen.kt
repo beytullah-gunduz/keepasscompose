@@ -14,14 +14,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,73 +34,88 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.github.keepasscompose.core.common.PasswordHealthAnalyzer
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpiredEntriesScreen(
     expiredEntries: List<PasswordHealthAnalyzer.EntryHealth>,
     expiringSoonEntries: List<PasswordHealthAnalyzer.EntryHealth>,
     onEntryClick: (PasswordHealthAnalyzer.EntryHealth) -> Unit = {},
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val total = expiredEntries.size + expiringSoonEntries.size
 
-    Column(modifier = modifier.fillMaxWidth().padding(top = 24.dp, start = 24.dp, end = 24.dp)) {
-        Text("Expired Entries", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "${expiredEntries.size} expired, ${expiringSoonEntries.size} expiring soon",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Expired Entries") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxWidth().padding(padding).padding(top = 24.dp, start = 24.dp, end = 24.dp)) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${expiredEntries.size} expired, ${expiringSoonEntries.size} expiring soon",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        if (total == 0) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "No expired entries!",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            if (total == 0) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Filled.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "No expired entries!",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-            }
-            return
-        }
-
-        LazyColumn {
-            if (expiredEntries.isNotEmpty()) {
-                item(key = "expired_header") {
-                    Text(
-                        text = "Expired (${expiredEntries.size})",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(bottom = 4.dp),
-                    )
-                }
-                items(expiredEntries, key = { "expired_${it.entry.uuid}" }) { entryHealth ->
-                    ExpiredEntryRow(entryHealth = entryHealth, isExpired = true, onClick = { onEntryClick(entryHealth) })
-                    HorizontalDivider()
-                }
+                return@Scaffold
             }
 
-            if (expiringSoonEntries.isNotEmpty()) {
-                item(key = "expiring_header") {
-                    Text(
-                        text = "Expiring Soon (${expiringSoonEntries.size})",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.padding(top = if (expiredEntries.isNotEmpty()) 16.dp else 0.dp, bottom = 4.dp),
-                    )
+            LazyColumn {
+                if (expiredEntries.isNotEmpty()) {
+                    item(key = "expired_header") {
+                        Text(
+                            text = "Expired (${expiredEntries.size})",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(bottom = 4.dp),
+                        )
+                    }
+                    items(expiredEntries, key = { "expired_${it.entry.uuid}" }) { entryHealth ->
+                        ExpiredEntryRow(entryHealth = entryHealth, isExpired = true, onClick = { onEntryClick(entryHealth) })
+                        HorizontalDivider()
+                    }
                 }
-                items(expiringSoonEntries, key = { "expiring_${it.entry.uuid}" }) { entryHealth ->
-                    ExpiredEntryRow(entryHealth = entryHealth, isExpired = false, onClick = { onEntryClick(entryHealth) })
-                    HorizontalDivider()
+
+                if (expiringSoonEntries.isNotEmpty()) {
+                    item(key = "expiring_header") {
+                        Text(
+                            text = "Expiring Soon (${expiringSoonEntries.size})",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.padding(top = if (expiredEntries.isNotEmpty()) 16.dp else 0.dp, bottom = 4.dp),
+                        )
+                    }
+                    items(expiringSoonEntries, key = { "expiring_${it.entry.uuid}" }) { entryHealth ->
+                        ExpiredEntryRow(entryHealth = entryHealth, isExpired = false, onClick = { onEntryClick(entryHealth) })
+                        HorizontalDivider()
+                    }
                 }
             }
         }

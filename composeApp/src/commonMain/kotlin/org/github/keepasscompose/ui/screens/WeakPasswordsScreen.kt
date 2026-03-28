@@ -15,13 +15,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,48 +35,63 @@ import androidx.compose.ui.unit.dp
 import org.github.keepasscompose.core.common.PasswordHealthAnalyzer
 import org.github.keepasscompose.core.common.PasswordStrength
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeakPasswordsScreen(
     weakEntries: List<PasswordHealthAnalyzer.EntryHealth>,
     onEntryClick: (PasswordHealthAnalyzer.EntryHealth) -> Unit = {},
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(top = 24.dp, start = 24.dp, end = 24.dp)) {
-        Text("Weak Passwords", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "${weakEntries.size} ${if (weakEntries.size == 1) "entry" else "entries"} with weak passwords",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Weak Passwords") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxWidth().padding(padding).padding(top = 24.dp, start = 24.dp, end = 24.dp)) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "${weakEntries.size} ${if (weakEntries.size == 1) "entry" else "entries"} with weak passwords",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        if (weakEntries.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "All passwords are strong!",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            if (weakEntries.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Filled.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "All passwords are strong!",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
+                return@Scaffold
             }
-            return
-        }
 
-        val sorted = weakEntries.sortedBy { it.strength.level.ordinal }
+            val sorted = weakEntries.sortedBy { it.strength.level.ordinal }
 
-        LazyColumn {
-            items(sorted, key = { it.entry.uuid }) { entryHealth ->
-                WeakPasswordRow(entryHealth = entryHealth, onClick = { onEntryClick(entryHealth) })
-                HorizontalDivider()
+            LazyColumn {
+                items(sorted, key = { it.entry.uuid }) { entryHealth ->
+                    WeakPasswordRow(entryHealth = entryHealth, onClick = { onEntryClick(entryHealth) })
+                    HorizontalDivider()
+                }
             }
         }
     }

@@ -8,14 +8,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -36,6 +43,7 @@ data class DatabaseSettingsResult(
     val historyMaxSize: Long,
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatabaseSettingsScreen(
     meta: KdbxMeta,
@@ -56,72 +64,83 @@ fun DatabaseSettingsScreen(
     var historyMaxItems by remember { mutableStateOf(meta.historyMaxItems.toString()) }
     var historyMaxSize by remember { mutableStateOf((meta.historyMaxSize / (1024 * 1024)).toString()) }
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Text("Database Settings", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(title) },
-                )
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Database Settings") },
+                navigationIcon = {
+                    IconButton(onClick = onCancel) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            PrimaryTabRow(selectedTabIndex = selectedTab) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(title) },
+                    )
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Column(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-        ) {
-            when (selectedTab) {
-                0 -> GeneralTab(
-                    databaseName = databaseName,
-                    description = description,
-                    defaultUserName = defaultUserName,
-                    onNameChange = { databaseName = it },
-                    onDescriptionChange = { description = it },
-                    onDefaultUserNameChange = { defaultUserName = it },
-                )
-
-                1 -> SecurityTab(
-                    encryption = encryption,
-                    kdf = kdf,
-                    onEncryptionChange = { encryption = it },
-                    onKdfChange = { kdf = it },
-                )
-
-                2 -> MaintenanceTab(
-                    historyMaxItems = historyMaxItems,
-                    historyMaxSize = historyMaxSize,
-                    onMaxItemsChange = { historyMaxItems = it },
-                    onMaxSizeChange = { historyMaxSize = it },
-                )
-            }
-        }
-
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(8.dp))
-        androidx.compose.foundation.layout.Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
-        ) {
-            TextButton(onClick = onCancel) { Text("Cancel") }
-            Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-            Button(onClick = {
-                onSave(
-                    DatabaseSettingsResult(
+            Column(
+                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+            ) {
+                when (selectedTab) {
+                    0 -> GeneralTab(
                         databaseName = databaseName,
                         description = description,
                         defaultUserName = defaultUserName,
-                        encryptionAlgorithm = encryption,
-                        kdfAlgorithm = kdf,
-                        historyMaxItems = historyMaxItems.toIntOrNull() ?: KdbxMeta.DEFAULT_HISTORY_MAX_ITEMS,
-                        historyMaxSize = (historyMaxSize.toLongOrNull() ?: 6) * 1024 * 1024,
-                    ),
-                )
-            }) { Text("Save") }
+                        onNameChange = { databaseName = it },
+                        onDescriptionChange = { description = it },
+                        onDefaultUserNameChange = { defaultUserName = it },
+                    )
+
+                    1 -> SecurityTab(
+                        encryption = encryption,
+                        kdf = kdf,
+                        onEncryptionChange = { encryption = it },
+                        onKdfChange = { kdf = it },
+                    )
+
+                    2 -> MaintenanceTab(
+                        historyMaxItems = historyMaxItems,
+                        historyMaxSize = historyMaxSize,
+                        onMaxItemsChange = { historyMaxItems = it },
+                        onMaxSizeChange = { historyMaxSize = it },
+                    )
+                }
+            }
+
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(8.dp))
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End,
+            ) {
+                TextButton(onClick = onCancel) { Text("Cancel") }
+                Spacer(modifier = Modifier.padding(horizontal = 4.dp))
+                Button(onClick = {
+                    onSave(
+                        DatabaseSettingsResult(
+                            databaseName = databaseName,
+                            description = description,
+                            defaultUserName = defaultUserName,
+                            encryptionAlgorithm = encryption,
+                            kdfAlgorithm = kdf,
+                            historyMaxItems = historyMaxItems.toIntOrNull() ?: KdbxMeta.DEFAULT_HISTORY_MAX_ITEMS,
+                            historyMaxSize = (historyMaxSize.toLongOrNull() ?: 6) * 1024 * 1024,
+                        ),
+                    )
+                }) { Text("Save") }
+            }
         }
     }
 }

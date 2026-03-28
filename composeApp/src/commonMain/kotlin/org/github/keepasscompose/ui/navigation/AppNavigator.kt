@@ -324,6 +324,7 @@ fun AppNavigator() {
             SearchResultsScreen(
                 results = results,
                 query = searchQuery,
+                onBack = { currentScreen = AppScreen.Main },
                 onResultClick = { result ->
                     currentScreen = AppScreen.Main
                 },
@@ -458,6 +459,7 @@ fun AppNavigator() {
                     onReusedPasswords = { /* navigate to reused passwords sub-screen */ },
                     onExpiredEntries = { /* navigate to expired entries sub-screen */ },
                     onHibpReport = { /* navigate to HIBP sub-screen */ },
+                    onBack = { currentScreen = AppScreen.Main },
                 )
             } else {
                 PlaceholderScreen("Reports") { currentScreen = AppScreen.Main }
@@ -489,6 +491,7 @@ fun AppNavigator() {
             if (entry != null) {
                 EntryHistoryScreen(
                     entry = entry,
+                    onBack = { currentScreen = AppScreen.Main },
                     onRestoreVersion = { historicalEntry ->
                         databaseViewModel.updateEntry(historicalEntry)
                         database?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
