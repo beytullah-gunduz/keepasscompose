@@ -1,3 +1,2 @@
 package = CommonCrypto
-headers = CommonCrypto/CommonCrypto.h
-headerFilter = CommonCrypto/**
+modules = CommonCrypto
