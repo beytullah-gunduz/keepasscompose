@@ -192,377 +192,377 @@ fun AppNavigator() {
         },
         label = "screen_transition",
     ) { screen ->
-    when (screen) {
-        is AppScreen.Welcome -> {
-            WelcomeScreen(
-                recentDatabases = recentEntries.map { RecentDatabase(it.name, it.path, it.lastOpened) },
-                onOpenDatabase = {
-                    scope.launch {
-                        val path = filePicker.pickFile(listOf("kdbx"))
-                        if (path != null) {
-                            currentScreen = AppScreen.Unlock(path)
-                        }
-                    }
-                },
-                onNewDatabase = { currentScreen = AppScreen.CreateDatabase },
-                onRecentDatabaseSelected = { db ->
-                    currentScreen = AppScreen.Unlock(db.path)
-                },
-                onRemoveRecentDatabase = { db ->
-                    scope.launch { appSettings.removeRecentDatabase(db.path) }
-                },
-            )
-        }
-
-        is AppScreen.Unlock -> {
-            val unlockScreen = screen as AppScreen.Unlock
-            val keyFilePath by unlockViewModel.keyFilePath.collectAsState()
-
-            UnlockScreen(
-                databasePath = unlockScreen.databasePath,
-                keyFilePath = keyFilePath,
-                isLoading = unlockState is UnlockState.Loading,
-                errorMessage = (unlockState as? UnlockState.Error)?.message,
-                onPasswordSubmit = { password -> unlockViewModel.unlock(unlockScreen.databasePath, password) },
-                onSelectKeyFile = {
-                    scope.launch {
-                        val path = filePicker.pickFile(listOf("keyx", "key"))
-                        if (path != null) unlockViewModel.setKeyFilePath(path)
-                    }
-                },
-                onClearKeyFile = { unlockViewModel.clearKeyFile() },
-            )
-        }
-
-        is AppScreen.Main -> {
-            val database by databaseViewModel.database.collectAsState()
-            val dbPath by databaseViewModel.filePath.collectAsState()
-            val databaseKey = dbPath?.let { appSettings.databaseKeyFromPath(it) } ?: ""
-            val persistedExpandedGroups by appSettings.expandedGroupsForDatabase(databaseKey)
-                .collectAsState(initial = null)
-
-            MainScreen(
-                databaseName = database?.meta?.databaseName ?: "Database",
-                rootGroup = database?.rootGroup,
-                onLockDatabase = {
-                    databaseViewModel.lock()
-                    unlockViewModel.resetState()
-                    currentScreen = AppScreen.Welcome
-                },
-                onOpenDatabase = {
-                    scope.launch {
-                        val path = filePicker.pickFile(listOf("kdbx"))
-                        if (path != null) {
-                            databaseViewModel.close()
-                            currentScreen = AppScreen.Unlock(path)
-                        }
-                    }
-                },
-                onNewEntry = {
-                    entryEditorViewModel.startCreating()
-                    currentScreen = AppScreen.EntryEditor(isEditMode = false, entryUuid = null)
-                },
-                onEditEntry = { uuid ->
-                    val entry = database?.rootGroup?.let { RecycleBinManager.findEntry(it, uuid) }
-                    if (entry != null) {
-                        entryEditorViewModel.startEditing(entry)
-                        currentScreen = AppScreen.EntryEditor(isEditMode = true, entryUuid = uuid)
-                    }
-                },
-                onDeleteEntry = { uuid ->
-                    databaseViewModel.deleteEntry(uuid)
-                    database?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
-                },
-                onCreateGroup = { parentUuid, result ->
-                    val newGroup = org.github.keepasscompose.core.model.KdbxGroup(
-                        uuid = Base64.encode(Uuid.random().toByteArray()),
-                        name = result.name,
-                        icon = org.github.keepasscompose.core.model.KdbxIcon(standardIndex = result.iconIndex),
-                        notes = result.notes,
-                    )
-                    databaseViewModel.addGroup(parentUuid, newGroup)
-                    databaseViewModel.database.value?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
-                },
-                onDeleteGroup = { uuid ->
-                    databaseViewModel.deleteGroup(uuid)
-                    databaseViewModel.database.value?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
-                },
-                onSearch = { currentScreen = AppScreen.Search },
-                onOpenSettings = { currentScreen = AppScreen.AppSettings },
-                onOpenDatabaseSettings = { currentScreen = AppScreen.DatabaseSettings },
-                onOpenImportExport = { currentScreen = AppScreen.ImportExport },
-                onOpenReports = { currentScreen = AppScreen.Reports },
-                onChangePassword = { currentScreen = AppScreen.ChangePassword },
-                onChangeKeyFile = { currentScreen = AppScreen.ChangeKeyFile },
-                hasRecycleBin = database?.meta?.recycleBinEnabled == true,
-                recycleBinUuid = database?.meta?.recycleBinUuid,
-                initialExpandedGroups = persistedExpandedGroups,
-                onExpandedGroupsChanged = { expandedUuids ->
-                    if (databaseKey.isNotEmpty()) {
+        when (screen) {
+            is AppScreen.Welcome -> {
+                WelcomeScreen(
+                    recentDatabases = recentEntries.map { RecentDatabase(it.name, it.path, it.lastOpened) },
+                    onOpenDatabase = {
                         scope.launch {
-                            appSettings.setExpandedGroupsForDatabase(databaseKey, expandedUuids)
-                        }
-                    }
-                },
-            )
-        }
-
-        is AppScreen.EntryEditor -> {
-            val editorScreen = screen as AppScreen.EntryEditor
-            val database by databaseViewModel.database.collectAsState()
-            val existingEntry = if (editorScreen.isEditMode && editorScreen.entryUuid != null) {
-                database?.rootGroup?.let { RecycleBinManager.findEntry(it, editorScreen.entryUuid) }
-            } else {
-                null
-            }
-
-            EntryEditorScreen(
-                initialTitle = existingEntry?.title ?: "",
-                initialUserName = existingEntry?.userName ?: "",
-                initialPassword = existingEntry?.password ?: "",
-                initialUrl = existingEntry?.url ?: "",
-                initialNotes = existingEntry?.notes ?: "",
-                initialIconIndex = existingEntry?.icon?.standardIndex ?: 0,
-                initialTags = existingEntry?.tags ?: emptyList(),
-                isEditMode = editorScreen.isEditMode,
-                onSave = { result ->
-                    val saved = entryEditorViewModel.save(result)
-                    if (saved != null) {
-                        val selectedGroup = groupNavViewModel.selectedGroup.value
-                        val parentUuid = selectedGroup?.uuid ?: database?.rootGroup?.uuid ?: return@EntryEditorScreen
-                        if (editorScreen.isEditMode) {
-                            databaseViewModel.updateEntry(saved)
-                        } else {
-                            databaseViewModel.addEntry(parentUuid, saved)
-                        }
-                        // Refresh group navigation with updated root
-                        databaseViewModel.database.value?.rootGroup?.let {
-                            groupNavViewModel.setRootGroup(it)
-                        }
-                        entryEditorViewModel.resetState()
-                        currentScreen = AppScreen.Main
-                    }
-                },
-                onCancel = {
-                    entryEditorViewModel.resetState()
-                    currentScreen = AppScreen.Main
-                },
-            )
-        }
-
-        is AppScreen.CreateDatabase -> {
-            CreateDatabaseScreen(
-                onSelectLocation = {
-                    scope.launch {
-                        filePicker.pickSaveLocation("NewDatabase.kdbx", listOf("kdbx"))
-                    }
-                },
-                onCancel = { currentScreen = AppScreen.Welcome },
-                onCreate = { currentScreen = AppScreen.Welcome },
-            )
-        }
-
-        is AppScreen.Search -> {
-            val database by databaseViewModel.database.collectAsState()
-            var searchQuery by remember { mutableStateOf("") }
-            val results = remember(searchQuery, database) {
-                if (searchQuery.length >= 2 && database?.rootGroup != null) {
-                    SearchEngine.search(database!!.rootGroup, searchQuery)
-                } else {
-                    emptyList()
-                }
-            }
-
-            SearchResultsScreen(
-                results = results,
-                query = searchQuery,
-                onBack = { currentScreen = AppScreen.Main },
-                onResultClick = { result ->
-                    currentScreen = AppScreen.Main
-                },
-            )
-        }
-
-        is AppScreen.AppSettings -> {
-            AppSettingsScreen(
-                onCancel = { currentScreen = AppScreen.Main },
-                onSave = { currentScreen = AppScreen.Main },
-            )
-        }
-
-        is AppScreen.DatabaseSettings -> {
-            val database by databaseViewModel.database.collectAsState()
-            val meta = database?.meta ?: org.github.keepasscompose.core.model.KdbxMeta()
-
-            DatabaseSettingsScreen(
-                meta = meta,
-                onCancel = { currentScreen = AppScreen.Main },
-                onSave = { currentScreen = AppScreen.Main },
-            )
-        }
-
-        is AppScreen.ImportExport -> {
-            val database by databaseViewModel.database.collectAsState()
-            var ieState by remember { mutableStateOf<ImportExportState>(ImportExportState.FormatSelection) }
-            var selectedFilePath by remember { mutableStateOf<String?>(null) }
-
-            ImportExportScreen(
-                state = ieState,
-                onBack = {
-                    ieState = ImportExportState.FormatSelection
-                    currentScreen = AppScreen.Main
-                },
-                onFormatSelected = { format ->
-                    ieState = ImportExportState.FileSelection(format)
-                },
-                onPickFile = { format ->
-                    scope.launch {
-                        if (format.isImport) {
-                            val extensions = when (format.id) {
-                                "csv" -> listOf("csv")
-                                "lastpass" -> listOf("csv")
-                                "bitwarden" -> listOf("json", "csv")
-                                "1password" -> listOf("csv", "1pif")
-                                else -> listOf("csv")
-                            }
-                            val path = filePicker.pickFile(extensions)
+                            val path = filePicker.pickFile(listOf("kdbx"))
                             if (path != null) {
-                                selectedFilePath = path
-                                try {
-                                    val content = fileSystem.readFile(path).decodeToString()
-                                    val (entryCount, groupCount) = countImportItems(format.id, content)
-                                    ieState = ImportExportState.Preview(format, entryCount, groupCount)
-                                } catch (e: Exception) {
-                                    ieState = ImportExportState.Failed(format, e.message ?: "Failed to read file")
-                                }
+                                currentScreen = AppScreen.Unlock(path)
                             }
-                        } else {
-                            val ext = when (format.id) {
-                                "csv-export" -> "csv"
-                                "html-export" -> "html"
-                                "xml-export" -> "xml"
-                                else -> "txt"
-                            }
-                            val rootGroup = database?.rootGroup ?: return@launch
-                            val entryCount = countAllEntries(rootGroup)
-                            val groupCount = countAllGroups(rootGroup)
-                            ieState = ImportExportState.Preview(format, entryCount, groupCount)
                         }
-                    }
-                },
-                onConfirmImport = {
-                    val format = (ieState as? ImportExportState.Preview)?.format ?: return@ImportExportScreen
-                    val path = selectedFilePath ?: return@ImportExportScreen
-                    scope.launch {
-                        ieState = ImportExportState.InProgress(format, 0.5f)
-                        try {
-                            val content = fileSystem.readFile(path).decodeToString()
-                            val (entries, groupTree) = executeImport(format.id, content)
-                            val rootGroup = database?.rootGroup ?: return@launch
-                            val mergedRoot = mergeImportedGroup(rootGroup, groupTree, entries)
-                            val db = database ?: return@launch
-                            databaseViewModel.setDatabase(db.copy(rootGroup = mergedRoot), databaseViewModel.filePath.value ?: "")
-                            databaseViewModel.markDirty()
-                            groupNavViewModel.setRootGroup(mergedRoot)
-                            ieState = ImportExportState.Complete(format, entries.size, countAllGroups(groupTree))
-                        } catch (e: Exception) {
-                            ieState = ImportExportState.Failed(format, e.message ?: "Import failed")
-                        }
-                    }
-                },
-                onConfirmExport = {
-                    val format = (ieState as? ImportExportState.Preview)?.format ?: return@ImportExportScreen
-                    scope.launch {
-                        ieState = ImportExportState.InProgress(format, 0.5f)
-                        try {
-                            val rootGroup = database?.rootGroup ?: return@launch
-                            val output = executeExport(format.id, rootGroup)
-                            val savePath = filePicker.pickSaveLocation(
-                                "export.${format.id.removeSuffix("-export")}",
-                                listOf(format.id.removeSuffix("-export")),
-                            )
-                            if (savePath != null) {
-                                fileSystem.writeFile(savePath, output.encodeToByteArray())
-                                ieState = ImportExportState.Complete(format, countAllEntries(rootGroup), countAllGroups(rootGroup))
-                            } else {
-                                ieState = ImportExportState.FormatSelection
-                            }
-                        } catch (e: Exception) {
-                            ieState = ImportExportState.Failed(format, e.message ?: "Export failed")
-                        }
-                    }
-                },
-            )
-        }
-
-        is AppScreen.Reports -> {
-            val database by databaseViewModel.database.collectAsState()
-            val rootGroup = database?.rootGroup
-            val report = remember(rootGroup) {
-                if (rootGroup != null) PasswordHealthAnalyzer.analyze(rootGroup) else null
-            }
-
-            if (report != null && rootGroup != null) {
-                ReportsScreen(
-                    report = report,
-                    totalGroups = countAllGroups(rootGroup),
-                    totalAttachments = 0,
-                    onWeakPasswords = { /* navigate to weak passwords sub-screen */ },
-                    onReusedPasswords = { /* navigate to reused passwords sub-screen */ },
-                    onExpiredEntries = { /* navigate to expired entries sub-screen */ },
-                    onHibpReport = { /* navigate to HIBP sub-screen */ },
-                    onBack = { currentScreen = AppScreen.Main },
+                    },
+                    onNewDatabase = { currentScreen = AppScreen.CreateDatabase },
+                    onRecentDatabaseSelected = { db ->
+                        currentScreen = AppScreen.Unlock(db.path)
+                    },
+                    onRemoveRecentDatabase = { db ->
+                        scope.launch { appSettings.removeRecentDatabase(db.path) }
+                    },
                 )
-            } else {
-                PlaceholderScreen("Reports") { currentScreen = AppScreen.Main }
             }
-        }
 
-        is AppScreen.ChangePassword -> {
-            ChangePasswordScreen(
-                onChangePassword = { _, _ -> currentScreen = AppScreen.Main },
-                onCancel = { currentScreen = AppScreen.Main },
-            )
-        }
+            is AppScreen.Unlock -> {
+                val unlockScreen = screen as AppScreen.Unlock
+                val keyFilePath by unlockViewModel.keyFilePath.collectAsState()
 
-        is AppScreen.ChangeKeyFile -> {
-            ChangeKeyFileScreen(
-                onSelectKeyFile = {
-                    scope.launch { filePicker.pickFile(listOf("keyx", "key")) }
-                },
-                onApply = { currentScreen = AppScreen.Main },
-                onCancel = { currentScreen = AppScreen.Main },
-            )
-        }
+                UnlockScreen(
+                    databasePath = unlockScreen.databasePath,
+                    keyFilePath = keyFilePath,
+                    isLoading = unlockState is UnlockState.Loading,
+                    errorMessage = (unlockState as? UnlockState.Error)?.message,
+                    onPasswordSubmit = { password -> unlockViewModel.unlock(unlockScreen.databasePath, password) },
+                    onSelectKeyFile = {
+                        scope.launch {
+                            val path = filePicker.pickFile(listOf("keyx", "key"))
+                            if (path != null) unlockViewModel.setKeyFilePath(path)
+                        }
+                    },
+                    onClearKeyFile = { unlockViewModel.clearKeyFile() },
+                )
+            }
 
-        is AppScreen.EntryHistory -> {
-            val historyScreen = screen as AppScreen.EntryHistory
-            val database by databaseViewModel.database.collectAsState()
-            val entry = database?.rootGroup?.let { RecycleBinManager.findEntry(it, historyScreen.entryUuid) }
+            is AppScreen.Main -> {
+                val database by databaseViewModel.database.collectAsState()
+                val dbPath by databaseViewModel.filePath.collectAsState()
+                val databaseKey = dbPath?.let { appSettings.databaseKeyFromPath(it) } ?: ""
+                val persistedExpandedGroups by appSettings.expandedGroupsForDatabase(databaseKey)
+                    .collectAsState(initial = null)
 
-            if (entry != null) {
-                EntryHistoryScreen(
-                    entry = entry,
-                    onBack = { currentScreen = AppScreen.Main },
-                    onRestoreVersion = { historicalEntry ->
-                        databaseViewModel.updateEntry(historicalEntry)
+                MainScreen(
+                    databaseName = database?.meta?.databaseName ?: "Database",
+                    rootGroup = database?.rootGroup,
+                    onLockDatabase = {
+                        databaseViewModel.lock()
+                        unlockViewModel.resetState()
+                        currentScreen = AppScreen.Welcome
+                    },
+                    onOpenDatabase = {
+                        scope.launch {
+                            val path = filePicker.pickFile(listOf("kdbx"))
+                            if (path != null) {
+                                databaseViewModel.close()
+                                currentScreen = AppScreen.Unlock(path)
+                            }
+                        }
+                    },
+                    onNewEntry = {
+                        entryEditorViewModel.startCreating()
+                        currentScreen = AppScreen.EntryEditor(isEditMode = false, entryUuid = null)
+                    },
+                    onEditEntry = { uuid ->
+                        val entry = database?.rootGroup?.let { RecycleBinManager.findEntry(it, uuid) }
+                        if (entry != null) {
+                            entryEditorViewModel.startEditing(entry)
+                            currentScreen = AppScreen.EntryEditor(isEditMode = true, entryUuid = uuid)
+                        }
+                    },
+                    onDeleteEntry = { uuid ->
+                        databaseViewModel.deleteEntry(uuid)
                         database?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
+                    },
+                    onCreateGroup = { parentUuid, result ->
+                        val newGroup = org.github.keepasscompose.core.model.KdbxGroup(
+                            uuid = Base64.encode(Uuid.random().toByteArray()),
+                            name = result.name,
+                            icon = org.github.keepasscompose.core.model.KdbxIcon(standardIndex = result.iconIndex),
+                            notes = result.notes,
+                        )
+                        databaseViewModel.addGroup(parentUuid, newGroup)
+                        databaseViewModel.database.value?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
+                    },
+                    onDeleteGroup = { uuid ->
+                        databaseViewModel.deleteGroup(uuid)
+                        databaseViewModel.database.value?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
+                    },
+                    onSearch = { currentScreen = AppScreen.Search },
+                    onOpenSettings = { currentScreen = AppScreen.AppSettings },
+                    onOpenDatabaseSettings = { currentScreen = AppScreen.DatabaseSettings },
+                    onOpenImportExport = { currentScreen = AppScreen.ImportExport },
+                    onOpenReports = { currentScreen = AppScreen.Reports },
+                    onChangePassword = { currentScreen = AppScreen.ChangePassword },
+                    onChangeKeyFile = { currentScreen = AppScreen.ChangeKeyFile },
+                    hasRecycleBin = database?.meta?.recycleBinEnabled == true,
+                    recycleBinUuid = database?.meta?.recycleBinUuid,
+                    initialExpandedGroups = persistedExpandedGroups,
+                    onExpandedGroupsChanged = { expandedUuids ->
+                        if (databaseKey.isNotEmpty()) {
+                            scope.launch {
+                                appSettings.setExpandedGroupsForDatabase(databaseKey, expandedUuids)
+                            }
+                        }
+                    },
+                )
+            }
+
+            is AppScreen.EntryEditor -> {
+                val editorScreen = screen as AppScreen.EntryEditor
+                val database by databaseViewModel.database.collectAsState()
+                val existingEntry = if (editorScreen.isEditMode && editorScreen.entryUuid != null) {
+                    database?.rootGroup?.let { RecycleBinManager.findEntry(it, editorScreen.entryUuid) }
+                } else {
+                    null
+                }
+
+                EntryEditorScreen(
+                    initialTitle = existingEntry?.title ?: "",
+                    initialUserName = existingEntry?.userName ?: "",
+                    initialPassword = existingEntry?.password ?: "",
+                    initialUrl = existingEntry?.url ?: "",
+                    initialNotes = existingEntry?.notes ?: "",
+                    initialIconIndex = existingEntry?.icon?.standardIndex ?: 0,
+                    initialTags = existingEntry?.tags ?: emptyList(),
+                    isEditMode = editorScreen.isEditMode,
+                    onSave = { result ->
+                        val saved = entryEditorViewModel.save(result)
+                        if (saved != null) {
+                            val selectedGroup = groupNavViewModel.selectedGroup.value
+                            val parentUuid = selectedGroup?.uuid ?: database?.rootGroup?.uuid ?: return@EntryEditorScreen
+                            if (editorScreen.isEditMode) {
+                                databaseViewModel.updateEntry(saved)
+                            } else {
+                                databaseViewModel.addEntry(parentUuid, saved)
+                            }
+                            // Refresh group navigation with updated root
+                            databaseViewModel.database.value?.rootGroup?.let {
+                                groupNavViewModel.setRootGroup(it)
+                            }
+                            entryEditorViewModel.resetState()
+                            currentScreen = AppScreen.Main
+                        }
+                    },
+                    onCancel = {
+                        entryEditorViewModel.resetState()
                         currentScreen = AppScreen.Main
                     },
                 )
-            } else {
-                PlaceholderScreen("Entry History") { currentScreen = AppScreen.Main }
+            }
+
+            is AppScreen.CreateDatabase -> {
+                CreateDatabaseScreen(
+                    onSelectLocation = {
+                        scope.launch {
+                            filePicker.pickSaveLocation("NewDatabase.kdbx", listOf("kdbx"))
+                        }
+                    },
+                    onCancel = { currentScreen = AppScreen.Welcome },
+                    onCreate = { currentScreen = AppScreen.Welcome },
+                )
+            }
+
+            is AppScreen.Search -> {
+                val database by databaseViewModel.database.collectAsState()
+                var searchQuery by remember { mutableStateOf("") }
+                val results = remember(searchQuery, database) {
+                    if (searchQuery.length >= 2 && database?.rootGroup != null) {
+                        SearchEngine.search(database!!.rootGroup, searchQuery)
+                    } else {
+                        emptyList()
+                    }
+                }
+
+                SearchResultsScreen(
+                    results = results,
+                    query = searchQuery,
+                    onBack = { currentScreen = AppScreen.Main },
+                    onResultClick = { result ->
+                        currentScreen = AppScreen.Main
+                    },
+                )
+            }
+
+            is AppScreen.AppSettings -> {
+                AppSettingsScreen(
+                    onCancel = { currentScreen = AppScreen.Main },
+                    onSave = { currentScreen = AppScreen.Main },
+                )
+            }
+
+            is AppScreen.DatabaseSettings -> {
+                val database by databaseViewModel.database.collectAsState()
+                val meta = database?.meta ?: org.github.keepasscompose.core.model.KdbxMeta()
+
+                DatabaseSettingsScreen(
+                    meta = meta,
+                    onCancel = { currentScreen = AppScreen.Main },
+                    onSave = { currentScreen = AppScreen.Main },
+                )
+            }
+
+            is AppScreen.ImportExport -> {
+                val database by databaseViewModel.database.collectAsState()
+                var ieState by remember { mutableStateOf<ImportExportState>(ImportExportState.FormatSelection) }
+                var selectedFilePath by remember { mutableStateOf<String?>(null) }
+
+                ImportExportScreen(
+                    state = ieState,
+                    onBack = {
+                        ieState = ImportExportState.FormatSelection
+                        currentScreen = AppScreen.Main
+                    },
+                    onFormatSelected = { format ->
+                        ieState = ImportExportState.FileSelection(format)
+                    },
+                    onPickFile = { format ->
+                        scope.launch {
+                            if (format.isImport) {
+                                val extensions = when (format.id) {
+                                    "csv" -> listOf("csv")
+                                    "lastpass" -> listOf("csv")
+                                    "bitwarden" -> listOf("json", "csv")
+                                    "1password" -> listOf("csv", "1pif")
+                                    else -> listOf("csv")
+                                }
+                                val path = filePicker.pickFile(extensions)
+                                if (path != null) {
+                                    selectedFilePath = path
+                                    try {
+                                        val content = fileSystem.readFile(path).decodeToString()
+                                        val (entryCount, groupCount) = countImportItems(format.id, content)
+                                        ieState = ImportExportState.Preview(format, entryCount, groupCount)
+                                    } catch (e: Exception) {
+                                        ieState = ImportExportState.Failed(format, e.message ?: "Failed to read file")
+                                    }
+                                }
+                            } else {
+                                val ext = when (format.id) {
+                                    "csv-export" -> "csv"
+                                    "html-export" -> "html"
+                                    "xml-export" -> "xml"
+                                    else -> "txt"
+                                }
+                                val rootGroup = database?.rootGroup ?: return@launch
+                                val entryCount = countAllEntries(rootGroup)
+                                val groupCount = countAllGroups(rootGroup)
+                                ieState = ImportExportState.Preview(format, entryCount, groupCount)
+                            }
+                        }
+                    },
+                    onConfirmImport = {
+                        val format = (ieState as? ImportExportState.Preview)?.format ?: return@ImportExportScreen
+                        val path = selectedFilePath ?: return@ImportExportScreen
+                        scope.launch {
+                            ieState = ImportExportState.InProgress(format, 0.5f)
+                            try {
+                                val content = fileSystem.readFile(path).decodeToString()
+                                val (entries, groupTree) = executeImport(format.id, content)
+                                val rootGroup = database?.rootGroup ?: return@launch
+                                val mergedRoot = mergeImportedGroup(rootGroup, groupTree, entries)
+                                val db = database ?: return@launch
+                                databaseViewModel.setDatabase(db.copy(rootGroup = mergedRoot), databaseViewModel.filePath.value ?: "")
+                                databaseViewModel.markDirty()
+                                groupNavViewModel.setRootGroup(mergedRoot)
+                                ieState = ImportExportState.Complete(format, entries.size, countAllGroups(groupTree))
+                            } catch (e: Exception) {
+                                ieState = ImportExportState.Failed(format, e.message ?: "Import failed")
+                            }
+                        }
+                    },
+                    onConfirmExport = {
+                        val format = (ieState as? ImportExportState.Preview)?.format ?: return@ImportExportScreen
+                        scope.launch {
+                            ieState = ImportExportState.InProgress(format, 0.5f)
+                            try {
+                                val rootGroup = database?.rootGroup ?: return@launch
+                                val output = executeExport(format.id, rootGroup)
+                                val savePath = filePicker.pickSaveLocation(
+                                    "export.${format.id.removeSuffix("-export")}",
+                                    listOf(format.id.removeSuffix("-export")),
+                                )
+                                if (savePath != null) {
+                                    fileSystem.writeFile(savePath, output.encodeToByteArray())
+                                    ieState = ImportExportState.Complete(format, countAllEntries(rootGroup), countAllGroups(rootGroup))
+                                } else {
+                                    ieState = ImportExportState.FormatSelection
+                                }
+                            } catch (e: Exception) {
+                                ieState = ImportExportState.Failed(format, e.message ?: "Export failed")
+                            }
+                        }
+                    },
+                )
+            }
+
+            is AppScreen.Reports -> {
+                val database by databaseViewModel.database.collectAsState()
+                val rootGroup = database?.rootGroup
+                val report = remember(rootGroup) {
+                    if (rootGroup != null) PasswordHealthAnalyzer.analyze(rootGroup) else null
+                }
+
+                if (report != null && rootGroup != null) {
+                    ReportsScreen(
+                        report = report,
+                        totalGroups = countAllGroups(rootGroup),
+                        totalAttachments = 0,
+                        onWeakPasswords = { /* navigate to weak passwords sub-screen */ },
+                        onReusedPasswords = { /* navigate to reused passwords sub-screen */ },
+                        onExpiredEntries = { /* navigate to expired entries sub-screen */ },
+                        onHibpReport = { /* navigate to HIBP sub-screen */ },
+                        onBack = { currentScreen = AppScreen.Main },
+                    )
+                } else {
+                    PlaceholderScreen("Reports") { currentScreen = AppScreen.Main }
+                }
+            }
+
+            is AppScreen.ChangePassword -> {
+                ChangePasswordScreen(
+                    onChangePassword = { _, _ -> currentScreen = AppScreen.Main },
+                    onCancel = { currentScreen = AppScreen.Main },
+                )
+            }
+
+            is AppScreen.ChangeKeyFile -> {
+                ChangeKeyFileScreen(
+                    onSelectKeyFile = {
+                        scope.launch { filePicker.pickFile(listOf("keyx", "key")) }
+                    },
+                    onApply = { currentScreen = AppScreen.Main },
+                    onCancel = { currentScreen = AppScreen.Main },
+                )
+            }
+
+            is AppScreen.EntryHistory -> {
+                val historyScreen = screen as AppScreen.EntryHistory
+                val database by databaseViewModel.database.collectAsState()
+                val entry = database?.rootGroup?.let { RecycleBinManager.findEntry(it, historyScreen.entryUuid) }
+
+                if (entry != null) {
+                    EntryHistoryScreen(
+                        entry = entry,
+                        onBack = { currentScreen = AppScreen.Main },
+                        onRestoreVersion = { historicalEntry ->
+                            databaseViewModel.updateEntry(historicalEntry)
+                            database?.rootGroup?.let { groupNavViewModel.setRootGroup(it) }
+                            currentScreen = AppScreen.Main
+                        },
+                    )
+                } else {
+                    PlaceholderScreen("Entry History") { currentScreen = AppScreen.Main }
+                }
+            }
+
+            is AppScreen.KdfConfig -> {
+                PlaceholderScreen("KDF Configuration") { currentScreen = AppScreen.Main }
+            }
+
+            is AppScreen.TotpSetup -> {
+                PlaceholderScreen("TOTP Setup") { currentScreen = AppScreen.Main }
             }
         }
-
-        is AppScreen.KdfConfig -> {
-            PlaceholderScreen("KDF Configuration") { currentScreen = AppScreen.Main }
-        }
-
-        is AppScreen.TotpSetup -> {
-            PlaceholderScreen("TOTP Setup") { currentScreen = AppScreen.Main }
-        }
-    }
     }
 }
 

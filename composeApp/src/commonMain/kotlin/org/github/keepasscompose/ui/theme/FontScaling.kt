@@ -44,5 +44,4 @@ private fun TextStyle.scaledStyle(factor: Float): TextStyle = copy(
     lineHeight = lineHeight.scaled(factor),
 )
 
-private fun TextUnit.scaled(factor: Float): TextUnit =
-    if (this == TextUnit.Unspecified) this else (this.value * factor).sp
+private fun TextUnit.scaled(factor: Float): TextUnit = if (this == TextUnit.Unspecified) this else (this.value * factor).sp
