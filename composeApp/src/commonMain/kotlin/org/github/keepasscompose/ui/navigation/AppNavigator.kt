@@ -196,6 +196,10 @@ fun AppNavigator() {
 
         is AppScreen.Main -> {
             val database by databaseViewModel.database.collectAsState()
+            val dbPath by databaseViewModel.filePath.collectAsState()
+            val databaseKey = dbPath?.let { appSettings.databaseKeyFromPath(it) } ?: ""
+            val persistedExpandedGroups by appSettings.expandedGroupsForDatabase(databaseKey)
+                .collectAsState(initial = null)
 
             MainScreen(
                 databaseName = database?.meta?.databaseName ?: "Database",
@@ -252,6 +256,14 @@ fun AppNavigator() {
                 onChangeKeyFile = { currentScreen = AppScreen.ChangeKeyFile },
                 hasRecycleBin = database?.meta?.recycleBinEnabled == true,
                 recycleBinUuid = database?.meta?.recycleBinUuid,
+                initialExpandedGroups = persistedExpandedGroups,
+                onExpandedGroupsChanged = { expandedUuids ->
+                    if (databaseKey.isNotEmpty()) {
+                        scope.launch {
+                            appSettings.setExpandedGroupsForDatabase(databaseKey, expandedUuids)
+                        }
+                    }
+                },
             )
         }
 

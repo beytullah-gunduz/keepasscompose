@@ -73,6 +73,8 @@ fun MainScreen(
     onDeleteGroup: (String) -> Unit = {},
     hasRecycleBin: Boolean = false,
     recycleBinUuid: String? = null,
+    initialExpandedGroups: Set<String>? = null,
+    onExpandedGroupsChanged: (Set<String>) -> Unit = {},
 ) {
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
     val scope = rememberCoroutineScope()
@@ -176,6 +178,8 @@ fun MainScreen(
                     if (rootGroup != null) {
                         GroupTree(
                             rootGroup = rootGroup,
+                            initialExpandedGroups = initialExpandedGroups,
+                            onExpandedGroupsChanged = onExpandedGroupsChanged,
                             selectedEntryUuid = navigator.currentDestination?.contentKey,
                             onEntrySelected = { entry ->
                                 scope.launch {
