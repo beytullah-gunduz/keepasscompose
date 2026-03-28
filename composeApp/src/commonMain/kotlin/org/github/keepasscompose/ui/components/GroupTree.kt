@@ -35,10 +35,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.github.keepasscompose.core.model.KdbxEntry
 import org.github.keepasscompose.core.model.KdbxGroup
+import org.github.keepasscompose.core.model.collectAllUuids
 
 @Composable
 fun GroupTree(
     rootGroup: KdbxGroup,
+    initialExpandedGroups: Set<String>? = null,
+    onExpandedGroupsChanged: (Set<String>) -> Unit = {},
     selectedEntryUuid: String? = null,
     onEntrySelected: (KdbxEntry) -> Unit = {},
     onEditEntry: (KdbxEntry) -> Unit = {},
@@ -50,7 +53,11 @@ fun GroupTree(
     recycleBinUuid: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    val expandedGroups = remember { mutableStateListOf(rootGroup.uuid) }
+    val expandedGroups = remember(initialExpandedGroups) {
+        mutableStateListOf<String>().apply {
+            addAll(initialExpandedGroups ?: rootGroup.collectAllUuids())
+        }
+    }
     val flattenedItems = remember(rootGroup, expandedGroups.toList()) {
         buildFlatTreeList(rootGroup, expandedGroups.toSet(), depth = 0)
     }
@@ -70,6 +77,7 @@ fun GroupTree(
                         } else {
                             expandedGroups.add(item.group.uuid)
                         }
+                        onExpandedGroupsChanged(expandedGroups.toSet())
                     },
                     onNewEntry = { onNewEntryInGroup(item.group) },
                     onNewSubGroup = { onNewSubGroup(item.group) },

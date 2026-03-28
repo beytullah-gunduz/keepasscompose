@@ -21,8 +21,11 @@ class AppSettings(private val dataStore: DataStore<Preferences>) {
         val THEME_PREFERENCE = stringPreferencesKey("theme_preference")
         val CLIPBOARD_CLEAR_TIMEOUT_SECONDS = intPreferencesKey("clipboard_clear_timeout_seconds")
         val RECENT_DATABASES = stringPreferencesKey("recent_databases")
+        val EXPANDED_GROUPS = stringPreferencesKey("expanded_groups")
         const val MAX_RECENT_DATABASES = 10
     }
+
+    fun databaseKeyFromPath(path: String): String = path.substringAfterLast('/').substringBeforeLast('.')
 
     @Serializable
     data class RecentDatabaseEntry(val path: String, val name: String, val lastOpened: String)
@@ -102,5 +105,30 @@ class AppSettings(private val dataStore: DataStore<Preferences>) {
         val current = recentDatabases.first().toMutableList()
         current.removeAll { it.path == path }
         dataStore.edit { it[RECENT_DATABASES] = Json.encodeToString(current.toList()) }
+    }
+
+    fun expandedGroupsForDatabase(databaseKey: String): Flow<Set<String>?> = dataStore.data.map { prefs ->
+        prefs[EXPANDED_GROUPS]?.let { json ->
+            try {
+                val map = Json.decodeFromString<Map<String, List<String>>>(json)
+                map[databaseKey]?.toSet()
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    suspend fun setExpandedGroupsForDatabase(databaseKey: String, expandedUuids: Set<String>) {
+        dataStore.edit { prefs ->
+            val existing = prefs[EXPANDED_GROUPS]?.let { json ->
+                try {
+                    Json.decodeFromString<Map<String, List<String>>>(json).toMutableMap()
+                } catch (_: Exception) {
+                    mutableMapOf()
+                }
+            } ?: mutableMapOf()
+            existing[databaseKey] = expandedUuids.toList()
+            prefs[EXPANDED_GROUPS] = Json.encodeToString(existing.toMap())
+        }
     }
 }
