@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -28,8 +29,10 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -42,12 +45,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateDatabaseScreen(
     onSelectLocation: () -> Unit = {},
     onSelectKeyFile: () -> Unit = {},
     onCreate: (CreateDatabaseConfig) -> Unit = {},
     onCancel: () -> Unit = {},
+    modifier: Modifier = Modifier,
 ) {
     var currentStep by remember { mutableIntStateOf(0) }
 
@@ -68,114 +73,125 @@ fun CreateDatabaseScreen(
     var kdfAlgorithm by remember { mutableStateOf("Argon2d") }
     var kdfIterations by remember { mutableStateOf("10") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "Create New Database",
-            style = MaterialTheme.typography.headlineSmall,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "Step ${currentStep + 1} of 5",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        LinearProgressIndicator(
-            progress = { (currentStep + 1) / 5f },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        when (currentStep) {
-            0 -> StepLocation(
-                databaseName = databaseName,
-                databasePath = databasePath,
-                onNameChange = { databaseName = it },
-                onSelectLocation = onSelectLocation,
-                onPathChange = { databasePath = it },
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Create Database") },
+                navigationIcon = {
+                    IconButton(onClick = onCancel) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
             )
-
-            1 -> StepPassword(
-                password = password,
-                confirmPassword = confirmPassword,
-                passwordVisible = passwordVisible,
-                onPasswordChange = { password = it },
-                onConfirmPasswordChange = { confirmPassword = it },
-                onToggleVisibility = { passwordVisible = !passwordVisible },
-            )
-
-            2 -> StepKeyFile(
-                keyFilePath = keyFilePath,
-                onSelectKeyFile = onSelectKeyFile,
-                onClearKeyFile = { keyFilePath = "" },
-                onKeyFilePathChange = { keyFilePath = it },
-            )
-
-            3 -> StepSettings(
-                encryptionAlgorithm = encryptionAlgorithm,
-                kdfAlgorithm = kdfAlgorithm,
-                kdfIterations = kdfIterations,
-                onEncryptionChange = { encryptionAlgorithm = it },
-                onKdfChange = { kdfAlgorithm = it },
-                onIterationsChange = { kdfIterations = it },
-            )
-
-            4 -> StepConfirmation(
-                databaseName = databaseName,
-                databasePath = databasePath,
-                hasKeyFile = keyFilePath.isNotEmpty(),
-                encryption = encryptionAlgorithm,
-                kdf = kdfAlgorithm,
-            )
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Navigation buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (currentStep > 0) {
-                OutlinedButton(onClick = { currentStep-- }) {
-                    Text("Back")
-                }
-            } else {
-                TextButton(onClick = onCancel) {
-                    Text("Cancel")
-                }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Step ${currentStep + 1} of 5",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            LinearProgressIndicator(
+                progress = { (currentStep + 1) / 5f },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            when (currentStep) {
+                0 -> StepLocation(
+                    databaseName = databaseName,
+                    databasePath = databasePath,
+                    onNameChange = { databaseName = it },
+                    onSelectLocation = onSelectLocation,
+                    onPathChange = { databasePath = it },
+                )
+
+                1 -> StepPassword(
+                    password = password,
+                    confirmPassword = confirmPassword,
+                    passwordVisible = passwordVisible,
+                    onPasswordChange = { password = it },
+                    onConfirmPasswordChange = { confirmPassword = it },
+                    onToggleVisibility = { passwordVisible = !passwordVisible },
+                )
+
+                2 -> StepKeyFile(
+                    keyFilePath = keyFilePath,
+                    onSelectKeyFile = onSelectKeyFile,
+                    onClearKeyFile = { keyFilePath = "" },
+                    onKeyFilePathChange = { keyFilePath = it },
+                )
+
+                3 -> StepSettings(
+                    encryptionAlgorithm = encryptionAlgorithm,
+                    kdfAlgorithm = kdfAlgorithm,
+                    kdfIterations = kdfIterations,
+                    onEncryptionChange = { encryptionAlgorithm = it },
+                    onKdfChange = { kdfAlgorithm = it },
+                    onIterationsChange = { kdfIterations = it },
+                )
+
+                4 -> StepConfirmation(
+                    databaseName = databaseName,
+                    databasePath = databasePath,
+                    hasKeyFile = keyFilePath.isNotEmpty(),
+                    encryption = encryptionAlgorithm,
+                    kdf = kdfAlgorithm,
+                )
             }
 
-            if (currentStep < 4) {
-                val canProceed = when (currentStep) {
-                    0 -> databaseName.isNotBlank() && databasePath.isNotBlank()
-                    1 -> password.isNotEmpty() && password == confirmPassword
-                    else -> true
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Navigation buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                if (currentStep > 0) {
+                    OutlinedButton(onClick = { currentStep-- }) {
+                        Text("Back")
+                    }
+                } else {
+                    TextButton(onClick = onCancel) {
+                        Text("Cancel")
+                    }
                 }
-                Button(onClick = { currentStep++ }, enabled = canProceed) {
-                    Text("Next")
-                }
-            } else {
-                Button(onClick = {
-                    onCreate(
-                        CreateDatabaseConfig(
-                            name = databaseName,
-                            path = databasePath,
-                            password = password,
-                            keyFilePath = keyFilePath.ifEmpty { null },
-                            encryptionAlgorithm = encryptionAlgorithm,
-                            kdfAlgorithm = kdfAlgorithm,
-                            kdfIterations = kdfIterations.toIntOrNull() ?: 10,
-                        ),
-                    )
-                }) {
-                    Text("Create")
+
+                if (currentStep < 4) {
+                    val canProceed = when (currentStep) {
+                        0 -> databaseName.isNotBlank() && databasePath.isNotBlank()
+                        1 -> password.isNotEmpty() && password == confirmPassword
+                        else -> true
+                    }
+                    Button(onClick = { currentStep++ }, enabled = canProceed) {
+                        Text("Next")
+                    }
+                } else {
+                    Button(onClick = {
+                        onCreate(
+                            CreateDatabaseConfig(
+                                name = databaseName,
+                                path = databasePath,
+                                password = password,
+                                keyFilePath = keyFilePath.ifEmpty { null },
+                                encryptionAlgorithm = encryptionAlgorithm,
+                                kdfAlgorithm = kdfAlgorithm,
+                                kdfIterations = kdfIterations.toIntOrNull() ?: 10,
+                            ),
+                        )
+                    }) {
+                        Text("Create")
+                    }
                 }
             }
         }

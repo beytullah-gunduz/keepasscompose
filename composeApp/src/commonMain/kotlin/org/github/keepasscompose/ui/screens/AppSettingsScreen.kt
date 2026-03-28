@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -25,14 +26,17 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -61,6 +65,7 @@ data class AppSettingsData(
     val browserInstalledBrowsers: List<BrowserInstallStatus> = emptyList(),
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppSettingsScreen(
     settings: AppSettingsData = AppSettingsData(),
@@ -84,83 +89,94 @@ fun AppSettingsScreen(
     var browserSortByTitle by remember { mutableStateOf(settings.browserSortByTitle) }
     var browserMinimizeOnAutofill by remember { mutableStateOf(settings.browserMinimizeOnAutofill) }
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Text("App Settings", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
-            tabs.forEachIndexed { index, title ->
-                Tab(selected = selectedTab == index, onClick = { selectedTab = index }, text = { Text(title) })
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("App Settings") },
+                navigationIcon = {
+                    IconButton(onClick = onCancel) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            PrimaryTabRow(selectedTabIndex = selectedTab) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(selected = selectedTab == index, onClick = { selectedTab = index }, text = { Text(title) })
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-            when (selectedTab) {
-                0 -> GeneralSettingsTab(
-                    startAtLogin = startAtLogin,
-                    minimizeToTray = minimizeToTray,
-                    onStartAtLoginChange = { startAtLogin = it },
-                    onMinimizeToTrayChange = { minimizeToTray = it },
-                )
-
-                1 -> SecuritySettingsTab(
-                    autoLockTimeout = autoLockTimeout,
-                    lockOnMinimize = lockOnMinimize,
-                    clipboardClearTimeout = clipboardClearTimeout,
-                    onAutoLockChange = { autoLockTimeout = it },
-                    onLockOnMinimizeChange = { lockOnMinimize = it },
-                    onClipboardClearChange = { clipboardClearTimeout = it },
-                )
-
-                2 -> AppearanceSettingsTab(
-                    theme = theme,
-                    fontSize = fontSize,
-                    onThemeChange = { theme = it },
-                    onFontSizeChange = { fontSize = it },
-                )
-
-                3 -> BrowserSettingsTab(
-                    enabled = browserEnabled,
-                    onEnabledChange = { browserEnabled = it },
-                    matchStrategy = browserMatchStrategy,
-                    onMatchStrategyChange = { browserMatchStrategy = it },
-                    showNotifications = browserShowNotifications,
-                    onShowNotificationsChange = { browserShowNotifications = it },
-                    sortByTitle = browserSortByTitle,
-                    onSortByTitleChange = { browserSortByTitle = it },
-                    minimizeOnAutofill = browserMinimizeOnAutofill,
-                    onMinimizeOnAutofillChange = { browserMinimizeOnAutofill = it },
-                    installedBrowsers = settings.browserInstalledBrowsers,
-                    onInstallBrowserSupport = {},
-                )
-            }
-        }
-
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onCancel) { Text("Cancel") }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = {
-                onSave(
-                    AppSettingsData(
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                when (selectedTab) {
+                    0 -> GeneralSettingsTab(
                         startAtLogin = startAtLogin,
                         minimizeToTray = minimizeToTray,
-                        autoLockTimeout = autoLockTimeout.toIntOrNull() ?: 300,
+                        onStartAtLoginChange = { startAtLogin = it },
+                        onMinimizeToTrayChange = { minimizeToTray = it },
+                    )
+
+                    1 -> SecuritySettingsTab(
+                        autoLockTimeout = autoLockTimeout,
                         lockOnMinimize = lockOnMinimize,
-                        clipboardClearTimeout = clipboardClearTimeout.toIntOrNull() ?: 30,
+                        clipboardClearTimeout = clipboardClearTimeout,
+                        onAutoLockChange = { autoLockTimeout = it },
+                        onLockOnMinimizeChange = { lockOnMinimize = it },
+                        onClipboardClearChange = { clipboardClearTimeout = it },
+                    )
+
+                    2 -> AppearanceSettingsTab(
                         theme = theme,
                         fontSize = fontSize,
-                        browserIntegrationEnabled = browserEnabled,
-                        browserMatchStrategy = browserMatchStrategy,
-                        browserShowNotifications = browserShowNotifications,
-                        browserSortByTitle = browserSortByTitle,
-                        browserMinimizeOnAutofill = browserMinimizeOnAutofill,
-                    ),
-                )
-            }) { Text("Save") }
+                        onThemeChange = { theme = it },
+                        onFontSizeChange = { fontSize = it },
+                    )
+
+                    3 -> BrowserSettingsTab(
+                        enabled = browserEnabled,
+                        onEnabledChange = { browserEnabled = it },
+                        matchStrategy = browserMatchStrategy,
+                        onMatchStrategyChange = { browserMatchStrategy = it },
+                        showNotifications = browserShowNotifications,
+                        onShowNotificationsChange = { browserShowNotifications = it },
+                        sortByTitle = browserSortByTitle,
+                        onSortByTitleChange = { browserSortByTitle = it },
+                        minimizeOnAutofill = browserMinimizeOnAutofill,
+                        onMinimizeOnAutofillChange = { browserMinimizeOnAutofill = it },
+                        installedBrowsers = settings.browserInstalledBrowsers,
+                        onInstallBrowserSupport = {},
+                    )
+                }
+            }
+
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onCancel) { Text("Cancel") }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = {
+                    onSave(
+                        AppSettingsData(
+                            startAtLogin = startAtLogin,
+                            minimizeToTray = minimizeToTray,
+                            autoLockTimeout = autoLockTimeout.toIntOrNull() ?: 300,
+                            lockOnMinimize = lockOnMinimize,
+                            clipboardClearTimeout = clipboardClearTimeout.toIntOrNull() ?: 30,
+                            theme = theme,
+                            fontSize = fontSize,
+                            browserIntegrationEnabled = browserEnabled,
+                            browserMatchStrategy = browserMatchStrategy,
+                            browserShowNotifications = browserShowNotifications,
+                            browserSortByTitle = browserSortByTitle,
+                            browserMinimizeOnAutofill = browserMinimizeOnAutofill,
+                        ),
+                    )
+                }) { Text("Save") }
+            }
         }
     }
 }

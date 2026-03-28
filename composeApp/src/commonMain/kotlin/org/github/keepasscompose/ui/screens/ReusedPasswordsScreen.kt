@@ -14,12 +14,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,61 +32,76 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.github.keepasscompose.core.common.PasswordHealthAnalyzer
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReusedPasswordsScreen(
     reusedGroups: Map<String, List<PasswordHealthAnalyzer.EntryHealth>>,
     onEntryClick: (PasswordHealthAnalyzer.EntryHealth) -> Unit = {},
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val totalEntries = reusedGroups.values.sumOf { it.size }
 
-    Column(modifier = modifier.fillMaxWidth().padding(top = 24.dp, start = 24.dp, end = 24.dp)) {
-        Text("Reused Passwords", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "$totalEntries ${if (totalEntries == 1) "entry" else "entries"} sharing " +
-                "${reusedGroups.size} ${if (reusedGroups.size == 1) "password" else "passwords"}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Reused Passwords") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxWidth().padding(padding).padding(top = 24.dp, start = 24.dp, end = 24.dp)) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "$totalEntries ${if (totalEntries == 1) "entry" else "entries"} sharing " +
+                    "${reusedGroups.size} ${if (reusedGroups.size == 1) "password" else "passwords"}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        if (reusedGroups.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Filled.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "No reused passwords!",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            if (reusedGroups.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            Icons.Filled.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(48.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "No reused passwords!",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
+                return@Scaffold
             }
-            return
-        }
 
-        val sortedGroups = reusedGroups.entries.sortedByDescending { it.value.size }
+            val sortedGroups = reusedGroups.entries.sortedByDescending { it.value.size }
 
-        LazyColumn {
-            sortedGroups.forEachIndexed { groupIndex, (_, entries) ->
-                item(key = "header_$groupIndex") {
-                    Text(
-                        text = "Shared by ${entries.size} entries",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.padding(top = if (groupIndex > 0) 16.dp else 0.dp, bottom = 4.dp),
-                    )
-                }
+            LazyColumn {
+                sortedGroups.forEachIndexed { groupIndex, (_, entries) ->
+                    item(key = "header_$groupIndex") {
+                        Text(
+                            text = "Shared by ${entries.size} entries",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.padding(top = if (groupIndex > 0) 16.dp else 0.dp, bottom = 4.dp),
+                        )
+                    }
 
-                items(entries, key = { it.entry.uuid }) { entryHealth ->
-                    ReusedPasswordRow(entryHealth = entryHealth, onClick = { onEntryClick(entryHealth) })
-                    HorizontalDivider()
+                    items(entries, key = { it.entry.uuid }) { entryHealth ->
+                        ReusedPasswordRow(entryHealth = entryHealth, onClick = { onEntryClick(entryHealth) })
+                        HorizontalDivider()
+                    }
                 }
             }
         }

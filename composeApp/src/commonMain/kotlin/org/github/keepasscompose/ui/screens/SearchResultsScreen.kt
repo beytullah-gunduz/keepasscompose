@@ -15,12 +15,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,50 +37,66 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import org.github.keepasscompose.core.common.SearchEngine
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchResultsScreen(
     results: List<SearchEngine.SearchResult>,
     query: String,
     onResultClick: (SearchEngine.SearchResult) -> Unit = {},
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    if (results.isEmpty()) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Filled.SearchOff,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Search Results") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        if (results.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Filled.SearchOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (query.isNotEmpty()) "No results for \"$query\"" else "Enter a search query",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            return@Scaffold
+        }
+
+        LazyColumn(modifier = Modifier.padding(padding)) {
+            item {
                 Text(
-                    text = if (query.isNotEmpty()) "No results for \"$query\"" else "Enter a search query",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "${results.size} result${if (results.size != 1) "s" else ""}",
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
-        }
-        return
-    }
 
-    LazyColumn(modifier = modifier) {
-        item {
-            Text(
-                text = "${results.size} result${if (results.size != 1) "s" else ""}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-        }
-
-        items(results, key = { it.entry.uuid }) { result ->
-            SearchResultRow(
-                result = result,
-                query = query,
-                onClick = { onResultClick(result) },
-            )
-            HorizontalDivider()
+            items(results, key = { it.entry.uuid }) { result ->
+                SearchResultRow(
+                    result = result,
+                    query = query,
+                    onClick = { onResultClick(result) },
+                )
+                HorizontalDivider()
+            }
         }
     }
 }

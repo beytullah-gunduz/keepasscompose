@@ -10,17 +10,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +35,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChangePasswordScreen(
     isProcessing: Boolean = false,
@@ -47,87 +52,100 @@ fun ChangePasswordScreen(
     val passwordsMatch = newPassword == confirmPassword
     val canSubmit = currentPassword.isNotEmpty() && newPassword.isNotEmpty() && passwordsMatch && !isProcessing
 
-    Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
-        Text("Change Master Password", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = currentPassword,
-            onValueChange = { currentPassword = it },
-            label = { Text("Current Password") },
-            singleLine = true,
-            enabled = !isProcessing,
-            visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = newPassword,
-            onValueChange = { newPassword = it },
-            label = { Text("New Password") },
-            singleLine = true,
-            enabled = !isProcessing,
-            visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { showPasswords = !showPasswords }) {
-                    Icon(
-                        if (showPasswords) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                        contentDescription = null,
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        // Strength indicator
-        if (newPassword.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            val strength = computeStrength(newPassword)
-            LinearProgressIndicator(
-                progress = { strength.first },
-                modifier = Modifier.fillMaxWidth(),
-                color = strength.third,
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Change Password") },
+                navigationIcon = {
+                    IconButton(onClick = onCancel) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
             )
-            Text(strength.second, style = MaterialTheme.typography.labelSmall, color = strength.third)
-        }
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxWidth().padding(padding).padding(16.dp)) {
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Spacer(modifier = Modifier.height(12.dp))
+            OutlinedTextField(
+                value = currentPassword,
+                onValueChange = { currentPassword = it },
+                label = { Text("Current Password") },
+                singleLine = true,
+                enabled = !isProcessing,
+                visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+            )
 
-        OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = { confirmPassword = it },
-            label = { Text("Confirm New Password") },
-            singleLine = true,
-            enabled = !isProcessing,
-            visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
-            isError = confirmPassword.isNotEmpty() && !passwordsMatch,
-            supportingText = if (confirmPassword.isNotEmpty() && !passwordsMatch) {
-                { Text("Passwords do not match") }
-            } else {
-                null
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
+            Spacer(modifier = Modifier.height(16.dp))
 
-        if (errorMessage != null) {
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = { newPassword = it },
+                label = { Text("New Password") },
+                singleLine = true,
+                enabled = !isProcessing,
+                visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { showPasswords = !showPasswords }) {
+                        Icon(
+                            if (showPasswords) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            contentDescription = null,
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            // Strength indicator
+            if (newPassword.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val strength = computeStrength(newPassword)
+                LinearProgressIndicator(
+                    progress = { strength.first },
+                    modifier = Modifier.fillMaxWidth(),
+                    color = strength.third,
+                )
+                Text(strength.second, style = MaterialTheme.typography.labelSmall, color = strength.third)
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
-            Text(errorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-        }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onCancel, enabled = !isProcessing) { Text("Cancel") }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = { onChangePassword(currentPassword, newPassword) }, enabled = canSubmit) {
-                if (isProcessing) {
-                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Re-encrypting...")
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                label = { Text("Confirm New Password") },
+                singleLine = true,
+                enabled = !isProcessing,
+                visualTransformation = if (showPasswords) VisualTransformation.None else PasswordVisualTransformation(),
+                isError = confirmPassword.isNotEmpty() && !passwordsMatch,
+                supportingText = if (confirmPassword.isNotEmpty() && !passwordsMatch) {
+                    { Text("Passwords do not match") }
                 } else {
-                    Text("Change Password")
+                    null
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(errorMessage, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onCancel, enabled = !isProcessing) { Text("Cancel") }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = { onChangePassword(currentPassword, newPassword) }, enabled = canSubmit) {
+                    if (isProcessing) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Re-encrypting...")
+                    } else {
+                        Text("Change Password")
+                    }
                 }
             }
         }

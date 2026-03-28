@@ -12,62 +12,82 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.github.keepasscompose.core.model.KdbxEntry
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EntryHistoryScreen(
     entry: KdbxEntry,
     onViewVersion: (KdbxEntry) -> Unit = {},
     onRestoreVersion: (KdbxEntry) -> Unit = {},
     onDeleteVersion: (Int) -> Unit = {},
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Text(
-            text = "History: ${entry.title}",
-            style = MaterialTheme.typography.headlineSmall,
-        )
-        Text(
-            text = "${entry.history.size} version${if (entry.history.size != 1) "s" else ""}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (entry.history.isEmpty()) {
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("Entry History") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             Text(
-                text = "No history available",
-                style = MaterialTheme.typography.bodyLarge,
+                text = "History: ${entry.title}",
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            Text(
+                text = "${entry.history.size} version${if (entry.history.size != 1) "s" else ""}",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                itemsIndexed(
-                    entry.history.reversed(),
-                    key = { index, _ -> index },
-                ) { index, version ->
-                    val actualIndex = entry.history.lastIndex - index
-                    HistoryVersionCard(
-                        version = version,
-                        versionNumber = actualIndex + 1,
-                        onView = { onViewVersion(version) },
-                        onRestore = { onRestoreVersion(version) },
-                        onDelete = { onDeleteVersion(actualIndex) },
-                    )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (entry.history.isEmpty()) {
+                Text(
+                    text = "No history available",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    itemsIndexed(
+                        entry.history.reversed(),
+                        key = { index, _ -> index },
+                    ) { index, version ->
+                        val actualIndex = entry.history.lastIndex - index
+                        HistoryVersionCard(
+                            version = version,
+                            versionNumber = actualIndex + 1,
+                            onView = { onViewVersion(version) },
+                            onRestore = { onRestoreVersion(version) },
+                            onDelete = { onDeleteVersion(actualIndex) },
+                        )
+                    }
                 }
             }
         }
