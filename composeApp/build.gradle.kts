@@ -35,6 +35,13 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
         }
+        iosTarget.compilations.getByName("main") {
+            cinterops {
+                val commonCrypto by creating {
+                    definitionFile.set(project.file("src/nativeInterop/cinterop/CommonCrypto.def"))
+                }
+            }
+        }
     }
 
     jvm()
