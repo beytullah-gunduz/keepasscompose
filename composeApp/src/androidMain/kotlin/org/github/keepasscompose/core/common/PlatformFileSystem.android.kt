@@ -1,8 +1,10 @@
 package org.github.keepasscompose.core.common
 
 import android.net.Uri
+import okio.FileSystem as OkioFileSystem
 
 actual class PlatformFileSystem actual constructor() : BaseFileSystem() {
+    override val okioFs: OkioFileSystem = OkioFileSystem.SYSTEM
     override fun getDefaultDatabaseDirectory(): String = AndroidContextHolder.applicationContext.filesDir
         .resolve("databases")
         .absolutePath

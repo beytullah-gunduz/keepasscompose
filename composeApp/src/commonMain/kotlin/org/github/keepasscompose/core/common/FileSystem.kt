@@ -16,7 +16,7 @@ interface FileSystem {
 }
 
 abstract class BaseFileSystem : FileSystem {
-    protected val okioFs: OkioFileSystem = OkioFileSystem.SYSTEM
+    protected abstract val okioFs: OkioFileSystem
 
     override fun readFile(path: String): ByteArray = okioFs.read(path.toPath()) { readByteArray() }
 
@@ -35,4 +35,7 @@ abstract class BaseFileSystem : FileSystem {
     }
 }
 
-expect class PlatformFileSystem() : BaseFileSystem
+expect class PlatformFileSystem() : BaseFileSystem {
+    override val okioFs: OkioFileSystem
+    override fun getDefaultDatabaseDirectory(): String
+}

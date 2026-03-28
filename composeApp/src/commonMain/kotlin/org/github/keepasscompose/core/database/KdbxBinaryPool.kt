@@ -81,8 +81,11 @@ class KdbxBinaryPool(entries: Map<Int, ByteArray> = emptyMap()) {
         /** Compresses [data] using GZip. */
         fun compressGzip(data: ByteArray): ByteArray {
             val buffer = Buffer()
-            GzipSink(buffer).buffer().use { sink ->
+            val sink = GzipSink(buffer).buffer()
+            try {
                 sink.write(data)
+            } finally {
+                sink.close()
             }
             return buffer.readByteArray()
         }
