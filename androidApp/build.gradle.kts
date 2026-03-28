@@ -51,5 +51,6 @@ dependencies {
     implementation(project(":composeApp"))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.splashscreen)
+    implementation(libs.napier)
     debugImplementation(libs.compose.uiTooling)
 }
