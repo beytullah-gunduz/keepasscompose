@@ -19,3 +19,4 @@ captures
 node_modules/
 .idea
 .claude
+/gradle/gradle-daemon-jvm.properties
