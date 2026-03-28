@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -132,6 +133,7 @@ fun MainScreen(
         listPane = {
             AnimatedPane {
                 Scaffold(
+                    contentWindowInsets = WindowInsets(0),
                     topBar = {
                         Column {
                             TopAppBar(
@@ -205,6 +207,7 @@ fun MainScreen(
                     val entry = selectedEntry
                     if (entry != null) {
                         Scaffold(
+                            contentWindowInsets = WindowInsets(0),
                             topBar = {
                                 if (isListHidden) {
                                     TopAppBar(
