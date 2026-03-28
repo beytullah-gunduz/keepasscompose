@@ -50,7 +50,7 @@ class ProtectedString private constructor(private val chars: CharArray) : AutoCl
      */
     fun toProtectedByteArray(): ProtectedByteArray {
         check(!closed) { "ProtectedString has been closed" }
-        val str = String(chars)
+        val str = chars.concatToString()
         val bytes = str.encodeToByteArray()
         return ProtectedByteArray(bytes)
     }
@@ -61,7 +61,7 @@ class ProtectedString private constructor(private val chars: CharArray) : AutoCl
      */
     override fun toString(): String {
         check(!closed) { "ProtectedString has been closed" }
-        return String(chars)
+        return chars.concatToString()
     }
 
     override fun equals(other: Any?): Boolean {

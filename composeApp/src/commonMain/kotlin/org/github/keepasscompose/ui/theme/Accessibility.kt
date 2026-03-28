@@ -1,5 +1,6 @@
 package org.github.keepasscompose.ui.theme
 
+import kotlin.math.pow
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -48,7 +49,7 @@ const val WCAG_AA_LARGE_TEXT_RATIO = 3.0
 fun relativeLuminance(red: Float, green: Float, blue: Float): Double {
     fun linearize(c: Float): Double {
         val d = c.toDouble()
-        return if (d <= 0.03928) d / 12.92 else Math.pow((d + 0.055) / 1.055, 2.4)
+        return if (d <= 0.03928) d / 12.92 else ((d + 0.055) / 1.055).pow(2.4)
     }
     return 0.2126 * linearize(red) + 0.7152 * linearize(green) + 0.0722 * linearize(blue)
 }

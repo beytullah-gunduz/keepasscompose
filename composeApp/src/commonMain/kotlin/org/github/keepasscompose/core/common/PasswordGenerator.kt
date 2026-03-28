@@ -104,7 +104,7 @@ object PasswordGenerator {
             result[j] = tmp
         }
 
-        return String(result)
+        return result.concatToString()
     }
 
     /**
