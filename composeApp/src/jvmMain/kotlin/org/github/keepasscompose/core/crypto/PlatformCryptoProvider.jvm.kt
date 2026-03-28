@@ -17,17 +17,17 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
-    override fun sha256(data: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(data)
+    actual override fun sha256(data: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(data)
 
-    override fun sha512(data: ByteArray): ByteArray = MessageDigest.getInstance("SHA-512").digest(data)
+    actual override fun sha512(data: ByteArray): ByteArray = MessageDigest.getInstance("SHA-512").digest(data)
 
-    override fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
+    actual override fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(key, "HmacSHA256"))
         return mac.doFinal(data)
     }
 
-    override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
+    actual override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
         val cipher =
             PaddedBufferedBlockCipher(
                 CBCBlockCipher.newInstance(AESEngine.newInstance()),
@@ -40,7 +40,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return output
     }
 
-    override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
+    actual override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
         val cipher =
             PaddedBufferedBlockCipher(
                 CBCBlockCipher.newInstance(AESEngine.newInstance()),
@@ -53,7 +53,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return output.copyOf(len + finalLen)
     }
 
-    override fun aesKdf(key: ByteArray, seed: ByteArray, rounds: Long): ByteArray {
+    actual override fun aesKdf(key: ByteArray, seed: ByteArray, rounds: Long): ByteArray {
         val aes = AESEngine.newInstance()
         aes.init(true, KeyParameter(seed))
         val result = key.copyOf()
@@ -64,7 +64,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return result
     }
 
-    override fun argon2(
+    actual override fun argon2(
         password: ByteArray,
         salt: ByteArray,
         variant: Argon2Variant,
@@ -94,7 +94,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return result
     }
 
-    override fun chaCha20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
+    actual override fun chaCha20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
         val engine = ChaCha7539Engine()
         engine.init(true, ParametersWithIV(KeyParameter(key), nonce))
         val output = ByteArray(data.size)
@@ -102,7 +102,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return output
     }
 
-    override fun salsa20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
+    actual override fun salsa20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray {
         val engine = Salsa20Engine()
         engine.init(true, ParametersWithIV(KeyParameter(key), nonce))
         val output = ByteArray(data.size)
@@ -110,7 +110,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return output
     }
 
-    override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
+    actual override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
         val cipher =
             PaddedBufferedBlockCipher(
                 CBCBlockCipher.newInstance(TwofishEngine()),
@@ -123,7 +123,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return output
     }
 
-    override fun twofishDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
+    actual override fun twofishDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
         val cipher =
             PaddedBufferedBlockCipher(
                 CBCBlockCipher.newInstance(TwofishEngine()),

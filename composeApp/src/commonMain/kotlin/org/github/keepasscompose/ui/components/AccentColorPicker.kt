@@ -47,18 +47,11 @@ val accentColorPresets = listOf(
     AccentColor("Deep Purple", Color(0xFF4527A0)),
 )
 
-data class AccentColor(
-    val name: String,
-    val color: Color,
-)
+data class AccentColor(val name: String, val color: Color)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun AccentColorPicker(
-    selectedColor: Color,
-    onColorSelected: (Color) -> Unit,
-    onDismiss: () -> Unit,
-) {
+fun AccentColorPicker(selectedColor: Color, onColorSelected: (Color) -> Unit, onDismiss: () -> Unit) {
     var preview by remember { mutableStateOf(selectedColor) }
 
     AlertDialog(
@@ -98,8 +91,11 @@ fun AccentColorPicker(
                                 .clip(CircleShape)
                                 .background(accent.color)
                                 .then(
-                                    if (isSelected) Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                                    else Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                    if (isSelected) {
+                                        Modifier.border(3.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                                    } else {
+                                        Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                    },
                                 )
                                 .clickable { preview = accent.color },
                             contentAlignment = Alignment.Center,
@@ -118,7 +114,10 @@ fun AccentColorPicker(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onColorSelected(preview); onDismiss() }) {
+            TextButton(onClick = {
+                onColorSelected(preview)
+                onDismiss()
+            }) {
                 Text("Apply")
             }
         },

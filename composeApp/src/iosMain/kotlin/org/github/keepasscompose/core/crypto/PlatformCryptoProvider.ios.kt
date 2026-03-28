@@ -30,7 +30,7 @@ import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH as HMAC_SHA256_LENGTH
 // - Twofish requires a pure Kotlin or C library via CInterop
 @OptIn(ExperimentalForeignApi::class)
 actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
-    override fun sha256(data: ByteArray): ByteArray {
+    actual override fun sha256(data: ByteArray): ByteArray {
         val digest = UByteArray(CC_SHA256_DIGEST_LENGTH)
         digest.usePinned { digestPin ->
             if (data.isEmpty()) {
@@ -44,7 +44,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return digest.toByteArray()
     }
 
-    override fun sha512(data: ByteArray): ByteArray {
+    actual override fun sha512(data: ByteArray): ByteArray {
         val digest = UByteArray(CC_SHA512_DIGEST_LENGTH)
         digest.usePinned { digestPin ->
             if (data.isEmpty()) {
@@ -58,7 +58,7 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return digest.toByteArray()
     }
 
-    override fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
+    actual override fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
         val mac = UByteArray(HMAC_SHA256_LENGTH)
         // Pin all three arrays simultaneously for the CCHmac call
         val keyToPin = key.ifEmpty { byteArrayOf(0) }
@@ -80,9 +80,9 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         return mac.toByteArray()
     }
 
-    override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = ccCryptAes(kCCEncrypt, data, key, iv)
+    actual override fun aesEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = ccCryptAes(kCCEncrypt, data, key, iv)
 
-    override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = ccCryptAes(kCCDecrypt, data, key, iv)
+    actual override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = ccCryptAes(kCCDecrypt, data, key, iv)
 
     private fun ccCryptAes(operation: Int, data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
         // Output buffer: encrypt may add up to one block of padding (16 bytes)
@@ -119,9 +119,9 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         }
     }
 
-    override fun aesKdf(key: ByteArray, seed: ByteArray, rounds: Long): ByteArray = AesKdf.transform(key, seed, rounds)
+    actual override fun aesKdf(key: ByteArray, seed: ByteArray, rounds: Long): ByteArray = AesKdf.transform(key, seed, rounds)
 
-    override fun argon2(
+    actual override fun argon2(
         password: ByteArray,
         salt: ByteArray,
         variant: Argon2Variant,
@@ -131,11 +131,11 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
         parallelism: Int,
     ): ByteArray = Argon2.derive(password, salt, variant, version, memory, iterations, parallelism)
 
-    override fun chaCha20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray = ChaCha20.encrypt(data, key, nonce)
+    actual override fun chaCha20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray = ChaCha20.encrypt(data, key, nonce)
 
-    override fun salsa20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray = Salsa20.encrypt(data, key, nonce)
+    actual override fun salsa20(data: ByteArray, key: ByteArray, nonce: ByteArray): ByteArray = Salsa20.encrypt(data, key, nonce)
 
-    override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = Twofish.encryptCbc(data, key, iv)
+    actual override fun twofishEncrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = Twofish.encryptCbc(data, key, iv)
 
-    override fun twofishDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = Twofish.decryptCbc(data, key, iv)
+    actual override fun twofishDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = Twofish.decryptCbc(data, key, iv)
 }

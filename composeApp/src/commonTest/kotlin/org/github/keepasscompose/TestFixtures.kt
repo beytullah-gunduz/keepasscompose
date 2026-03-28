@@ -69,17 +69,12 @@ object TestFixtures {
         ),
     )
 
-    fun createMeta(
-        databaseName: String = "Test Database",
-    ): KdbxMeta = KdbxMeta(
+    fun createMeta(databaseName: String = "Test Database"): KdbxMeta = KdbxMeta(
         databaseName = databaseName,
         description = "A test database",
         defaultUserName = "testuser",
     )
 
-    fun createAttachment(
-        id: Int = 0,
-        name: String = "test.txt",
-        data: ByteArray = "Hello, World!".encodeToByteArray(),
-    ): KdbxAttachment = KdbxAttachment(id = id, name = name, data = data)
+    fun createAttachment(id: Int = 0, name: String = "test.txt", data: ByteArray = "Hello, World!".encodeToByteArray()): KdbxAttachment =
+        KdbxAttachment(id = id, name = name, data = data)
 }
