@@ -1,17 +1,5 @@
 package org.github.keepasscompose.core.crypto
 
-import CommonCrypto.CCCrypt
-import CommonCrypto.CCHmac
-import CommonCrypto.CC_SHA256
-import CommonCrypto.CC_SHA256_DIGEST_LENGTH
-import CommonCrypto.CC_SHA512
-import CommonCrypto.CC_SHA512_DIGEST_LENGTH
-import CommonCrypto.kCCAlgorithmAES
-import CommonCrypto.kCCDecrypt
-import CommonCrypto.kCCEncrypt
-import CommonCrypto.kCCHmacAlgSHA256
-import CommonCrypto.kCCOptionPKCS7Padding
-import CommonCrypto.kCCSuccess
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
@@ -21,8 +9,20 @@ import kotlinx.cinterop.ptr
 import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.value
 import org.github.keepasscompose.core.model.Argon2Variant
+import platform.CommonCrypto.CCCrypt
+import platform.CommonCrypto.CCHmac
+import platform.CommonCrypto.CC_SHA256
+import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH
+import platform.CommonCrypto.CC_SHA512
+import platform.CommonCrypto.CC_SHA512_DIGEST_LENGTH
+import platform.CommonCrypto.kCCAlgorithmAES
+import platform.CommonCrypto.kCCDecrypt
+import platform.CommonCrypto.kCCEncrypt
+import platform.CommonCrypto.kCCHmacAlgSHA256
+import platform.CommonCrypto.kCCOptionPKCS7Padding
+import platform.CommonCrypto.kCCSuccess
 import platform.CoreFoundation.CFIndex
-import CommonCrypto.CC_SHA256_DIGEST_LENGTH as HMAC_SHA256_LENGTH
+import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH as HMAC_SHA256_LENGTH
 
 // iOS implementation will use a hybrid approach:
 // - Apple CommonCrypto (via CInterop) for AES-CBC, SHA-256/512, HMAC-SHA-256
