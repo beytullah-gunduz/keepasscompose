@@ -1,5 +1,12 @@
 package org.github.keepasscompose.ui.navigation
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -37,17 +44,13 @@ import org.github.keepasscompose.ui.screens.CreateDatabaseScreen
 import org.github.keepasscompose.ui.screens.DatabaseSettingsScreen
 import org.github.keepasscompose.ui.screens.EntryEditorScreen
 import org.github.keepasscompose.ui.screens.EntryHistoryScreen
-import org.github.keepasscompose.ui.screens.ExpiredEntriesScreen
-import org.github.keepasscompose.ui.screens.ImportExportFormat
 import org.github.keepasscompose.ui.screens.ImportExportScreen
 import org.github.keepasscompose.ui.screens.ImportExportState
 import org.github.keepasscompose.ui.screens.MainScreen
 import org.github.keepasscompose.ui.screens.RecentDatabase
 import org.github.keepasscompose.ui.screens.ReportsScreen
-import org.github.keepasscompose.ui.screens.ReusedPasswordsScreen
 import org.github.keepasscompose.ui.screens.SearchResultsScreen
 import org.github.keepasscompose.ui.screens.UnlockScreen
-import org.github.keepasscompose.ui.screens.WeakPasswordsScreen
 import org.github.keepasscompose.ui.screens.WelcomeScreen
 import org.github.keepasscompose.viewmodel.DatabaseViewModel
 import org.github.keepasscompose.viewmodel.EntryEditorViewModel
@@ -55,6 +58,9 @@ import org.github.keepasscompose.viewmodel.GroupNavigationViewModel
 import org.github.keepasscompose.viewmodel.UnlockState
 import org.github.keepasscompose.viewmodel.UnlockViewModel
 import org.koin.compose.koinInject
+import kotlin.io.encoding.Base64
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 private sealed interface AppScreen {
     data object Welcome : AppScreen
@@ -72,6 +78,24 @@ private sealed interface AppScreen {
     data class EntryHistory(val entryUuid: String) : AppScreen
     data object KdfConfig : AppScreen
     data object TotpSetup : AppScreen
+}
+
+private fun AppScreen.depth(): Int = when (this) {
+    is AppScreen.Welcome -> 0
+    is AppScreen.CreateDatabase -> 1
+    is AppScreen.Unlock -> 1
+    is AppScreen.Main -> 2
+    is AppScreen.Search -> 3
+    is AppScreen.AppSettings -> 3
+    is AppScreen.DatabaseSettings -> 3
+    is AppScreen.ImportExport -> 3
+    is AppScreen.Reports -> 3
+    is AppScreen.ChangePassword -> 3
+    is AppScreen.ChangeKeyFile -> 3
+    is AppScreen.EntryEditor -> 3
+    is AppScreen.EntryHistory -> 3
+    is AppScreen.KdfConfig -> 3
+    is AppScreen.TotpSetup -> 3
 }
 
 private val AppScreenSaver = Saver<AppScreen, List<String>>(
@@ -115,6 +139,7 @@ private val AppScreenSaver = Saver<AppScreen, List<String>>(
     },
 )
 
+@OptIn(ExperimentalUuidApi::class)
 @Composable
 fun AppNavigator() {
     val unlockViewModel: UnlockViewModel = koinInject()
@@ -152,7 +177,22 @@ fun AppNavigator() {
         else -> {}
     }
 
-    when (currentScreen) {
+    AnimatedContent(
+        targetState = currentScreen,
+        transitionSpec = {
+            val forward = targetState.depth() >= initialState.depth()
+            val offsetFraction = { fullWidth: Int -> fullWidth / 4 }
+            if (forward) {
+                (slideInHorizontally { offsetFraction(it) } + fadeIn()) togetherWith
+                    (slideOutHorizontally { -offsetFraction(it) } + fadeOut())
+            } else {
+                (slideInHorizontally { -offsetFraction(it) } + fadeIn()) togetherWith
+                    (slideOutHorizontally { offsetFraction(it) } + fadeOut())
+            } using SizeTransform(clip = false)
+        },
+        label = "screen_transition",
+    ) { screen ->
+    when (screen) {
         is AppScreen.Welcome -> {
             WelcomeScreen(
                 recentDatabases = recentEntries.map { RecentDatabase(it.name, it.path, it.lastOpened) },
@@ -175,15 +215,15 @@ fun AppNavigator() {
         }
 
         is AppScreen.Unlock -> {
-            val screen = currentScreen as AppScreen.Unlock
+            val unlockScreen = screen as AppScreen.Unlock
             val keyFilePath by unlockViewModel.keyFilePath.collectAsState()
 
             UnlockScreen(
-                databasePath = screen.databasePath,
+                databasePath = unlockScreen.databasePath,
                 keyFilePath = keyFilePath,
                 isLoading = unlockState is UnlockState.Loading,
                 errorMessage = (unlockState as? UnlockState.Error)?.message,
-                onPasswordSubmit = { password -> unlockViewModel.unlock(screen.databasePath, password) },
+                onPasswordSubmit = { password -> unlockViewModel.unlock(unlockScreen.databasePath, password) },
                 onSelectKeyFile = {
                     scope.launch {
                         val path = filePicker.pickFile(listOf("keyx", "key"))
@@ -235,7 +275,7 @@ fun AppNavigator() {
                 },
                 onCreateGroup = { parentUuid, result ->
                     val newGroup = org.github.keepasscompose.core.model.KdbxGroup(
-                        uuid = java.util.UUID.randomUUID().toString(),
+                        uuid = Base64.encode(Uuid.random().toByteArray()),
                         name = result.name,
                         icon = org.github.keepasscompose.core.model.KdbxIcon(standardIndex = result.iconIndex),
                         notes = result.notes,
@@ -268,10 +308,10 @@ fun AppNavigator() {
         }
 
         is AppScreen.EntryEditor -> {
-            val screen = currentScreen as AppScreen.EntryEditor
+            val editorScreen = screen as AppScreen.EntryEditor
             val database by databaseViewModel.database.collectAsState()
-            val existingEntry = if (screen.isEditMode && screen.entryUuid != null) {
-                database?.rootGroup?.let { RecycleBinManager.findEntry(it, screen.entryUuid) }
+            val existingEntry = if (editorScreen.isEditMode && editorScreen.entryUuid != null) {
+                database?.rootGroup?.let { RecycleBinManager.findEntry(it, editorScreen.entryUuid) }
             } else {
                 null
             }
@@ -284,13 +324,13 @@ fun AppNavigator() {
                 initialNotes = existingEntry?.notes ?: "",
                 initialIconIndex = existingEntry?.icon?.standardIndex ?: 0,
                 initialTags = existingEntry?.tags ?: emptyList(),
-                isEditMode = screen.isEditMode,
+                isEditMode = editorScreen.isEditMode,
                 onSave = { result ->
                     val saved = entryEditorViewModel.save(result)
                     if (saved != null) {
                         val selectedGroup = groupNavViewModel.selectedGroup.value
                         val parentUuid = selectedGroup?.uuid ?: database?.rootGroup?.uuid ?: return@EntryEditorScreen
-                        if (screen.isEditMode) {
+                        if (editorScreen.isEditMode) {
                             databaseViewModel.updateEntry(saved)
                         } else {
                             databaseViewModel.addEntry(parentUuid, saved)
@@ -496,9 +536,9 @@ fun AppNavigator() {
         }
 
         is AppScreen.EntryHistory -> {
-            val screen = currentScreen as AppScreen.EntryHistory
+            val historyScreen = screen as AppScreen.EntryHistory
             val database by databaseViewModel.database.collectAsState()
-            val entry = database?.rootGroup?.let { RecycleBinManager.findEntry(it, screen.entryUuid) }
+            val entry = database?.rootGroup?.let { RecycleBinManager.findEntry(it, historyScreen.entryUuid) }
 
             if (entry != null) {
                 EntryHistoryScreen(
@@ -522,6 +562,7 @@ fun AppNavigator() {
         is AppScreen.TotpSetup -> {
             PlaceholderScreen("TOTP Setup") { currentScreen = AppScreen.Main }
         }
+    }
     }
 }
 
