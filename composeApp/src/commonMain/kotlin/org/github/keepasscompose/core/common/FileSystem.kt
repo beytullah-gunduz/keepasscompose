@@ -35,7 +35,4 @@ abstract class BaseFileSystem : FileSystem {
     }
 }
 
-expect class PlatformFileSystem() : BaseFileSystem {
-    override val okioFs: OkioFileSystem
-    override fun getDefaultDatabaseDirectory(): String
-}
+expect class PlatformFileSystem() : BaseFileSystem

@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    id("com.android.kotlin.multiplatform.library")
+    alias(libs.plugins.androidKmpLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
@@ -50,7 +50,7 @@ kotlin {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
-            implementation(compose.materialIconsExtended)
+            implementation(libs.compose.materialIconsExtended)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
@@ -78,7 +78,7 @@ kotlin {
             implementation(libs.turbine)
         }
         jvmTest.dependencies {
-            implementation(compose.desktop.uiTestJUnit4)
+            implementation(libs.compose.uiTestJunit4)
             implementation(compose.desktop.currentOs)
         }
         jvmMain.dependencies {
