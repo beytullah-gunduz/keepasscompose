@@ -82,6 +82,12 @@ sealed class KdfParameters {
         }
     }
 
+    /**
+     * Argon2 KDF parameters.
+     *
+     * @param memory Memory cost in **KiB**. The KDBX file stores it in bytes (`M`);
+     *   the header reader and writer convert between the two.
+     */
     data class Argon2(
         val variant: Argon2Variant = Argon2Variant.ARGON2D,
         val version: Int = 0x13,
