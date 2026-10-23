@@ -9,20 +9,21 @@ import kotlinx.cinterop.ptr
 import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.value
 import org.github.keepasscompose.core.model.Argon2Variant
-import platform.CommonCrypto.CCCrypt
-import platform.CommonCrypto.CCHmac
-import platform.CommonCrypto.CC_SHA256
-import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH
-import platform.CommonCrypto.CC_SHA512
-import platform.CommonCrypto.CC_SHA512_DIGEST_LENGTH
-import platform.CommonCrypto.kCCAlgorithmAES
-import platform.CommonCrypto.kCCDecrypt
-import platform.CommonCrypto.kCCEncrypt
-import platform.CommonCrypto.kCCHmacAlgSHA256
-import platform.CommonCrypto.kCCOptionPKCS7Padding
-import platform.CommonCrypto.kCCSuccess
-import platform.CoreFoundation.CFIndex
-import platform.CommonCrypto.CC_SHA256_DIGEST_LENGTH as HMAC_SHA256_LENGTH
+import platform.CoreCrypto.CCCrypt
+import platform.CoreCrypto.CCHmac
+import platform.CoreCrypto.CCOperation
+import platform.CoreCrypto.CC_SHA256
+import platform.CoreCrypto.CC_SHA256_DIGEST_LENGTH
+import platform.CoreCrypto.CC_SHA512
+import platform.CoreCrypto.CC_SHA512_DIGEST_LENGTH
+import platform.CoreCrypto.kCCAlgorithmAES
+import platform.CoreCrypto.kCCDecrypt
+import platform.CoreCrypto.kCCEncrypt
+import platform.CoreCrypto.kCCHmacAlgSHA256
+import platform.CoreCrypto.kCCOptionPKCS7Padding
+import platform.CoreCrypto.kCCSuccess
+import platform.posix.size_tVar
+import platform.CoreCrypto.CC_SHA256_DIGEST_LENGTH as HMAC_SHA256_LENGTH
 
 // iOS implementation will use a hybrid approach:
 // - Apple CommonCrypto (via CInterop) for AES-CBC, SHA-256/512, HMAC-SHA-256
@@ -61,8 +62,8 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
     override fun hmacSha256(key: ByteArray, data: ByteArray): ByteArray {
         val mac = UByteArray(HMAC_SHA256_LENGTH)
         // Pin all three arrays simultaneously for the CCHmac call
-        val keyToPin = key.ifEmpty { byteArrayOf(0) }
-        val dataToPin = data.ifEmpty { byteArrayOf(0) }
+        val keyToPin = if (key.isEmpty()) byteArrayOf(0) else key
+        val dataToPin = if (data.isEmpty()) byteArrayOf(0) else data
         mac.usePinned { macPin ->
             keyToPin.usePinned { keyPin ->
                 dataToPin.usePinned { dataPin ->
@@ -84,19 +85,19 @@ actual class PlatformCryptoProvider actual constructor() : CryptoProvider {
 
     override fun aesDecrypt(data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray = ccCryptAes(kCCDecrypt, data, key, iv)
 
-    private fun ccCryptAes(operation: Int, data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
+    private fun ccCryptAes(operation: CCOperation, data: ByteArray, key: ByteArray, iv: ByteArray): ByteArray {
         // Output buffer: encrypt may add up to one block of padding (16 bytes)
         val outputSize = data.size + 16
         val output = ByteArray(outputSize)
         memScoped {
-            val dataOutMoved = alloc<CFIndex>()
+            val dataOutMoved = alloc<size_tVar>()
             val status =
                 data.usePinned { dataPin ->
                     key.usePinned { keyPin ->
                         iv.usePinned { ivPin ->
                             output.usePinned { outPin ->
                                 CCCrypt(
-                                    operation.convert(),
+                                    operation,
                                     kCCAlgorithmAES,
                                     kCCOptionPKCS7Padding,
                                     keyPin.addressOf(0),
