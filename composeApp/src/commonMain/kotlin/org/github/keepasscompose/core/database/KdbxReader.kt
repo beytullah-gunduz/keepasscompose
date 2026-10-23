@@ -9,6 +9,7 @@ import org.github.keepasscompose.core.model.CompositeKey
 import org.github.keepasscompose.core.model.CompressionAlgorithm
 import org.github.keepasscompose.core.model.InnerStreamCipher
 import org.github.keepasscompose.core.model.KdbxDatabase
+import org.github.keepasscompose.core.model.KdfParameters
 
 /**
  * Orchestrates reading a KDBX file by combining header parsing, key derivation,
@@ -47,16 +48,15 @@ class KdbxReader(private val crypto: CryptoProvider) {
         val headerResult = KdbxHeaderReader().readHeader(source)
         val header = headerResult.header
 
-        // 2. Derive keys
-        val keys = keyDerivation.deriveKeys(compositeKey, header.masterSeed, header.kdfParameters)
+        // 2. Derive keys (KDBX 4.x: authenticated against the header HMAC)
+        if (header.version.isV4) verifyHeaderHash(headerResult)
+        val (kdfParameters, keys) = deriveVerifiedKeys(headerResult, compositeKey)
         val masterKey = keys.masterKey
         val transformedKey = keys.transformedKey
 
-        // 3. Verify and read encrypted payload
+        // 3. Read encrypted payload
         val encryptedPayload: ByteArray
         if (header.version.isV4) {
-            verifyHeaderHash(headerResult)
-            verifyHeaderHmac(headerResult, header.masterSeed, transformedKey)
             encryptedPayload = readHmacBlocks(source, header.masterSeed, transformedKey)
         } else {
             encryptedPayload = source.readByteArray()
@@ -111,7 +111,8 @@ class KdbxReader(private val crypto: CryptoProvider) {
 
         return KdbxDatabase(
             meta = xmlResult.meta,
-            header = header,
+            // Keep the parameters that unlocked the file so the next save writes them per spec
+            header = header.copy(kdfParameters = kdfParameters),
             rootGroup = xmlResult.rootGroup,
         )
     }
@@ -128,20 +129,47 @@ class KdbxReader(private val crypto: CryptoProvider) {
         }
     }
 
-    private fun verifyHeaderHmac(headerResult: KdbxHeaderReadResult, masterSeed: ByteArray, transformedKey: ByteArray) {
+    /**
+     * Derives the keys and, for KDBX 4.x, checks them against the header HMAC.
+     *
+     * If the spec-compliant parameters fail and the header carries a legacy Argon2
+     * interpretation (memory written in KiB by older versions of this app), that one is tried
+     * before reporting invalid credentials.
+     *
+     * @return The KDF parameters that produced valid keys, with those keys.
+     */
+    private fun deriveVerifiedKeys(
+        headerResult: KdbxHeaderReadResult,
+        compositeKey: CompositeKey,
+    ): Pair<KdfParameters, CompositeKeyDerivation.DerivedKeys> {
+        val header = headerResult.header
+        val keys = keyDerivation.deriveKeys(compositeKey, header.masterSeed, header.kdfParameters)
+        if (!header.version.isV4 || isHeaderHmacValid(headerResult, keys.transformedKey)) {
+            return header.kdfParameters to keys
+        }
+
+        val legacyParameters = headerResult.legacyKdfParameters
+        if (legacyParameters != null) {
+            val legacyKeys = keyDerivation.deriveKeys(compositeKey, header.masterSeed, legacyParameters)
+            if (isHeaderHmacValid(headerResult, legacyKeys.transformedKey)) {
+                return legacyParameters to legacyKeys
+            }
+        }
+
+        throw KdbxParseException(
+            "Invalid credentials: header HMAC verification failed",
+        )
+    }
+
+    private fun isHeaderHmacValid(headerResult: KdbxHeaderReadResult, transformedKey: ByteArray): Boolean {
         val expected =
             headerResult.headerHmac
                 ?: throw KdbxParseException("KDBX 4.x file missing header HMAC")
 
-        val hmacBaseKey = keyDerivation.computeHmacBaseKey(masterSeed, transformedKey)
+        val hmacBaseKey = keyDerivation.computeHmacBaseKey(headerResult.header.masterSeed, transformedKey)
         val blockKey = computeHmacBlockKey(hmacBaseKey, HEADER_HMAC_BLOCK_INDEX)
         val actual = crypto.hmacSha256(blockKey, headerResult.rawHeaderBytes)
-
-        if (!actual.contentEquals(expected)) {
-            throw KdbxParseException(
-                "Invalid credentials: header HMAC verification failed",
-            )
-        }
+        return actual.contentEquals(expected)
     }
 
     // -- Payload reading --

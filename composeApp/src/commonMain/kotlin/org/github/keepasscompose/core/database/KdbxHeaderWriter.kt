@@ -155,7 +155,8 @@ class KdbxHeaderWriter {
                 writeVariantEntry(buf, TYPE_UINT32, "V", intToBytes(kdf.version))
                 writeVariantEntry(buf, TYPE_BYTE_ARRAY, "S", kdf.salt)
                 writeVariantEntry(buf, TYPE_UINT32, "P", intToBytes(kdf.parallelism))
-                writeVariantEntry(buf, TYPE_UINT64, "M", longToBytes(kdf.memory))
+                // KDBX stores the Argon2 memory cost in bytes; the model holds KiB
+                writeVariantEntry(buf, TYPE_UINT64, "M", longToBytes(kdf.memory * BYTES_PER_KIB))
                 writeVariantEntry(buf, TYPE_UINT64, "I", longToBytes(kdf.iterations))
             }
         }
@@ -180,6 +181,8 @@ class KdbxHeaderWriter {
     private fun longToBytes(value: Long): ByteArray = Buffer().apply { writeLongLe(value) }.readByteArray()
 
     companion object {
+        private const val BYTES_PER_KIB = 1024L
+
         // KDBX file signatures
         private val SIGNATURE_1 = 0x9AA2D903.toInt()
         private val SIGNATURE_2 = 0xB54BFB67.toInt()

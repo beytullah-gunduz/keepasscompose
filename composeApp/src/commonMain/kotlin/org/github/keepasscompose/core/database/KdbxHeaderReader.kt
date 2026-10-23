@@ -19,12 +19,16 @@ import org.github.keepasscompose.core.model.KdfParameters
  * @param headerHash SHA-256 hash stored after the header (KDBX 4.x only).
  * @param headerHmac HMAC-SHA-256 hash stored after the header (KDBX 4.x only).
  *   Verification requires the derived master key and is handled separately.
+ * @param legacyKdfParameters Argon2 parameters as older versions of this app wrote them
+ *   (the KiB value stored in `M` instead of bytes). Only set when `M` is too small to be a
+ *   realistic byte count; used as a fallback when the spec-compliant parameters fail.
  */
 data class KdbxHeaderReadResult(
     val header: KdbxHeader,
     val rawHeaderBytes: ByteArray,
     val headerHash: ByteArray? = null,
     val headerHmac: ByteArray? = null,
+    val legacyKdfParameters: KdfParameters? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -32,7 +36,8 @@ data class KdbxHeaderReadResult(
         return header == other.header &&
             rawHeaderBytes.contentEquals(other.rawHeaderBytes) &&
             headerHash.contentEquals(other.headerHash) &&
-            headerHmac.contentEquals(other.headerHmac)
+            headerHmac.contentEquals(other.headerHmac) &&
+            legacyKdfParameters == other.legacyKdfParameters
     }
 
     override fun hashCode(): Int {
@@ -40,6 +45,7 @@ data class KdbxHeaderReadResult(
         result = 31 * result + rawHeaderBytes.contentHashCode()
         result = 31 * result + (headerHash?.contentHashCode() ?: 0)
         result = 31 * result + (headerHmac?.contentHashCode() ?: 0)
+        result = 31 * result + (legacyKdfParameters?.hashCode() ?: 0)
         return result
     }
 }
@@ -75,6 +81,7 @@ class KdbxHeaderReader {
         var innerRandomStreamId = InnerStreamCipher.SALSA20
         var streamStartBytes = ByteArray(0)
         var kdfParameters: KdfParameters = KdfParameters.AesKdf()
+        var legacyKdfParameters: KdfParameters? = null
 
         // KDBX 3.1 specific fields (converted to KdfParameters after parsing)
         var transformSeed = ByteArray(0)
@@ -140,7 +147,9 @@ class KdbxHeaderReader {
                 }
 
                 FIELD_KDF_PARAMETERS -> {
-                    kdfParameters = parseKdfParameters(fieldData)
+                    val parsed = parseKdfParameters(fieldData)
+                    kdfParameters = parsed.parameters
+                    legacyKdfParameters = parsed.legacyParameters
                 }
             }
         }
@@ -180,6 +189,7 @@ class KdbxHeaderReader {
             rawHeaderBytes = rawHeaderBytes,
             headerHash = headerHash,
             headerHmac = headerHmac,
+            legacyKdfParameters = legacyKdfParameters,
         )
     }
 
@@ -228,7 +238,9 @@ class KdbxHeaderReader {
         else -> throw KdbxParseException("Unknown inner stream cipher: $id")
     }
 
-    private fun parseKdfParameters(data: ByteArray): KdfParameters {
+    private class ParsedKdfParameters(val parameters: KdfParameters, val legacyParameters: KdfParameters? = null)
+
+    private fun parseKdfParameters(data: ByteArray): ParsedKdfParameters {
         val buf = Buffer().apply { write(data) }
         val variantMap = parseVariantDictionary(buf)
 
@@ -238,9 +250,11 @@ class KdbxHeaderReader {
 
         return when {
             uuidBytes.contentEquals(KDF_AES_UUID) -> {
-                KdfParameters.AesKdf(
-                    rounds = (variantMap["R"] as? Long) ?: 6000L,
-                    seed = (variantMap["S"] as? ByteArray) ?: ByteArray(0),
+                ParsedKdfParameters(
+                    KdfParameters.AesKdf(
+                        rounds = (variantMap["R"] as? Long) ?: 6000L,
+                        seed = (variantMap["S"] as? ByteArray) ?: ByteArray(0),
+                    ),
                 )
             }
 
@@ -258,14 +272,28 @@ class KdbxHeaderReader {
         }
     }
 
-    private fun parseArgon2(variant: Argon2Variant, map: Map<String, Any>) = KdfParameters.Argon2(
-        variant = variant,
-        version = (map["V"] as? Int) ?: 0x13,
-        salt = (map["S"] as? ByteArray) ?: ByteArray(0),
-        parallelism = (map["P"] as? Int) ?: 2,
-        memory = (map["M"] as? Long) ?: 65536L,
-        iterations = (map["I"] as? Long) ?: 3L,
-    )
+    private fun parseArgon2(variant: Argon2Variant, map: Map<String, Any>): ParsedKdfParameters {
+        // KDBX stores the Argon2 memory cost in bytes; the model holds KiB
+        val memoryBytes = (map["M"] as? Long) ?: (DEFAULT_ARGON2_MEMORY_KIB * BYTES_PER_KIB)
+        val parameters =
+            KdfParameters.Argon2(
+                variant = variant,
+                version = (map["V"] as? Int) ?: 0x13,
+                salt = (map["S"] as? ByteArray) ?: ByteArray(0),
+                parallelism = (map["P"] as? Int) ?: 2,
+                memory = memoryBytes / BYTES_PER_KIB,
+                iterations = (map["I"] as? Long) ?: 3L,
+            )
+        // Older versions of this app wrote the KiB value into M. Real clients never go below
+        // 1 MiB, so a smaller M is most likely such a legacy value.
+        val legacyParameters =
+            if (memoryBytes in 1 until LEGACY_ARGON2_MEMORY_THRESHOLD_BYTES) {
+                parameters.copy(memory = memoryBytes)
+            } else {
+                null
+            }
+        return ParsedKdfParameters(parameters, legacyParameters)
+    }
 
     private fun parseVariantDictionary(buf: Buffer): Map<String, Any> {
         val version = buf.readShortLe().toInt() and 0xFFFF
@@ -328,6 +356,12 @@ class KdbxHeaderReader {
     }
 
     companion object {
+        private const val BYTES_PER_KIB = 1024L
+        private const val DEFAULT_ARGON2_MEMORY_KIB = 65536L
+
+        // Below this byte count, M is treated as a possible legacy KiB value
+        private const val LEGACY_ARGON2_MEMORY_THRESHOLD_BYTES = 1024L * 1024L
+
         // KDBX file signatures
         private val SIGNATURE_1 = 0x9AA2D903.toInt()
         private val SIGNATURE_2 = 0xB54BFB67.toInt()
