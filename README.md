@@ -1,3 +1,5 @@
+[![CI](https://github.com/beytullah-gunduz/keepasscompose/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/beytullah-gunduz/keepasscompose/actions/workflows/ci.yml)
+
 This is a Kotlin Multiplatform project targeting Android, iOS, Desktop (JVM).
 
 Toolchain: Kotlin 2.4, Compose Multiplatform 1.12, Gradle 9.8, AGP 9.4.
