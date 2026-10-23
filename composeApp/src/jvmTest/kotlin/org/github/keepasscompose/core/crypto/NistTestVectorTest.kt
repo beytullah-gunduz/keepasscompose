@@ -74,6 +74,5 @@ class NistTestVectorTest {
         )
     }
 
-    private fun ByteArray.toHexString(): String =
-        joinToString("") { "%02x".format(it) }
+    private fun ByteArray.toHexString(): String = joinToString("") { "%02x".format(it) }
 }

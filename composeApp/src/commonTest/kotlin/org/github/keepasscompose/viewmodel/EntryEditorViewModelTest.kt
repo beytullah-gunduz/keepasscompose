@@ -13,11 +13,7 @@ class EntryEditorViewModelTest {
 
     private val vm = EntryEditorViewModel()
 
-    private fun createResult(
-        title: String = "Test",
-        userName: String = "user",
-        password: String = "pass",
-    ) = EntryEditorResult(
+    private fun createResult(title: String = "Test", userName: String = "user", password: String = "pass") = EntryEditorResult(
         title = title,
         userName = userName,
         password = password,
